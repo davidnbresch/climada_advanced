@@ -1,6 +1,6 @@
-function damage=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_year,UNISYS_name,n_tracks,call_from_GUI)
+function [damage,track_filename]=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_year,UNISYS_name,n_tracks,call_from_GUI)
 % MODULE:
-%   LOCAL
+%   advanced
 % NAME:
 %   climada_tc_event_damage_ens
 % PURPOSE:
@@ -9,21 +9,35 @@ function damage=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_year,UNISYS_name,
 %
 %   Plus generate ensemble 'forecast' damage
 %
-%   run as a script in order to allow access to all generated data
+%   Fetches data from: weather.unisys.com/hurricane, but since the format
+%   and layout of the webpage changed, it only works back to about 2006...
+%   earier years will,likely lead to errors. In such cases, retrieve the TC
+%   track file manually and run the code by passing the track file in the
+%   first variable (UNISYS_regi)
 %
-%   See also: weather.unisys.com/hurricane
+%   See also climada_tc_event_damage_ens_gui
 % CALLING SEQUENCE:
-%   damages=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_year,UNISYS_name,n_tracks,call_from_GUI)
+%   [damage,track_filename]=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_year,UNISYS_name,n_tracks,call_from_GUI)
 % EXAMPLE:
-%   damages=climada_tc_event_damage_ens('atlantic','1992','ANDREW')
+%   damage=climada_tc_event_damage_ens('w_pacific','2015','KOPPU',5)
+%   [damage,track_filename]=climada_tc_event_damage_ens('','NONE','NONE',5) % prompt for track file
 % INPUTS:
 %   UNISYS_regi: the UNISYS region, i.e. 'atlantic','e_pacific','w_pacific'
 %       's_pacific','s_indian' or 'n_indian'
-%   UNISYS_year: the year yyyy (as string)
-%   UNISYS_name: the name of the event (without Hurricane-1 ...)
-%   > if all above parameters are empty: Select the region and event from
-%     selection lists , the single TC track file is downloaded from
-%     UNISYS and processed
+%       SPECIAL: if a TC track filename (with path) is passed instead of a region
+%       and UNISYS_year and UNISYS_name are both set to 'NONE', the track file
+%       is used. This way, any TC track file can be passed as input.
+%   UNISYS_year: the year yyyy (as string). Note that years before 2006
+%       likely do not work properly (since UNISYS changed the layout of
+%       their webpage and the code reads the html source to figure the
+%       event names...). If set to 'NONE' together with UNISYS_name, the
+%       user gets prompted for the TC track file
+%   UNISYS_name: the name of the event (without Hurricane-1 ..., usually uppercase). 
+%       If set to 'NONE' together with UNISYS_year, the user gets prompted
+%       for the TC track file. 
+%   >   if all three parameters above are empty: Select the region and event
+%       from selection lists, the single TC track file is downloaded from
+%       UNISYS and processed
 %   n_tracks: number of tracks (incl original one), default=100
 %   call_from_GUI: switch to direct to the correct axes
 %       if empty, not called from GUI, otherwise contains the axes handles
@@ -31,12 +45,13 @@ function damage=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_year,UNISYS_name,
 % OUTPUTS:
 %   damage: the vector with the calculated damages, damage(1) is the one
 %       for the reported track, all following ones for ensemble members
+%   track_filename: the TC track filename with path
 % MODIFICATION HISTORY:
-% David N. Bresch, david.bresch@gmail.com, 20151009
-% David N. Bresch, david.bresch@gmail.com, 20151018 automatic country detection
+% David N. Bresch, david.bresch@gmail.com, 20151009, initial
+% David N. Bresch, david.bresch@gmail.com, 20151018, automatic country detection
 % David N. Bresch, david.bresch@gmail.com, 20151019, converted into a function, see also climada_tc_event_damage_ens_gui
 
-damage=[];
+damage=[];track_filename=''; % init output
 
 % init global variables
 global climada_global
@@ -55,9 +70,9 @@ if ~exist('call_from_GUI','var'),call_from_GUI=[];end
 % track_filename = [climada_global.data_dir filesep 'tc_tracks' filesep '20071116_SIDR_track.dat'];
 % country_name='Bangladesh';
 %
-FontSize=12; % 18 for nice plots
+FontSize=12; % 18 for plots for e.g. pptx
 %
-% UNISYS regions
+% UNISYS regions (hard-wired)
 UNISYS_regis{1}='atlantic';
 UNISYS_regis{2}='e_pacific';
 UNISYS_regis{3}='w_pacific';
@@ -134,16 +149,21 @@ if isempty(UNISYS_name)
     end
 end % isempty(UNISYS_name)
 
-% fetch the tc track data from the internet
-url_str=['http://weather.unisys.com/hurricane/' UNISYS_regi '/' UNISYS_year '/' UNISYS_name '/track.dat'];
-fprintf('fetching %s\n',url_str);
-track_data_str = urlread(url_str);
-track_filename=[climada_global.data_dir filesep 'tc_tracks' filesep  UNISYS_regi '_' UNISYS_year '_' UNISYS_name '.dat'];
-fprintf('saving as %s\n',track_filename);
-fid=fopen(track_filename,'w');
-% write to single track file
-fprintf(fid,'%s\r\n',track_data_str);
-fclose(fid);
+if strcmp(UNISYS_name,'NONE')
+    track_filename=''; % force prompting for track file
+    if exist(UNISYS_regi,'file'),track_filename=UNISYS_regi;end
+else
+    % fetch the tc track data from the internet
+    url_str=['http://weather.unisys.com/hurricane/' UNISYS_regi '/' UNISYS_year '/' UNISYS_name '/track.dat'];
+    fprintf('fetching %s\n',url_str);
+    track_data_str = urlread(url_str);
+    track_filename=[climada_global.data_dir filesep 'tc_tracks' filesep  UNISYS_regi '_' UNISYS_year '_' UNISYS_name '.dat'];
+    fprintf('saving as %s\n',track_filename);
+    fid=fopen(track_filename,'w');
+    % write to single track file
+    fprintf(fid,'%s\r\n',track_data_str);
+    fclose(fid);
+end
 
 % get TC track (prompting for file to be selected)
 [tc_track,track_filename]=climada_tc_read_unisys_track(track_filename);
