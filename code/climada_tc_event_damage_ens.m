@@ -1,4 +1,4 @@
-% climada_tc_event_damage_ens
+function damage=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_year,UNISYS_name,n_tracks,call_from_GUI)
 % MODULE:
 %   LOCAL
 % NAME:
@@ -6,31 +6,48 @@
 % PURPOSE:
 %   Given a single track file, calculate the damage for all countries
 %   posibbly hit (i.e. at least one node within country boders)
-%   
+%
 %   Plus generate ensemble 'forecast' damage
 %
 %   run as a script in order to allow access to all generated data
 %
 %   See also: weather.unisys.com/hurricane
 % CALLING SEQUENCE:
-%   global_max_damage % a batch file
+%   damages=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_year,UNISYS_name,n_tracks,call_from_GUI)
 % EXAMPLE:
+%   damages=climada_tc_event_damage_ens('atlantic','1992','ANDREW')
 % INPUTS:
-%   Select the region and event from selection lists , the single TC track
-%       file is downloaded from UNISYS and processed  
+%   UNISYS_regi: the UNISYS region, i.e. 'atlantic','e_pacific','w_pacific'
+%       's_pacific','s_indian' or 'n_indian'
+%   UNISYS_year: the year yyyy (as string)
+%   UNISYS_name: the name of the event (without Hurricane-1 ...)
+%   > if all above parameters are empty: Select the region and event from
+%     selection lists , the single TC track file is downloaded from
+%     UNISYS and processed
+%   n_tracks: number of tracks (incl original one), default=100
+%   call_from_GUI: switch to direct to the correct axes
+%       if empty, not called from GUI, otherwise contains the axes handles
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
+%   damage: the vector with the calculated damages, damage(1) is the one
+%       for the reported track, all following ones for ensemble members
 % MODIFICATION HISTORY:
 % David N. Bresch, david.bresch@gmail.com, 20151009
 % David N. Bresch, david.bresch@gmail.com, 20151018 automatic country detection
+% David N. Bresch, david.bresch@gmail.com, 20151019, converted into a function, see also climada_tc_event_damage_ens_gui
+
+damage=[];
 
 % init global variables
 global climada_global
 if ~climada_init_vars,return;end
 
-if ~exist('track_filename','var'),track_filename = ''; end
-if ~exist('country_name','var'),country_name = ''; end
-
+% poor man's version to check arguments
+if ~exist('UNISYS_regi','var'),UNISYS_regi='';end
+if ~exist('UNISYS_year','var'),UNISYS_year='';end
+if ~exist('UNISYS_name','var'),UNISYS_name='';end
+if ~exist('n_tracks','var'),   n_tracks   =100;end % number of tracks (incl original one)
+if ~exist('call_from_GUI','var'),call_from_GUI=[];end
 
 % PARAMETERS
 %
@@ -38,8 +55,7 @@ if ~exist('country_name','var'),country_name = ''; end
 % track_filename = [climada_global.data_dir filesep 'tc_tracks' filesep '20071116_SIDR_track.dat'];
 % country_name='Bangladesh';
 %
-% number of tracks (incl original one)
-n_tracks=100; % 100 is far good enough
+FontSize=12; % 18 for nice plots
 %
 % UNISYS regions
 UNISYS_regis{1}='atlantic';
@@ -48,74 +64,81 @@ UNISYS_regis{3}='w_pacific';
 UNISYS_regis{4}='s_pacific';
 UNISYS_regis{5}='s_indian';
 UNISYS_regis{6}='n_indian';
-%
-% UNISYS year (usually the actual one)
-UNISYS_YEAR=datestr(today,'yyyy'); % e.g. '2015';
 
-% prompt for the region
-[selection,ok] = listdlg('PromptString','Select region:',...
-    'ListString',UNISYS_regis,'SelectionMode','SINGLE');
-pause(0.1)
-if ok
-    UNISYS_REGI=UNISYS_regis{selection};
-end
-
-% fetch the index of all events
-url_str=['http://weather.unisys.com/hurricane/' UNISYS_REGI '/' UNISYS_YEAR '/index.php'];
-fprintf('fetching %s\n',url_str);
-index_str = urlread(url_str);
-% kind of parse index_str to get names
-UNISYS_names={};
-for event_i=100:-1:1
-    for black_red=1:2
-        if black_red==1
-            check_str=['<tr><td width="20" align="right" style="color:black;">' num2str(event_i) '</td><td width="250" style="color:black;">'];
-        else
-            check_str=['<tr><td width="20" align="right" style="color:red;">' num2str(event_i) '</td><td width="250" style="color:red;">'];
+if isempty(UNISYS_name)
+    
+    if isempty(UNISYS_regi)
+        % prompt for the region
+        [selection,ok] = listdlg('PromptString','Select region:',...
+            'ListString',UNISYS_regis,'SelectionMode','SINGLE');
+        pause(0.1)
+        if ok
+            UNISYS_regi=UNISYS_regis{selection};
         end
-        
-        pos=strfind(index_str,check_str);
-        if pos>0
-            UNISYS_names{end+1}=index_str(pos+length(check_str):pos+length(check_str)+25);
-        end
-    end % black_red
-end % event_i
-
-[selection,ok] = listdlg('PromptString','Select event:',...
-    'ListString',UNISYS_names,'SelectionMode','SINGLE');
-pause(0.1)
-if ok
-    UNISYS_NAME=UNISYS_names{selection};
-    % get rid of all clutter
-    UNISYS_NAME=strrep(UNISYS_NAME,'Super ','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Tropical Depression','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Tropical Storm','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Typhoon-1','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Typhoon-2','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Typhoon-3','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Typhoon-4','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Typhoon-5','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Hurricane-1','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Hurricane-2','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Hurricane-3','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Hurricane-4','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Hurricane-5','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Cyclone-1','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Cyclone-2','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Cyclone-3','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Cyclone-4','');
-    UNISYS_NAME=strrep(UNISYS_NAME,'Cyclone-5','');
-    UNISYS_NAME=strrep(UNISYS_NAME,' ','');
-    UNISYS_NAME=strrep(UNISYS_NAME,' ','');
-else
-    return
-end
+    end % isempty(UNISYS_regi)
+    
+    if isempty(UNISYS_year)
+        % UNISYS year (usually the actual one)
+        UNISYS_year=datestr(today,'yyyy'); % e.g. '2015'
+    end
+    
+    % fetch the index of all events
+    url_str=['http://weather.unisys.com/hurricane/' UNISYS_regi '/' UNISYS_year '/index.php'];
+    fprintf('fetching %s\n',url_str);
+    index_str = urlread(url_str);
+    % kind of parse index_str to get names
+    UNISYS_names={};
+    for event_i=100:-1:1
+        for black_red=1:2
+            if black_red==1
+                check_str=['<tr><td width="20" align="right" style="color:black;">' num2str(event_i) '</td><td width="250" style="color:black;">'];
+            else
+                check_str=['<tr><td width="20" align="right" style="color:red;">' num2str(event_i) '</td><td width="250" style="color:red;">'];
+            end
+            
+            pos=strfind(index_str,check_str);
+            if pos>0
+                UNISYS_names{end+1}=index_str(pos+length(check_str):pos+length(check_str)+25);
+            end
+        end % black_red
+    end % event_i
+    
+    [selection,ok] = listdlg('PromptString','Select event:',...
+        'ListString',UNISYS_names,'SelectionMode','SINGLE');
+    pause(0.1)
+    if ok
+        UNISYS_name=UNISYS_names{selection};
+        % get rid of all clutter
+        UNISYS_name=strrep(UNISYS_name,'Super ','');
+        UNISYS_name=strrep(UNISYS_name,'Tropical Depression','');
+        UNISYS_name=strrep(UNISYS_name,'Tropical Storm','');
+        UNISYS_name=strrep(UNISYS_name,'Typhoon-1','');
+        UNISYS_name=strrep(UNISYS_name,'Typhoon-2','');
+        UNISYS_name=strrep(UNISYS_name,'Typhoon-3','');
+        UNISYS_name=strrep(UNISYS_name,'Typhoon-4','');
+        UNISYS_name=strrep(UNISYS_name,'Typhoon-5','');
+        UNISYS_name=strrep(UNISYS_name,'Hurricane-1','');
+        UNISYS_name=strrep(UNISYS_name,'Hurricane-2','');
+        UNISYS_name=strrep(UNISYS_name,'Hurricane-3','');
+        UNISYS_name=strrep(UNISYS_name,'Hurricane-4','');
+        UNISYS_name=strrep(UNISYS_name,'Hurricane-5','');
+        UNISYS_name=strrep(UNISYS_name,'Cyclone-1','');
+        UNISYS_name=strrep(UNISYS_name,'Cyclone-2','');
+        UNISYS_name=strrep(UNISYS_name,'Cyclone-3','');
+        UNISYS_name=strrep(UNISYS_name,'Cyclone-4','');
+        UNISYS_name=strrep(UNISYS_name,'Cyclone-5','');
+        UNISYS_name=strrep(UNISYS_name,' ','');
+        UNISYS_name=strrep(UNISYS_name,' ','');
+    else
+        return
+    end
+end % isempty(UNISYS_name)
 
 % fetch the tc track data from the internet
-url_str=['http://weather.unisys.com/hurricane/' UNISYS_REGI '/' UNISYS_YEAR '/' UNISYS_NAME '/track.dat'];
+url_str=['http://weather.unisys.com/hurricane/' UNISYS_regi '/' UNISYS_year '/' UNISYS_name '/track.dat'];
 fprintf('fetching %s\n',url_str);
 track_data_str = urlread(url_str);
-track_filename=[climada_global.data_dir filesep 'tc_tracks' filesep  UNISYS_REGI '_' UNISYS_YEAR '_' UNISYS_NAME '.dat'];
+track_filename=[climada_global.data_dir filesep 'tc_tracks' filesep  UNISYS_regi '_' UNISYS_year '_' UNISYS_name '.dat'];
 fprintf('saving as %s\n',track_filename);
 fid=fopen(track_filename,'w');
 % write to single track file
@@ -160,8 +183,14 @@ for country_i=1:length(country_list)
     centroids=climada_centroids_load([country_ISO3 '_' country_name '_centroids']);
     %entity=climada_assets_encode(entity,centroids);
     
-    figure('Name',['TC ensemble ' country_name],'Position',[199 55 1076 618],'Color',[1 1 1]);
-    subplot(1,2,1)
+    if isempty(call_from_GUI)
+        figure('Name',['TC ensemble ' country_name],'Position',[199 55 1076 618],'Color',[1 1 1]);
+        subplot(1,2,1)
+    else
+        cla(call_from_GUI.axes_left)
+        axes(call_from_GUI.axes_left);
+    end
+    
     climada_entity_plot(entity,4)
     % plot(tc_track.lon,tc_track.lat,'-r');axis equal; hold on
     % climada_plot_world_borders(1,country_name,'',1)
@@ -172,7 +201,7 @@ for country_i=1:length(country_list)
     plot(tc_tracks(1).lon,tc_tracks(1).lat,'-r','LineWidth',2); % orig track
     axis off
     xlabel('red crosses: forecast timesteps, blue:ensemble members','FontSize',8);
-    title(country_name,'FontSize',18,'FontWeight','normal');drawnow
+    title(country_name,'FontSize',FontSize,'FontWeight','normal');drawnow
     
     damage=zeros(1,length(tc_tracks)); % allocate
     
@@ -183,19 +212,29 @@ for country_i=1:length(country_list)
         damage(track_i)=EDS(track_i).damage;
     end % track_i
     
-    subplot(1,2,2)
+    if isempty(call_from_GUI)
+        subplot(1,2,2)
+    else
+        cla(call_from_GUI.axes_right)
+        axes(call_from_GUI.axes_right);
+    end
     hist(damage); % plot
     [counts,centers]=hist(damage); % get info
-    set(gca,'FontSize',18),xlabel('damage [USD]','FontSize',18),ylabel('event count','FontSize',18)
+    set(gca,'FontSize',FontSize),xlabel('damage [USD]','FontSize',FontSize),ylabel('event count','FontSize',FontSize)
     hold on;plot(damage(1),0,'xr');
     ddamage=(max(damage)-min(damage))/(2*length(counts));
-    text(damage(1)+ddamage,1,'damage','Rotation',90,'Color','red','FontSize',18);
+    text(damage(1)+ddamage,1,'damage','Rotation',90,'Color','red','FontSize',FontSize);
     [max_damage,track_i] = max(damage);
     tc_track_name=lower(tc_track.name);
-    title([[upper(tc_track_name(1)) tc_track_name(2:end)]  ' @ ' country_name],'FontSize',18,'FontWeight','normal');drawnow
+    title([[upper(tc_track_name(1)) tc_track_name(2:end)]  ' @ ' country_name],'FontSize',FontSize,'FontWeight','normal');drawnow
     %plot(damage(track_i),0,'xb');
     %text(damage(track_i),0,'max ensemble damage','Rotation',90);
-    subplot(1,2,1);hold on;
+    if isempty(call_from_GUI)
+        subplot(1,2,1);hold on;
+    else
+        axes(call_from_GUI.axes_left);
+        hold on
+    end
     plot(tc_tracks(track_i).lon,tc_tracks(track_i).lat,'-b','LineWidth',2); % max damage track
     
 end % country_i
