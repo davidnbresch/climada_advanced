@@ -32,9 +32,9 @@ function [damage,track_filename]=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_
 %       their webpage and the code reads the html source to figure the
 %       event names...). If set to 'NONE' together with UNISYS_name, the
 %       user gets prompted for the TC track file
-%   UNISYS_name: the name of the event (without Hurricane-1 ..., usually uppercase). 
+%   UNISYS_name: the name of the event (without Hurricane-1 ..., usually uppercase).
 %       If set to 'NONE' together with UNISYS_year, the user gets prompted
-%       for the TC track file. 
+%       for the TC track file.
 %   >   if all three parameters above are empty: Select the region and event
 %       from selection lists, the single TC track file is downloaded from
 %       UNISYS and processed
@@ -50,6 +50,7 @@ function [damage,track_filename]=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_
 % David N. Bresch, david.bresch@gmail.com, 20151009, initial
 % David N. Bresch, david.bresch@gmail.com, 20151018, automatic country detection
 % David N. Bresch, david.bresch@gmail.com, 20151019, converted into a function, see also climada_tc_event_damage_ens_gui
+% David N. Bresch, david.bresch@gmail.com, 20151021, special case for no web access added
 
 damage=[];track_filename=''; % init output
 
@@ -80,6 +81,12 @@ UNISYS_regis{4}='s_pacific';
 UNISYS_regis{5}='s_indian';
 UNISYS_regis{6}='n_indian';
 
+if strcmpi(UNISYS_name,'nowebaccess>presscalculatebutton')
+    % special case to select local file
+    UNISYS_name='NONE';
+    UNISYS_year='NONE';
+end
+
 if isempty(UNISYS_name)
     
     if isempty(UNISYS_regi)
@@ -100,52 +107,56 @@ if isempty(UNISYS_name)
     % fetch the index of all events
     url_str=['http://weather.unisys.com/hurricane/' UNISYS_regi '/' UNISYS_year '/index.php'];
     fprintf('fetching %s\n',url_str);
-    index_str = urlread(url_str);
-    % kind of parse index_str to get names
-    UNISYS_names={};
-    for event_i=100:-1:1
-        for black_red=1:2
-            if black_red==1
-                check_str=['<tr><td width="20" align="right" style="color:black;">' num2str(event_i) '</td><td width="250" style="color:black;">'];
-            else
-                check_str=['<tr><td width="20" align="right" style="color:red;">' num2str(event_i) '</td><td width="250" style="color:red;">'];
-            end
-            
-            pos=strfind(index_str,check_str);
-            if pos>0
-                UNISYS_names{end+1}=index_str(pos+length(check_str):pos+length(check_str)+25);
-            end
-        end % black_red
-    end % event_i
-    
-    [selection,ok] = listdlg('PromptString','Select event:',...
-        'ListString',UNISYS_names,'SelectionMode','SINGLE');
-    pause(0.1)
-    if ok
-        UNISYS_name=UNISYS_names{selection};
-        % get rid of all clutter
-        UNISYS_name=strrep(UNISYS_name,'Super ','');
-        UNISYS_name=strrep(UNISYS_name,'Tropical Depression','');
-        UNISYS_name=strrep(UNISYS_name,'Tropical Storm','');
-        UNISYS_name=strrep(UNISYS_name,'Typhoon-1','');
-        UNISYS_name=strrep(UNISYS_name,'Typhoon-2','');
-        UNISYS_name=strrep(UNISYS_name,'Typhoon-3','');
-        UNISYS_name=strrep(UNISYS_name,'Typhoon-4','');
-        UNISYS_name=strrep(UNISYS_name,'Typhoon-5','');
-        UNISYS_name=strrep(UNISYS_name,'Hurricane-1','');
-        UNISYS_name=strrep(UNISYS_name,'Hurricane-2','');
-        UNISYS_name=strrep(UNISYS_name,'Hurricane-3','');
-        UNISYS_name=strrep(UNISYS_name,'Hurricane-4','');
-        UNISYS_name=strrep(UNISYS_name,'Hurricane-5','');
-        UNISYS_name=strrep(UNISYS_name,'Cyclone-1','');
-        UNISYS_name=strrep(UNISYS_name,'Cyclone-2','');
-        UNISYS_name=strrep(UNISYS_name,'Cyclone-3','');
-        UNISYS_name=strrep(UNISYS_name,'Cyclone-4','');
-        UNISYS_name=strrep(UNISYS_name,'Cyclone-5','');
-        UNISYS_name=strrep(UNISYS_name,' ','');
-        UNISYS_name=strrep(UNISYS_name,' ','');
+    [index_str,STATUS] = urlread(url_str);
+    if STATUS
+        % kind of parse index_str to get names
+        UNISYS_names={};
+        for event_i=100:-1:1
+            for black_red=1:2
+                if black_red==1
+                    check_str=['<tr><td width="20" align="right" style="color:black;">' num2str(event_i) '</td><td width="250" style="color:black;">'];
+                else
+                    check_str=['<tr><td width="20" align="right" style="color:red;">' num2str(event_i) '</td><td width="250" style="color:red;">'];
+                end
+                
+                pos=strfind(index_str,check_str);
+                if pos>0
+                    UNISYS_names{end+1}=index_str(pos+length(check_str):pos+length(check_str)+25);
+                end
+            end % black_red
+        end % event_i
+        
+        [selection,ok] = listdlg('PromptString','Select event:',...
+            'ListString',UNISYS_names,'SelectionMode','SINGLE');
+        pause(0.1)
+        if ok
+            UNISYS_name=UNISYS_names{selection};
+            % get rid of all clutter
+            UNISYS_name=strrep(UNISYS_name,'Super ','');
+            UNISYS_name=strrep(UNISYS_name,'Tropical Depression','');
+            UNISYS_name=strrep(UNISYS_name,'Tropical Storm','');
+            UNISYS_name=strrep(UNISYS_name,'Typhoon-1','');
+            UNISYS_name=strrep(UNISYS_name,'Typhoon-2','');
+            UNISYS_name=strrep(UNISYS_name,'Typhoon-3','');
+            UNISYS_name=strrep(UNISYS_name,'Typhoon-4','');
+            UNISYS_name=strrep(UNISYS_name,'Typhoon-5','');
+            UNISYS_name=strrep(UNISYS_name,'Hurricane-1','');
+            UNISYS_name=strrep(UNISYS_name,'Hurricane-2','');
+            UNISYS_name=strrep(UNISYS_name,'Hurricane-3','');
+            UNISYS_name=strrep(UNISYS_name,'Hurricane-4','');
+            UNISYS_name=strrep(UNISYS_name,'Hurricane-5','');
+            UNISYS_name=strrep(UNISYS_name,'Cyclone-1','');
+            UNISYS_name=strrep(UNISYS_name,'Cyclone-2','');
+            UNISYS_name=strrep(UNISYS_name,'Cyclone-3','');
+            UNISYS_name=strrep(UNISYS_name,'Cyclone-4','');
+            UNISYS_name=strrep(UNISYS_name,'Cyclone-5','');
+            UNISYS_name=strrep(UNISYS_name,' ','');
+            UNISYS_name=strrep(UNISYS_name,' ','');
+        else
+            return
+        end
     else
-        return
+        UNISYS_name='NONE';
     end
 end % isempty(UNISYS_name)
 
@@ -178,20 +189,21 @@ for shape_i = 1:length(shapes)
     end
 end % shape_i
 
-if length(country_list)==0 % prompt for country, as no direct hit
+if isempty(country_list) % prompt for country, as no direct hit
     country_list{1}=climada_country_name('SINGLE'); % obtain country
 end
 
 for country_i=1:length(country_list)
+    %for country_i=1:1
     
     country_name=char(country_list{country_i});
     
     fprintf('*** processing %s:\n',country_name);
     
     if isempty(country_name) % usually not the case any more, but left in, in case one would like to use this
-        [country_name,country_ISO3,shape_index]=climada_country_name('SINGLE'); % obtain country
+        [country_name,country_ISO3,~]=climada_country_name('SINGLE'); % obtain country
     else
-        [country_name,country_ISO3,shape_index]=climada_country_name(country_name); % just get ISO3
+        [country_name,country_ISO3,~]=climada_country_name(country_name); % just get ISO3
     end
     country_name=char(country_name);
     country_ISO3=char(country_ISO3);
@@ -223,6 +235,12 @@ for country_i=1:length(country_list)
     xlabel('red crosses: forecast timesteps, blue:ensemble members','FontSize',8);
     title(country_name,'FontSize',FontSize,'FontWeight','normal');drawnow
     
+    if isempty(call_from_GUI)
+        subplot(1,2,2)
+    else
+        cla(call_from_GUI.axes_right)
+        axes(call_from_GUI.axes_right);
+    end
     damage=zeros(1,length(tc_tracks)); % allocate
     
     for track_i=1:length(tc_tracks)
@@ -230,21 +248,19 @@ for country_i=1:length(country_list)
         hazard.frequency=1;
         EDS(track_i)=climada_EDS_calc(entity,hazard);
         damage(track_i)=EDS(track_i).damage;
+        calc_sec=str2double(strtok(strrep(EDS(track_i).comment,'calculation took ',''),'sec'));
+        cla;text(0.1,0.5,sprintf('%i seconds calculation remaining',...
+            ceil((length(tc_tracks)-track_i)*calc_sec)),'FontSize',FontSize);drawnow
+        %fprintf('%i seconds calculation remaining\n',ceil((length(tc_tracks)-track_i)*calc_sec));
     end % track_i
     
-    if isempty(call_from_GUI)
-        subplot(1,2,2)
-    else
-        cla(call_from_GUI.axes_right)
-        axes(call_from_GUI.axes_right);
-    end
     hist(damage); % plot
-    [counts,centers]=hist(damage); % get info
+    [counts,~]=hist(damage); % get info
     set(gca,'FontSize',FontSize),xlabel('damage [USD]','FontSize',FontSize),ylabel('event count','FontSize',FontSize)
     hold on;plot(damage(1),0,'xr');
     ddamage=(max(damage)-min(damage))/(2*length(counts));
     text(damage(1)+ddamage,1,'damage','Rotation',90,'Color','red','FontSize',FontSize);
-    [max_damage,track_i] = max(damage);
+    [~,track_i] = max(damage);
     tc_track_name=lower(tc_track.name);
     title([[upper(tc_track_name(1)) tc_track_name(2:end)]  ' @ ' country_name],'FontSize',FontSize,'FontWeight','normal');drawnow
     %plot(damage(track_i),0,'xb');
@@ -256,5 +272,7 @@ for country_i=1:length(country_list)
         hold on
     end
     plot(tc_tracks(track_i).lon,tc_tracks(track_i).lat,'-b','LineWidth',2); % max damage track
+    
+    call_from_GUI=[]; % second plot in new figure
     
 end % country_i

@@ -84,7 +84,8 @@ function popupmenu_region_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_region contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_region
 get_UNISYS_name_list(hObject,eventdata,handles);
-%set(handles.pushbutton_calculate,'Enable','off');
+set(handles.pushbutton_calculate,'Enable','off');
+set(handles.popupmenu_year,'Enable','on'); % first a name region to be selected
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu_region_CreateFcn(hObject, eventdata, handles)
@@ -140,6 +141,7 @@ for year_i=1:10
         sprintf('%i',str2double(climada_tc_event_damage_ens_vars.UNISYS_years{year_i})-1);
 end
 set(hObject,'String',climada_tc_event_damage_ens_vars.UNISYS_years);
+set(hObject,'Enable','off'); % first a name region to be selected
 
 
 % --- Executes on selection change in popupmenu_name.
@@ -239,23 +241,28 @@ UNISYS_YEAR=climada_tc_event_damage_ens_vars.UNISYS_years{get(handles.popupmenu_
 % fetch the index of all events
 url_str=['http://weather.unisys.com/hurricane/' UNISYS_REGI '/' UNISYS_YEAR '/index.php'];
 fprintf('fetching %s\n',url_str);
-index_str = urlread(url_str);
-% kind of parse index_str to get names
-UNISYS_names={};
-for event_i=100:-1:1
-    for black_red=1:2
-        if black_red==1
-            check_str=['<tr><td width="20" align="right" style="color:black;">' num2str(event_i) '</td><td width="250" style="color:black;">'];
-        else
-            check_str=['<tr><td width="20" align="right" style="color:red;">' num2str(event_i) '</td><td width="250" style="color:red;">'];
-        end
-        pos=strfind(index_str,check_str);
-        if pos>0
-            UNISYS_names{end+1}=index_str(pos+length(check_str):pos+length(check_str)+25);
-        end
-    end % black_red
-end % event_i
+[index_str,STATUS] = urlread(url_str);
+if STATUS
+    % kind of parse index_str to get names
+    UNISYS_names={};
+    for event_i=100:-1:1
+        for black_red=1:2
+            if black_red==1
+                check_str=['<tr><td width="20" align="right" style="color:black;">' num2str(event_i) '</td><td width="250" style="color:black;">'];
+            else
+                check_str=['<tr><td width="20" align="right" style="color:red;">' num2str(event_i) '</td><td width="250" style="color:red;">'];
+            end
+            pos=strfind(index_str,check_str);
+            if pos>0
+                UNISYS_names{end+1}=index_str(pos+length(check_str):pos+length(check_str)+25);
+            end
+        end % black_red
+    end % event_i
+    set(handles.pushbutton_calculate,'Enable','off'); % first a name needs to be selected
+else
+    UNISYS_names{1}='no web access > press Calculate button';
+    set(handles.pushbutton_calculate,'Enable','on');
+end
 
 climada_tc_event_damage_ens_vars.UNISYS_names=UNISYS_names;
 set(handles.popupmenu_name,'String',climada_tc_event_damage_ens_vars.UNISYS_names);
-set(handles.pushbutton_calculate,'Enable','off'); % first a name needs to be selected
