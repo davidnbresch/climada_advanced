@@ -211,8 +211,8 @@ for country_i=1:length(country_list)
     tc_tracks=climada_tc_random_walk(tc_track,n_tracks-1,0.1,pi/30); % /15
     
     % get entity and centroids
-    entity=climada_entity_load([country_ISO3 '_' country_name '_entity']);
-    centroids=climada_centroids_load([country_ISO3 '_' country_name '_centroids']);
+    entity=climada_entity_load([country_ISO3 '_' strrep(country_name,' ','') '_entity']);
+    centroids=climada_centroids_load([country_ISO3 '_' strrep(country_name,' ','') '_centroids']);
     %entity=climada_assets_encode(entity,centroids);
     
     if isempty(call_from_GUI)
