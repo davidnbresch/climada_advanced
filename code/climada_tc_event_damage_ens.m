@@ -242,15 +242,15 @@ for country_i=1:length(country_list)
         axes(call_from_GUI.axes_right);
     end
     damage=zeros(1,length(tc_tracks)); % allocate
-    
-    for track_i=1:length(tc_tracks)
+    n_tracks=length(tc_tracks);
+    for track_i=1:n_tracks
         hazard=climada_tc_hazard_set(tc_tracks(track_i),'NOSAVE',centroids);
         hazard.frequency=1;
         EDS(track_i)=climada_EDS_calc(entity,hazard);
         damage(track_i)=EDS(track_i).damage;
         calc_sec=str2double(strtok(strrep(EDS(track_i).comment,'calculation took ',''),'sec'));
-        cla;text(0.1,0.5,sprintf('%i seconds calculation remaining',...
-            ceil((length(tc_tracks)-track_i)*calc_sec)),'FontSize',FontSize);drawnow
+        cla;text(0.1,0.5,sprintf('%i seconds calculation remaining (%i tracks)',...
+            ceil((n_tracks-track_i)*calc_sec),n_tracks-track_i),'FontSize',FontSize);drawnow
         %fprintf('%i seconds calculation remaining\n',ceil((length(tc_tracks)-track_i)*calc_sec));
     end % track_i
     
