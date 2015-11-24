@@ -1,5 +1,5 @@
 function centroids = climada_generate_centroids(centroids_rectORcountry_nameORshapes, resolution_km, buffer_check, save_file, check_plot)
-% climada generate high resolution centroids
+% climada generate gridded centroids
 % MODULE:
 %   advanced
 % NAME:
@@ -54,6 +54,7 @@ function centroids = climada_generate_centroids(centroids_rectORcountry_nameORsh
 % Gilles Stassen, 20150703, struct array shape input
 % David N. Bresch, david.bresch@gmail.com, 20150819, climada_global.centroids_dir introduced
 % Lea Mueller, muellele@gmail.com, 20151106, move to advanced
+% Lea Mueller, muellele@gmail.com, 20151123, set shapes_check to 0 for centroids_rect
 %-
 centroids = [];
 
@@ -119,6 +120,7 @@ elseif isnumeric(centroids_rectORcountry_nameORshapes) && length(centroids_rectO
     % input is centroids rect
     centroids_rect = centroids_rectORcountry_nameORshapes; clear centroids_rectORcountry_name
     buffer_check   = 0;
+    shapes_check = 0;
 elseif isstruct(centroids_rectORcountry_nameORshapes)
     %input is shapes
     shapes = centroids_rectORcountry_nameORshapes; clear centroids_rectORcountry_name
