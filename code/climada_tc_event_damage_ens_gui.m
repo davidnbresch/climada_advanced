@@ -230,7 +230,8 @@ fprintf('%s %s %s - %i\n',UNISYS_regi,UNISYS_year,UNISYS_name,ens_n);
 
 call_from_GUI.axes_left=handles.axes_left;
 call_from_GUI.axes_right=handles.axes_right;
-climada_tc_event_damage_ens(UNISYS_regi,UNISYS_year,UNISYS_name,ens_n,call_from_GUI);
+damages=climada_tc_event_damage_ens(UNISYS_regi,UNISYS_year,UNISYS_name,ens_n,call_from_GUI);
+fprintf('original track: %g [USD], min/max: %g/%g\n',damages(1),min(damages),max(damages));
 
 
 function get_UNISYS_name_list(hObject,eventdata,handles)
