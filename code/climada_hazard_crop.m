@@ -1,17 +1,17 @@
-function hazard = climada_hazard_focus_area(hazard, polygon_focus_area)
-% climada_hazard_focus_area
+function hazard = climada_hazard_crop(hazard, polygon_focus_area)
+% climada_hazard_crop
 % MODULE:
 %   advanced
 % NAME:
-%   climada_hazard_focus_area
+%   climada_hazard_crop
 % PURPOSE:
 %   Reduce hazard to focus only on a given area. Very useful for large hazards, 
 %   that contain gridded information and only a speficic area is need. 
 %   Usually this is the case after climada_asci2hazard.m. 
 % CALLING SEQUENCE:
-%   hazard = climada_hazard_focus_area(hazard, polygon_focus_area)
+%   hazard = climada_hazard_crop(hazard, polygon_focus_area)
 % EXAMPLE:
-%   hazard = climada_hazard_focus_area(hazard, polygon_focus_area)
+%   hazard = climada_hazard_crop(hazard, polygon_focus_area)
 % INPUTS: 
 %   hazard            : a climada hazard structure
 %   polygon_focus_area: structure with polygon coordinate information in fields
@@ -23,6 +23,7 @@ function hazard = climada_hazard_focus_area(hazard, polygon_focus_area)
 % MODIFICATION HISTORY:
 % Lea Mueller, muellele@gmail.com, 20150724, init
 % Lea Mueller, muellele@gmail.com, 20151106, move to advanced
+% Lea Mueller, muellele@gmail.com, 20151125, rename to climada_hazard_crop from climada_hazard_focus_area
 %-
 
 

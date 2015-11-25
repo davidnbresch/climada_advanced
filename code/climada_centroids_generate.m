@@ -1,4 +1,4 @@
-function centroids = climada_generate_centroids(centroids_rectORcountry_nameORshapes, resolution_km, buffer_check, save_file, check_plot)
+function centroids = climada_centroids_generate(centroids_rectORcountry_nameORshapes, resolution_km, buffer_check, save_file, check_plot)
 % climada generate gridded centroids
 % MODULE:
 %   advanced
@@ -55,6 +55,7 @@ function centroids = climada_generate_centroids(centroids_rectORcountry_nameORsh
 % David N. Bresch, david.bresch@gmail.com, 20150819, climada_global.centroids_dir introduced
 % Lea Mueller, muellele@gmail.com, 20151106, move to advanced
 % Lea Mueller, muellele@gmail.com, 20151123, set shapes_check to 0 for centroids_rect
+% Lea Mueller, muellele@gmail.com, 20151125, rename to climada_centroids_generate from climada_generate_centroids
 %-
 centroids = [];
 
