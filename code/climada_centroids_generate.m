@@ -56,7 +56,9 @@ function centroids = climada_centroids_generate(centroids_rectORcountry_nameORsh
 % Lea Mueller, muellele@gmail.com, 20151106, move to advanced
 % Lea Mueller, muellele@gmail.com, 20151123, set shapes_check to 0 for centroids_rect
 % Lea Mueller, muellele@gmail.com, 20151125, rename to climada_centroids_generate from climada_generate_centroids
+% David N. Bresch, david.bresch@gmail.com, 20160122, ISO3 debugged
 %-
+
 centroids = [];
 
 global climada_global
@@ -272,9 +274,9 @@ centroids.comment = sprintf('%3.2f km resolution centroids, created on %s', reso
 if ischar(save_file) && ~strcmp(save_file,'NO_SAVE')
     if strcmp(save_file,'AUTO')
         if country_check
-            save_file = [climada_global.centroids_dir filesep 'centroids_' ISO3 '_' datestr(now,'ddmmyy') '.mat'];
+            save_file = [climada_global.centroids_dir filesep 'centroids_' char(ISO3) '_' datestr(now,'yyyymmdd') '.mat'];
         else
-            save_file = [climada_global.centroids_dir filesep 'centroids_' datestr(now,'ddmmyy') '.mat'];
+            save_file = [climada_global.centroids_dir filesep 'centroids_' datestr(now,'yyyymmdd') '.mat'];
         end
         fprintf('autosaving centroids as %s \n', save_file)
         centroids.filename = save_file;
