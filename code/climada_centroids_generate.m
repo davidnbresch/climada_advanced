@@ -16,24 +16,23 @@ function centroids = climada_centroids_generate(centroids_rectORcountry_nameORsh
 %   centroids = climada_generate_centroids(shapes, 1.0, 1, '', 0)
 % INPUTS:
 %   centroids_rectORcountry_nameORshapes [prompted for if not given] 
-%   can be any one of the following:
+%       can be any one of the following:
 %       centroids_rect: 4-element row vector defining the longitude and latitude
-%                       limits of the study region
-%       country_name:   the name of a country of interest, or ISO3 code
-%       shapes:         any generic shapes struct, with fields .X and .Y
-%                       defining lat and lon coords of study boundary 
-%                       region respectively.
+%           limits of the study region [min_lon max_lon min_lat max_lat]
+%       country_name: the name of a country of interest, or ISO3 code
+%       shapes: any generic shapes struct, with fields .X and .Y
+%           defining lat and lon coords of study boundary region respectively.
 % OPTIONAL INPUT PARAMETERS:
-%   resolution_km:  specify the centroid resolution (default = 1 km)
-%   buffer_check:   specifies whether a lower resolution grid of centroids 
-%                   is generated outside the boundary defined by shapes,
-%                   or if the high resolution centroids fill the entire
-%                   boudning box (default = 1). Can also be set to -1, for
-%                   centroids that only fill the shape
-%   save_file:      full pathname of save location. If set to 'AUTO',
-%                   centroids are automatically saved in the climada global 
-%                   data directory. If set to 'NO_SAVE', centroids will not 
-%                   be saved. (default = 'AUTO')
+%   resolution_km: specify the centroid resolution (default = 1 km)
+%   buffer_check: specifies whether a lower resolution grid of centroids 
+%       is generated outside the boundary defined by shapes,
+%       or if the high resolution centroids fill the entire
+%       boudning box (default = 1). Can also be set to -1, for
+%       centroids that only fill the shape
+%   save_file: full pathname of save location. If set to 'AUTO',
+%       centroids are automatically saved in the climada global 
+%       data directory. If set to 'NO_SAVE', centroids will not 
+%       be saved. (default = 'AUTO')
 % OUTPUTS:
 %   centroids:      climada centroids struct with fields
 %                     .Longitude
@@ -57,6 +56,7 @@ function centroids = climada_centroids_generate(centroids_rectORcountry_nameORsh
 % Lea Mueller, muellele@gmail.com, 20151123, set shapes_check to 0 for centroids_rect
 % Lea Mueller, muellele@gmail.com, 20151125, rename to climada_centroids_generate from climada_generate_centroids
 % David N. Bresch, david.bresch@gmail.com, 20160122, ISO3 debugged
+% David N. Bresch, david.bresch@gmail.com, 20160126, header updated
 %-
 
 centroids = [];
