@@ -1,4 +1,4 @@
-function hazard = climada_hazard_crop(hazard, polygon_focus_area)
+function hazard = climada_hazard_crop(hazard,polygon_focus_area)
 % climada_hazard_crop
 % MODULE:
 %   advanced
@@ -26,6 +26,7 @@ function hazard = climada_hazard_crop(hazard, polygon_focus_area)
 % Lea Mueller, muellele@gmail.com, 20151106, move to advanced
 % Lea Mueller, muellele@gmail.com, 20151125, rename to climada_hazard_crop from climada_hazard_focus_area
 % Lea Mueller, muellele@gmail.com, 20160224, enable for multiple polygons
+% Lea Mueller, muellele@gmail.com, 20160314, loop over segments divided by nans
 %-
 
 
@@ -44,31 +45,43 @@ end
 % create concatenated matrices for inpoly
 hazard_lonlat  = climada_concatenate_lon_lat(hazard.lon, hazard.lat);
 focus_area_indx = zeros(numel(hazard.lon),1);  
+polygon_tolerance = 1.0; 
 
 % loop over multiple polygons
 for polygon_i = 1:numel(polygon_focus_area)
-   
     polygon_lonlat = []; %init
     % do we have lon,lat or X,Y data
     if isfield(polygon_focus_area(polygon_i),'lon')
-        % make sure there are non nans in the polgyon_focus_area
-        polygon_focus_area(polygon_i).lon(isnan(polygon_focus_area(polygon_i).lon)) = [];
-        polygon_focus_area(polygon_i).lat(isnan(polygon_focus_area(polygon_i).lat)) = [];
-        % create concatenated matrices for inpoly
-        polygon_lonlat = climada_concatenate_lon_lat(polygon_focus_area(polygon_i).lon, polygon_focus_area(polygon_i).lat);
-        
+        lon = polygon_focus_area(polygon_i).lon; 
+        lat = polygon_focus_area(polygon_i).lat;
     elseif isfield(polygon_focus_area(polygon_i),'X')
-        % make sure there are non nans in the polgyon_focus_area
-        polygon_focus_area(polygon_i).X(isnan(polygon_focus_area(polygon_i).X)) = [];
-        polygon_focus_area(polygon_i).Y(isnan(polygon_focus_area(polygon_i).Y)) = [];
-        % create concatenated matrices for inpoly
-        polygon_lonlat = climada_concatenate_lon_lat(polygon_focus_area(polygon_i).X, polygon_focus_area(polygon_i).Y);
+        lon = polygon_focus_area(polygon_i).X; 
+        lat = polygon_focus_area(polygon_i).Y;
     end
-    % create indx for focus area
+    % make sure there are non nans in the polgyon_focus_area
+    %lon(isnan(lon) = []; lat(isnan(lat) = [];   
+    
+    % create concatenated matrices for inpoly
+    polygon_lonlat = climada_concatenate_lon_lat(lon, lat);
+      
     if ~isempty(polygon_lonlat)
-        focus_area_indx_temp = inpoly(hazard_lonlat,polygon_lonlat);
-        focus_area_indx = focus_area_indx+focus_area_indx_temp;
-    end
+        nan_position = find(isnan(polygon_lonlat(:,1)));
+        if ~isempty(nan_position)
+           nan_position = [0; nan_position];
+        else
+           nan_position = [0 numel(lon)+1];
+        end
+        % create indx for focus area
+        % loop over different segments, divided by nans
+        for pos_i = 1:numel(nan_position)-1
+           focus_area_indx_temp = inpoly(hazard_lonlat,polygon_lonlat(nan_position(pos_i)+1:nan_position(pos_i+1)-1,:),'',polygon_tolerance);
+           focus_area_indx = focus_area_indx+focus_area_indx_temp;
+        end   
+
+        %focus_area_indx_temp = inpoly(hazard_lonlat,polygon_lonlat,'',polygon_tolerance);
+        %focus_area_indx = focus_area_indx+focus_area_indx_temp;
+    end 
+    
     
 end
 
