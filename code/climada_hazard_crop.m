@@ -27,6 +27,7 @@ function hazard = climada_hazard_crop(hazard,polygon_focus_area)
 % Lea Mueller, muellele@gmail.com, 20151125, rename to climada_hazard_crop from climada_hazard_focus_area
 % Lea Mueller, muellele@gmail.com, 20160224, enable for multiple polygons
 % Lea Mueller, muellele@gmail.com, 20160314, loop over segments divided by nans
+% Lea Mueller, muellele@gmail.com, 20160318, introduce polygon_tolerance
 %-
 
 
@@ -37,7 +38,9 @@ if ~climada_init_vars,return;end % init/import global variables
 if ~exist('hazard','var'),hazard = []; end
 if ~exist('polygon_focus_area','var'),polygon_focus_area=[];end
 
-if isempty(hazard),climada_hazard_load; end
+hazard = climada_hazard_load(hazard);
+if isempty(hazard), return, end
+    
 if isempty(polygon_focus_area)
     fprintf('Please specify focus area, with focus_area.lon and focus_area.lat\n')
 end
@@ -45,11 +48,12 @@ end
 % create concatenated matrices for inpoly
 hazard_lonlat  = climada_concatenate_lon_lat(hazard.lon, hazard.lat);
 focus_area_indx = zeros(numel(hazard.lon),1);  
-polygon_tolerance = 1.0; 
+polygon_tolerance = 1.0e-12; %polygon_tolerance = 1.0; 
+
 
 % loop over multiple polygons
 for polygon_i = 1:numel(polygon_focus_area)
-    polygon_lonlat = []; %init
+    polygon_lonlat = []; lon = []; lat = []; %init
     % do we have lon,lat or X,Y data
     if isfield(polygon_focus_area(polygon_i),'lon')
         lon = polygon_focus_area(polygon_i).lon; 
@@ -62,7 +66,7 @@ for polygon_i = 1:numel(polygon_focus_area)
     %lon(isnan(lon) = []; lat(isnan(lat) = [];   
     
     % create concatenated matrices for inpoly
-    polygon_lonlat = climada_concatenate_lon_lat(lon, lat);
+    polygon_lonlat = climada_concatenate_lon_lat(lon,lat);
       
     if ~isempty(polygon_lonlat)
         nan_position = find(isnan(polygon_lonlat(:,1)));
