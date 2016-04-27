@@ -28,6 +28,7 @@ function hazard = climada_hazard_crop(hazard,polygon_focus_area)
 % Lea Mueller, muellele@gmail.com, 20160224, enable for multiple polygons
 % Lea Mueller, muellele@gmail.com, 20160314, loop over segments divided by nans
 % Lea Mueller, muellele@gmail.com, 20160318, introduce polygon_tolerance
+% Lea Mueller, muellele@gmail.com, 20160427, bugfix if hazard.comment does not exist 
 %-
 
 
@@ -95,6 +96,7 @@ hazard.lon         = hazard.lon(focus_area_indx);
 hazard.lat         = hazard.lat(focus_area_indx);
 hazard.centroid_ID = 1:numel(hazard.lat);
 hazard.intensity   = hazard.intensity(:,focus_area_indx);
+if ~isfield(hazard,'comment'), hazard.comment = ''; end
 hazard.comment     = [hazard.comment ', value only for focus area'];
 hazard.focus_area  = polygon_focus_area;
     
