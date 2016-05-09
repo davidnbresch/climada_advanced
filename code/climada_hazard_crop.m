@@ -19,8 +19,11 @@ function hazard = climada_hazard_crop(hazard,polygon_focus_area)
 %                       area, can be multiple polygon_focus_area(2) or more
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:      
-%   hazard            : a climada hazard structure, with .lon, .lat and .intensity,
-%                        where all coordinates are within ghe given polygon focus area.
+%   hazard: a climada hazard structure, with .lon, .lat and .intensity,
+%                   where all coordinates are within the given polygon focus area.
+%   hazard.focus_area: copy of polygon struct
+%   hazard.in_focus_area: a vector to indicate in which polygon/focus_area
+%                   a centroid is located
 % MODIFICATION HISTORY:
 % Lea Mueller, muellele@gmail.com, 20150724, init
 % Lea Mueller, muellele@gmail.com, 20151106, move to advanced
@@ -29,7 +32,9 @@ function hazard = climada_hazard_crop(hazard,polygon_focus_area)
 % Lea Mueller, muellele@gmail.com, 20160314, loop over segments divided by nans
 % Lea Mueller, muellele@gmail.com, 20160318, introduce polygon_tolerance
 % Lea Mueller, muellele@gmail.com, 20160427, bugfix if hazard.comment does not exist 
+% Lea Mueller, muellele@gmail.com, 20160509, add in_focus_area
 %-
+
 
 
 global climada_global
@@ -51,6 +56,9 @@ hazard_lonlat  = climada_concatenate_lon_lat(hazard.lon, hazard.lat);
 focus_area_indx = zeros(numel(hazard.lon),1);  
 polygon_tolerance = 1.0e-12; %polygon_tolerance = 1.0; 
 
+% init vector that indicates in which polygon/focus area the centroid is
+% located
+in_focus_area = zeros(1,numel(hazard.lon));
 
 % loop over multiple polygons
 for polygon_i = 1:numel(polygon_focus_area)
@@ -81,11 +89,12 @@ for polygon_i = 1:numel(polygon_focus_area)
         for pos_i = 1:numel(nan_position)-1
            focus_area_indx_temp = inpoly(hazard_lonlat,polygon_lonlat(nan_position(pos_i)+1:nan_position(pos_i+1)-1,:),'',polygon_tolerance);
            focus_area_indx = focus_area_indx+focus_area_indx_temp;
+           in_focus_area(focus_area_indx_temp) = polygon_i;
         end   
-
         %focus_area_indx_temp = inpoly(hazard_lonlat,polygon_lonlat,'',polygon_tolerance);
         %focus_area_indx = focus_area_indx+focus_area_indx_temp;
     end 
+    
     
     
 end
@@ -99,6 +108,7 @@ hazard.intensity   = hazard.intensity(:,focus_area_indx);
 if ~isfield(hazard,'comment'), hazard.comment = ''; end
 hazard.comment     = [hazard.comment ', value only for focus area'];
 hazard.focus_area  = polygon_focus_area;
+hazard.in_focus_area = in_focus_area(focus_area_indx);
     
 
 
