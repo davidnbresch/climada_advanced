@@ -1,5 +1,6 @@
 % Script File: ShowFonts
 % How choose a font, a size, a weight, and an angle.
+%-
 close all
 HA = 'HorizontalAlign';
 fonts = {'Times-Roman' 'Helvetica' 'AvantGarde' 'Comic Sans MS' 'Palatino'...
