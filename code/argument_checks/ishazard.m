@@ -19,7 +19,8 @@ function ok = ishazard(hazard)
 %   ok:         1 if input satisfies the conditions to be a hazard struct
 %               0 otherwise
 % MODIFICATION HISTORY:
-%   Gilles Stassen, gillesstassen@hotmail.com, 20150826 init
+% Gilles Stassen, gillesstassen@hotmail.com, 20150826 init
+% David N. Bresch, david.bresch@gmail.com, 20161008, units, orig_event_flag, yyyy, mm, dd, datenum and reference_year are optional
 %-
 
 ok = 0; % init
@@ -36,21 +37,22 @@ if ~isempty(err_msg)
 end
 
 % required fields which define a hazard struct
-flds =  { 
-    'lon'        
-    'lat'        
-    'intensity'        
-    'centroid_ID'        
+flds =  {
+    'lon'
+    'lat'
+    'intensity'
+    'centroid_ID'
     'peril_ID'
-    'units'
+    %'units'
     'frequency'
     'event_ID'
-    'orig_event_flag'
-    'yyyy'
-    'mm'
-    'dd'
-    'datenum'
-    'reference_year'};
+    %'orig_event_flag'
+    %'yyyy'
+    %'mm'
+    %'dd'
+    %'datenum'
+    %'reference_year'
+    };
 
 ok = 1;
 missing_flds = {}; % init
@@ -68,5 +70,4 @@ if ~ok
     end
 end
 
-return
-    
+end % ishazard
