@@ -29,7 +29,7 @@ function ktools_model_from_climada( entity, hazard, doPlot, doCallKtools )
 % - doCallKtools:  Try to call the ktools conversion codes (CSV to BIN) and
 %                  run the ground-up loss (GUL) simulation.
 
-% Authors of this code:  Marc Wüest and Nadine König (ETH Zurich)
+% Authors of this code:  Marc WÃ¼est and Nadine KÃ¶nig (ETH Zurich)
 
 % The code was written and used in a master thesis project in early 2017.
 % The report can be found at ..
@@ -96,11 +96,10 @@ end
 
 %% ktools damage bin dictionary
 
-% This example code uses only a small number of linear bins so the the damage
-% function is better displayed, easier to read. However, more bins,
-% tailored for a damage function, especially logarithmic bins (for wind)
+% This example code uses only a reasonable number of linear bins so the the damage
+% function well represented. More bins, tailored for a damage function, especially logarithmic bins (for wind)
 % will lead to a better convergence to the original Climada losses.
-nDamageBins = 20;
+nDamageBins = 1000;
 
 binsDamage = table();
 % 1st column (according to the ktools documentation) holds the bin_from values.
