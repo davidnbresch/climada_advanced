@@ -29,6 +29,7 @@ function ktools_model_from_climada(entity,hazard,doPlot,doCallKtools,ktools_bin_
 %   for any climada model.
 %
 %   Authors of this code:  Marc Wueest and Nadine Koenig (ETH Zurich)
+%   Editor of this code: David N. Bresch (ETH Zurich)
 %
 %   The code was written and used in a master thesis project in early 2017.
 %   The report can be found at
@@ -543,7 +544,7 @@ if doCallKtools
     [ status, cmdout ] = system( kCall.Occurrence ); %#ok<ASGLU>
     
     % try to add the 
-    [ status, cmdout ] = system(ktools_bin_PATH); % just try
+    [ status, cmdout ] = system(ktools_bin_PATH); %#ok<ASGLU>
     
     % The following produces an event loss table (ELT) for the exported
     % portfolio, using -R random numbers and -S samples. This ELT should
