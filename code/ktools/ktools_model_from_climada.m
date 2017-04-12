@@ -1,4 +1,4 @@
-function ktools_model_from_climada(entity,hazard,doPlot,doCallKtools)
+function ktools_model_from_climada(entity,hazard,doPlot,doCallKtools,ktools_bin_PATH)
 % climada ktools OASIS LMF
 % MODULE:
 %   advanced
@@ -58,6 +58,9 @@ function ktools_model_from_climada(entity,hazard,doPlot,doCallKtools)
 %       not (if false, default).
 %   doCallKtools: try to call the ktools conversion codes (CSV to BIN) and
 %       run the ground-up loss (GUL) simulation. Default=true, hence at least try)
+%   ktools_bin_PATH: the statement to add the path to the (compiled)
+%       ktools, default is ='export PATH=$PATH:/cluster/apps/climate/ktools/bin'
+%       YEs, one states the full system command here, including 'export PATH=...'
 % OUTPUTS:
 %   tc_track: the tc_track structure, restricted to centroids, if passed
 %       and cleaned up, if check_plot=-99. Otherwise same as input tc_track
@@ -66,6 +69,7 @@ function ktools_model_from_climada(entity,hazard,doPlot,doCallKtools)
 % MODIFICATION HISTORY:
 % Nadine Koenig, koenigna@student.ethz.ch and maegic@maegic.ch, 20170330, initial
 % David N. Bresch, david.bresch@gmail.com, 20170412, climada adjustemnts (no absolute path etc.)
+% David N. Bresch, david.bresch@gmail.com, 20170412, ktools_bin_PATH added
 %-
 
 global climada_global
@@ -76,12 +80,17 @@ if ~exist( 'entity', 'var' ), entity = []; end
 if ~exist( 'hazard', 'var' ), hazard = []; end
 if ~exist( 'doPlot', 'var' ), doPlot = []; end
 if ~exist( 'doCallKtools', 'var' ), doCallKtools = []; end
+if ~exist( 'ktools_bin_PATH', 'var' ), ktools_bin_PATH = ''; end
 
 % PARAMETERS
 %
 nDamageBins = 100; % =1000, number of damage bins
 %
-% define the defaut folder for isimip TC track data
+if isempty( doPlot), doPlot = false; end
+if isempty( doCallKtools), doCallKtools = true; end % at least try
+if isempty( ktools_bin_PATH),ktools_bin_PATH='export PATH=$PATH:/cluster/apps/climate/ktools/bin';end
+%
+% define the default folder for ktools output
 ktools_dir=[climada_global.results_dir filesep 'ktools'];
 if ~isdir(ktools_dir)
     mkdir(climada_global.results_dir,'ktools'); % create it
@@ -89,8 +98,6 @@ if ~isdir(ktools_dir)
 end
 %
 % set default parameters
-if isempty( doPlot), doPlot = false; end
-if isempty( doCallKtools), doCallKtools = true; end % at least try
 if isempty( entity )
     try
         entity = climada_entity_load( 'USA_UnitedStates_Florida' ); % larger portfolio and model
@@ -535,13 +542,15 @@ if doCallKtools
     [ status, cmdout ] = system( kCall.Footprints ); %#ok<ASGLU>
     [ status, cmdout ] = system( kCall.Occurrence ); %#ok<ASGLU>
     
+    % try to add the 
+    [ status, cmdout ] = system(ktools_bin_PATH); % just try
+    
     % The following produces an event loss table (ELT) for the exported
     % portfolio, using -R random numbers and -S samples. This ELT should
     % correspond to the EDS, if the damage bin sampling is fine enough.
     cd( [ pathOut ] ) %#ok<NBRAK>
-    [ status, cmdout ] = system( [ ...
-        'eve 1 1 | getmodel | gulcalc -R 100000 -S1000 -c - | summarycalc -g -1 - | eltcalc > elt.csv' ...
-        ] ); %#ok<NBRAK,ASGLU>
+    system_call_str=sprintf('eve 1 1 | getmodel | gulcalc -R 100000 -S%i -c - | summarycalc -g -1 - | eltcalc > elt.csv',nDamageBins);
+    [ status, cmdout ] = system(system_call_str); %#ok<NBRAK,ASGLU>
     
 end % if to call ktools
 
