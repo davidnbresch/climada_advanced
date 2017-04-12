@@ -1,105 +1,137 @@
-function ktools_model_from_climada( entity, hazard, doPlot, doCallKtools )
+function ktools_model_from_climada(entity,hazard,doPlot,doCallKtools)
+% climada ktools OASIS LMF
+% MODULE:
+%   advanced
+% NAME:
+%   ktools_model_from_climada
+% PURPOSE:
+%   This function serves to migrate a climada portfolio and model to a
+%   ktools model. From climada we need the 'entity' structure and the
+%   'hazard' structure which are the relevant input parameters of this
+%   code. This code is written as an example for a tropicaly cyclone wind.
+%   It is meant as a starting point for migrating any model to
+%   ktools/Oasis. But there must be code changes depending on the hazard,
+%   binning, portfolio etc.
+%
+%   The output of this code is a set of CSV files which are as specified by the
+%   Oasis team in the ktools documentation (GitHub). These CSV files are
+%   written into a folder in the user's home directory, into a subfolder
+%   named below in the code ('ktools_tcusa' by default).
+%
+%   From there they can be converted to binary files (.bin) with the standard
+%   ktools functions and the loss simulation can be done. We give an example
+%   call at the end of this code, but these are as documented in the ktools
+%   GitHub.
+%
+%   It is important to note that we do not expect this code to run for all
+%   portfolios and hazards, just because there is a variety of portfolio
+%   structures, hazard types and units. But it should serve as a good basis
+%   for any climada model.
+%
+%   Authors of this code:  Marc Wueest and Nadine Koenig (ETH Zurich)
+%
+%   The code was written and used in a master thesis project in early 2017.
+%   The report can be found at
+%   http://www.iac.ethz.ch/the-institute/publications.html?title=&_charset_=UTF-8&authors=koenig&_charset_=UTF-8&rgroup=&pub_type=.
+%
+% CALLING SEQUENCE:
+%   ktools_model_from_climada(entity,hazard,doPlot,doCallKtools)
+% EXAMPLE:
+%   entity = climada_entity_load('USA_UnitedStates_Florida');
+%   hazard = climada_hazard_load('USA_UnitedStates_Florida_atl_TC');
+%   ktools_model_from_climada(entity,hazard)
+%   ktools_model_from_climada; % runs TEST (same entity and hazard as stated just above)
+% INPUTS:
+%   entity: an entity structure or an entity .mat file, see climada_assets_encode(climada_assets_read)
+%       If a file and no path provided, default path ../data/entities is
+%       used (and name can be without extension .mat)
+%       > promted for if not given
+%   hazard: either a hazard set (struct) or a hazard set file (.mat with a struct)
+%       If a file and no path provided, default path ../data/hazards is
+%       used (and name can be without extension .mat). If hazard is empty
+%       and entity contains hazard in entity.hazard, this hazard is used.
+%       > promted for if not given
+%       Minimum fileds of hazard struct are:
+%       peril_ID, event_ID, centroid_ID, intensity and frequency
+% OPTIONAL INPUT PARAMETERS:
+%   doPlot: create a check plot of the vulnerability binning (if true), or
+%       not (if false, default).
+%   doCallKtools: try to call the ktools conversion codes (CSV to BIN) and
+%       run the ground-up loss (GUL) simulation. Default=true, hence at least try)
+% OUTPUTS:
+%   tc_track: the tc_track structure, restricted to centroids, if passed
+%       and cleaned up, if check_plot=-99. Otherwise same as input tc_track
+%   info contains some information, but to stdout is main purpose of this
+%       routine
+% MODIFICATION HISTORY:
+% Nadine Koenig, koenigna@student.ethz.ch and maegic@maegic.ch, 20170330, initial
+% David N. Bresch, david.bresch@gmail.com, 20170412, climada adjustemnts (no absolute path etc.)
+%-
 
-% This function serves to migrate a Climada portfolio and model to a ktools
-% model. From Climada we need the 'entity' structure and the 'hazard'
-% structure which are the relevant input parameters of this code. This code
-% is written as an example for a tropicaly cyclone wind. It is meant as a
-% starting point for migrating any model to ktools/Oasis. But there must be
-% code changes depending on the hazard, binning, portfolio etc.
+global climada_global
+if ~climada_init_vars,return;end % init/import global variables
 
-% The output of this code is a set of CSV files which are as specified by the
-% Oasis team in the ktools documentation (GitHub). These CSV files are
-% written into a folder in the user's home directory, into a subfolder
-% named below in the code ('ktools_tcusa' by default). 
-
-% From there they can be converted to binary files (.bin) with the standard
-% ktools functions and the loss simulation can be done. We give an example
-% call at the end of this code, but these are as documented in the ktools
-% GitHub.
-
-% It is important to note that we do not expect this code to run for all
-% portfolios and hazards, just because there is a variety of portfolio
-% structures, hazard types and units. But it should serve as a good basis
-% for any Climada model.
-
-% There is one additional and optional input argument to this function:
-
-% - doPlot:        Create a check plot of the vulnerability binning (if true), or
-%                  not (if false, default).
-% - doCallKtools:  Try to call the ktools conversion codes (CSV to BIN) and
-%                  run the ground-up loss (GUL) simulation.
-
-% Authors of this code:  Marc Wüest and Nadine König (ETH Zurich)
-
-% The code was written and used in a master thesis project in early 2017.
-% The report can be found at ..
-% http://www.iac.ethz.ch/the-institute/publications.html?title=&_charset_=UTF-8&authors=koenig&_charset_=UTF-8&rgroup=&pub_type=.
-
-%% Check input arguments and default to slim and silent.
-if ~exist( 'doPlot', 'var' ), doPlot = []; end
-if isempty( doPlot), doPlot = true; end
-
-if ~exist( 'doCallKtools', 'var' ), doCallKtools = []; end
-if isempty( doCallKtools), doCallKtools = true; end % at least try
-
-%% Take or load the climada encoded portfolio (entity) and hazard
+% poor man's version to check arguments
 if ~exist( 'entity', 'var' ), entity = []; end
+if ~exist( 'hazard', 'var' ), hazard = []; end
+if ~exist( 'doPlot', 'var' ), doPlot = []; end
+if ~exist( 'doCallKtools', 'var' ), doCallKtools = []; end
+
+% PARAMETERS
+%
+nDamageBins = 100; % =1000, number of damage bins
+%
+% define the defaut folder for isimip TC track data
+ktools_dir=[climada_global.results_dir filesep 'ktools'];
+if ~isdir(ktools_dir)
+    mkdir(climada_global.results_dir,'ktools'); % create it
+    fprintf('NOTE: storing ktools output data in %s\n',ktools_dir);
+end
+%
+% set default parameters
+if isempty( doPlot), doPlot = false; end
+if isempty( doCallKtools), doCallKtools = true; end % at least try
 if isempty( entity )
-    
-    % Start up Climada
-    run( 'C:\Users\Public\climada\startup.m' ) % please adapt to a Mac/Linux path
     try
-        % entity = climada_entity_load( 'entity_template' ); % smallest test
         entity = climada_entity_load( 'USA_UnitedStates_Florida' ); % larger portfolio and model
     catch
-        disp( 'ERROR: No Climada entity was provided and no default/example could be loaded.' );
-        disp( 'Please provide an entity structure as input or install and start Climada so the default/example can be loaded.' );
+        disp( 'ERROR: No climada entity was provided and no default/example could be loaded.' );
+        disp( 'Please provide an entity structure as input or install and start climada in order for the default/example to be loaded.' );
     end
 end
-
-if ~exist( 'hazard', 'var' ), hazard = []; end
 if isempty( hazard )
-    
-    % Start up Climada
-    run( 'C:\Users\Public\climada\startup.m' ) % please adapt to a Mac/Linux path
     try
-        % hazard = climada_hazard_load( 'TCNA_today_small' ); % % larger portfolio and model
         hazard = climada_hazard_load( 'USA_UnitedStates_Florida_atl_TC' );
-   catch
-        disp( 'ERROR: No Climada hazard was provided and no default/example could be loaded.' );
-        disp( 'Please provide a hazard structure as input or install and start Climada so the default/example can be loaded.' );
+    catch
+        disp( 'ERROR: No climada hazard was provided and no default/example could be loaded.' );
+        disp( 'Please provide a hazard structure as input or install and start climada so the default/example can be loaded.' );
     end
     
 end
 
 %% Define a name for the model and give the main peril code
 % This name also defines the name of the output sub-folder.
-modelName = 'tcusa'; 
+modelName = 'tcusa';
 
 %% Set an output directory for the model, i.e. the CSV written.
 % Further below the code can try to convert the CSV files to BIN (binary)
 % files. This folder is then the model folder for ktools, i.e. ktools (if
 % installed correctly) will run from therein.
-sOS = getenv( 'OS' );
-if length(sOS) >= 3 && strcmp( sOS(1:3), 'Win' ); % Windows
-    dirBase = [ 'C:\Users\' getenv( 'username' ) '\Desktop\' ];
-else % Linux/Mac
-    dirBase = [ '/home/' getenv( 'username' ) '/' ];
-end
 
-pathOut = [ dirBase 'ktools_' modelName filesep ]; % please adapt to a Mac/Linux path
+pathOut = [ ktools_dir filesep 'ktools_' modelName filesep ];
 if ~exist( pathOut, 'dir' )
     mkdir( pathOut )
     mkdir( pathOut, 'input' ) % ktools requires a folder named 'input' for the portfolio (items, coverages ..).
     mkdir( pathOut, 'static' ) % ktools requires a folder named 'static' for the model data (event footprints, damage bins ..).
 end
 
+fprintf('writing output to %s and sub-folders input and static\n',pathOut);
+
 %% ktools damage bin dictionary
 
 % This example code uses only a reasonable number of linear bins so the the damage
 % function well represented. More bins, tailored for a damage function, especially logarithmic bins (for wind)
-% will lead to a better convergence to the original Climada losses.
-nDamageBins = 1000;
+% will lead to a better convergence to the original climada losses.
 
 binsDamage = table();
 % 1st column (according to the ktools documentation) holds the bin_from values.
@@ -107,7 +139,7 @@ binsDamage.bin_from = zeros( nDamageBins, 1 ); % initialize plus zero will be st
 % 2nd column holds the bin_to values
 binsDamage.bin_to = ( linspace( 1/nDamageBins, 1, nDamageBins) )';
 % Close the bins, i.e. set the bin_from now.
-binsDamage.bin_from(2:end) = binsDamage.bin_to(1:end-1); 
+binsDamage.bin_from(2:end) = binsDamage.bin_to(1:end-1);
 % 3rd column holds the expected MDR for the bin. We just interpolate.
 binsDamage.interpolation = 0.5 * ( binsDamage.bin_from + binsDamage.bin_to );
 % 4th column holds the interval type. We don't find sufficient
@@ -153,37 +185,37 @@ fprintf( fid_gsr, '%s\n', 'coverage_id,summary_id,summaryset_id' );
 idCoverage = 1;
 idItem = 1;
 
-% Note that in Climada a site and a centroid is technically the same. That
-% is, there is no disaggregation in Climada. The following lines simply
+% Note that in climada a site and a centroid is technically the same. That
+% is, there is no disaggregation in climada. The following lines simply
 % write a very flat structure of coverages, items etc.
 
 for ic = 1:length( entity.assets.centroid_index )
-        
-        fprintf( fid_cov, '%i,%f\n', ...
-            idCoverage, ...
-            entity.assets.Value(ic) ... % Total sum insured / insured value
-            );
-
-        fprintf( fid_gsr, '%i,%i,%i\n', ...
-            idCoverage, ... % links to above sum insured (value)
-            1, ... summary ID, in our terms a Site
-            1 ... summary set ID, in our terms a Policy/Account
-            );
-        
-        % Ideally add the gamma bin to the first 3 digits of the
-        % vulnerability curve ID because these don't vary within a
-        % model, usually ....
-        
-        fprintf( fid_itm, '%i,%i,%i,%i,%i\n', ...
-            idItem, ...
-            idCoverage, ...
-            entity.assets.centroid_index(ic), ... % refers directly as in index to the hazard structure
-            entity.assets.DamageFunID(ic), ...
-            ic );
-        
-        idItem = idItem + 1;        
-        idCoverage = idCoverage + 1;
-        
+    
+    fprintf( fid_cov, '%i,%f\n', ...
+        idCoverage, ...
+        entity.assets.Value(ic) ... % Total sum insured / insured value
+        );
+    
+    fprintf( fid_gsr, '%i,%i,%i\n', ...
+        idCoverage, ... % links to above sum insured (value)
+        1, ... summary ID, in our terms a Site
+        1 ... summary set ID, in our terms a Policy/Account
+        );
+    
+    % Ideally add the gamma bin to the first 3 digits of the
+    % vulnerability curve ID because these don't vary within a
+    % model, usually ....
+    
+    fprintf( fid_itm, '%i,%i,%i,%i,%i\n', ...
+        idItem, ...
+        idCoverage, ...
+        entity.assets.centroid_index(ic), ... % refers directly as in index to the hazard structure
+        entity.assets.DamageFunID(ic), ...
+        ic );
+    
+    idItem = idItem + 1;
+    idCoverage = idCoverage + 1;
+    
 end % for ic: = sites = coverages = centroids = calculation units
 
 fclose( fid_cov );
@@ -214,17 +246,17 @@ hazard.intensityAdj = full( hazard.intensityAdj ); % sparse not allowed in below
 binsIntensity = table();
 % Below example is for the wind of a tropical cyclone, as a 3-second gust
 % in m/s. Therefore we use a maximum of about 120 m/s.
-binsIntensity.bin_from = linspace( 0, 119, 120 )'; 
+binsIntensity.bin_from = linspace( 0, 119, 120 )';
 binsIntensity.bin_to   = [ binsIntensity.bin_from(2:end); 999 ]; % high-enough limit
 binsIntensity = binsIntensity(1:end-1,:); % cut out last record because of above
 
 % Actually bin the hazard
-[~,hazard.bin_index] = histc( hazard.intensityAdj, binsIntensity.bin_from ); 
+[~,hazard.bin_index] = histc( hazard.intensityAdj, binsIntensity.bin_from );
 
 %% ktools footprint
 % Write the wind fields into a CSV file.
 fid = fopen( [ pathOut filesep 'static' filesep  'footprint' '.csv' ], 'w' );
-fprintf( fid, '%s\n', 'event_id,areaperil_id,intensity_bin_index,prob' ); 
+fprintf( fid, '%s\n', 'event_id,areaperil_id,intensity_bin_index,prob' );
 
 % Note that here we don't write the hazard intensity, but its bin!!!
 
@@ -237,7 +269,7 @@ for ie = 1:size(hazard.bin_index,1) % filtered events
                 hazard.event_ID(ie), ...
                 ic, ... % hazard.centroid_ID(ic), ... I can't find the centroid ID in the entity structure in this moment.
                 hazard.bin_index(ie,ic), ...
-                1.0 ); % 'prob', currently set to 1 (100%) because hazard uncertainty already in our hazard set.            
+                1.0 ); % 'prob', currently set to 1 (100%) because hazard uncertainty already in our hazard set.
         end % if positive hazard
         
     end % for ie all events
@@ -263,14 +295,14 @@ kCall.Footprints = [ 'footprinttobin -i ' num2str( size(binsIntensity.bin_from,1
 
 % Write a CSV file.
 fid = fopen( [ pathOut filesep 'static' filesep  'occurrence' '.csv' ], 'w' );
-fprintf( fid, '%s\n', 'event_id,period_no,occ_year,occ_month,occ_day' ); 
+fprintf( fid, '%s\n', 'event_id,period_no,occ_year,occ_month,occ_day' );
 
 % !!! There might be a problem here that an Oasis event can have only one
 % time stamp. If so, shall we just repeat the event with a new reference/ID?
 
 for i = 1:numel(hazard.event_ID)
     
-    thisYear = hazard.yyyy(i); 
+    thisYear = hazard.yyyy(i);
     thisMonth = hazard.mm(i);
     thisDay = hazard.dd(i);
     
@@ -279,7 +311,7 @@ for i = 1:numel(hazard.event_ID)
         thisYear+1, ... period_no, here 1 calendar year (defined in this static table!!!)
         thisYear, ...
         thisMonth, ...
-        thisDay ); 
+        thisDay );
     
 end % for all event records
 
@@ -304,8 +336,8 @@ kCall.Occurrence = [ 'occurrencetobin -P ' num2str( max(hazard.yyyy) -min(hazard
 % attributes are transferred to the kernel (?). Something like it exists in
 % the Oasis 1.5.03 distribution for the S1 module though.
 
-% Note that ktools 'getmodel' looks into input/items.csv and only prepares the 
-% CDF for the calculation units needed for the portfolio. 
+% Note that ktools 'getmodel' looks into input/items.csv and only prepares the
+% CDF for the calculation units needed for the portfolio.
 
 %% ktools vulnerability
 
@@ -337,15 +369,15 @@ for thisDamFunID = listDamageFunctionID
             entity.damagefunctions.PAA(irdf), intensityOfThisBin );
         
         % Two parameters for normal distribution
-        mdrMu = mddSample .* paaSample; % take this as mean (expected) of the normal distribution        
+        mdrMu = mddSample .* paaSample; % take this as mean (expected) of the normal distribution
         mdrSigma = 1e-6 .* mdrMu; % for now make it small because beta can 'explode'
-
+        
         % The Matlab beta distribution requires parameters a & b. Calculate these
         % from the expected value mdrMu and the variance mdrSigma^2.
         c = mdrMu .* (1 - mdrMu) ./ (mdrSigma^2) - 1; % c is a helper variable / shortcut
         a = c .* mdrMu;
         b = c .* ( 1 - mdrMu );
-
+        
         % Add a loop over the bins to realize normal distribution
         for idb = 1:size(binsDamage,1)-1
             
@@ -361,12 +393,12 @@ for thisDamFunID = listDamageFunctionID
             end
             
             thisIntList = [ thisIntList; [ ... % actually not necessary if only one loss uncertainty sample
-                thisDamFunID, ... take the ID 
+                thisDamFunID, ... take the ID
                 intensityBin, ... intensity_bin_index
                 idb, ... damage_bin_index
                 samplePrb ... % probability
                 ] ]; %#ok<AGROW>
-        
+            
         end % for idb
         
         % Now make sure the total probability is 1.0
@@ -436,7 +468,7 @@ for thisDamFunID = listDamageFunctionID
             end % if doPlot
             
         end % if positive MDR at all
-
+        
     end % for all ih intensity bins
     clear nColorClasses
     
@@ -481,7 +513,7 @@ fclose( fid );
 kCall.Events = 'evetobin < events.csv > events.bin';
 
 if doCallKtools
-
+    
     %% Do the CSV (comma separated values) to BIN (binary) conversion
     % This only works if ktools is installed on the same computer and can be
     % found in the shell call. If it fails, try to call ktools manually and/or
@@ -516,4 +548,4 @@ end % if to call ktools
 disp( [ 'Your model should be ready now in ' pathOut '.' ] );
 disp( [ 'Completed running ' mfilename '.' ] );
 
-return
+end % ktools_model_from_climada
