@@ -9,6 +9,10 @@ function ktools_model_from_climada(entity,hazard,doPlot,doCallKtools,ktools_bin_
 %   ktools model. From climada we need the 'entity' structure and the
 %   'hazard' structure which are the relevant input parameters of this
 %   code. This code is written as an example for a tropicaly cyclone wind.
+%
+%   The code can optionally call ktools, see tag %#ok<ASGLU> and %#ok<NBRAK,ASGLU> in code and
+%   ktools_bin_PATH.
+%
 %   It is meant as a starting point for migrating any model to
 %   ktools/Oasis. But there must be code changes depending on the hazard,
 %   binning, portfolio etc.
@@ -71,6 +75,7 @@ function ktools_model_from_climada(entity,hazard,doPlot,doCallKtools,ktools_bin_
 % Nadine Koenig, koenigna@student.ethz.ch and maegic@maegic.ch, 20170330, initial
 % David N. Bresch, david.bresch@gmail.com, 20170412, climada adjustemnts (no absolute path etc.)
 % David N. Bresch, david.bresch@gmail.com, 20170412, ktools_bin_PATH added
+% David N. Bresch, david.bresch@gmail.com, 20171201, ktools calling errors catched
 %-
 
 global climada_global
@@ -528,19 +533,61 @@ if doCallKtools
     % follow the ktools documentation in GitHub.
     
     cd( [ pathOut 'input' ] )
+    
     [ status, cmdout ] = system( kCall.Coverages ); %#ok<ASGLU>
+    if status>0 % = 0 means success
+        fprintf('ERROR: %s',cmdout) % seems to contain EoL, hence no \n
+    else
+        fprintf('%s',cmdout); % seems to contain EoL, hence no \n
+    end
+    
     [ status, cmdout ] = system( kCall.Items ); %#ok<ASGLU>
+     if status>0 % = 0 means success
+        fprintf('ERROR: %s',cmdout) % seems to contain EoL, hence no \n
+    else
+        fprintf('%s',cmdout); % seems to contain EoL, hence no \n
+    end
     [ status, cmdout ] = system( kCall.gulSummary ); %#ok<ASGLU>
+     if status>0 % = 0 means success
+        fprintf('ERROR: %s',cmdout) % seems to contain EoL, hence no \n
+    else
+        fprintf('%s',cmdout); % seems to contain EoL, hence no \n
+     end
+    
     [ status, cmdout ] = system( kCall.Events ); %#ok<ASGLU>
+     if status>0 % = 0 means success
+        fprintf('ERROR: %s',cmdout) % seems to contain EoL, hence no \n
+    else
+        fprintf('%s',cmdout); % seems to contain EoL, hence no \n
+     end
     
     %% Try to call a ground-up loss (GUL) simulation.
     % This only works if ktools is installed on the same computer and can be
     % found in the shell call. If it fails, try to call ktools manually and/or
     % follow the ktools documentation in GitHub.
     cd( [ pathOut 'static' ] )
+    
     [ status, cmdout ] = system( kCall.DamageBins ); %#ok<ASGLU>
+     if status>0 % = 0 means success
+        fprintf('ERROR: %s',cmdout) % seems to contain EoL, hence no \n
+    else
+        fprintf('%s',cmdout); % seems to contain EoL, hence no \n
+     end
+    
     [ status, cmdout ] = system( kCall.Vulnerability ); %#ok<ASGLU>
+     if status>0 % = 0 means success
+        fprintf('ERROR: %s',cmdout) % seems to contain EoL, hence no \n
+    else
+        fprintf('%s',cmdout); % seems to contain EoL, hence no \n
+     end
+    
     [ status, cmdout ] = system( kCall.Footprints ); %#ok<ASGLU>
+     if status>0 % = 0 means success
+        fprintf('ERROR: %s',cmdout) % seems to contain EoL, hence no \n
+    else
+        fprintf('%s',cmdout); % seems to contain EoL, hence no \n
+     end
+    
     [ status, cmdout ] = system( kCall.Occurrence ); %#ok<ASGLU>
     
     % try to add the 
@@ -552,6 +599,11 @@ if doCallKtools
     cd( [ pathOut ] ) %#ok<NBRAK>
     system_call_str=sprintf('eve 1 1 | getmodel | gulcalc -R 100000 -S%i -c - | summarycalc -g -1 - | eltcalc > elt.csv',nDamageBins);
     [ status, cmdout ] = system(system_call_str); %#ok<NBRAK,ASGLU>
+     if status>0 % = 0 means success
+        fprintf('ERROR: %s',cmdout) % seems to contain EoL, hence no \n
+    else
+        fprintf('%s',cmdout); % seems to contain EoL, hence no \n
+    end
     
 end % if to call ktools
 
