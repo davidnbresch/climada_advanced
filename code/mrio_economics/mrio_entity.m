@@ -27,6 +27,7 @@ function [entity,hazard]=mrio_entity(params) % uncomment to run as function
 %   hazard: the global historic TC hazard set
 % MODIFICATION HISTORY:
 % David N. Bresch, david.bresch@gmail.com, 20171206, initial
+% Ediz Herms, ediz.herms@outlook.com, 20171206, tested, everything works
 %-
 
 entity=[]; % init output
