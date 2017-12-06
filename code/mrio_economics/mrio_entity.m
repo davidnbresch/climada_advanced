@@ -1,4 +1,4 @@
-function entity=mrio_entity(params)
+function [entity,hazard]=mrio_entity(params) % uncomment to run as function
 % mrio entity
 % MODULE:
 %   advanced
@@ -10,26 +10,29 @@ function entity=mrio_entity(params)
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: see isimip_gdp_entity to generate the global centroids and entity
-%   next call: <note the most usual next function call here>
+%   next call: EDS=climada_EDS_calc(entity,hazard); % just to illustrate
 % CALLING SEQUENCE:
-%   entity=mrio_entity(params)
+%   [entity,hazard]=mrio_entity(params)
 % EXAMPLE:
-%   entity=mrio_entity(params)
+%   [entity,hazard]=mrio_entity;
+%   params.plot_centroids=1;params.plot_entity=1;
+%   [entity,hazard]=mrio_entity(params)
 % INPUTS:
+% OPTIONAL INPUT PARAMETERS:
 %   params: a structure with the fields
 %       plot_centroids: =1 to plot the centroids, =0 not (default)
 %       plot_entity: =1 to plot the entity, =0 not (default)
-% OPTIONAL INPUT PARAMETERS:
-%   param2: as an example
 % OUTPUTS:
-%   res: the output, empty if not successful
+%   entity: the global entity
+%   hazard: the global historic TC hazard set
 % MODIFICATION HISTORY:
 % David N. Bresch, david.bresch@gmail.com, 20171206, initial
 %-
 
 entity=[]; % init output
+hazard=[]; % init output
 
-global climada_global
+%global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 %%if climada_global.verbose_mode,fprintf('*** %s ***\n',mfilename);end % show routine name on stdout
@@ -40,7 +43,7 @@ if ~exist('params','var'),params=struct;end % in case we want to pass all parame
 
 % locate the module's (or this code's) data folder (usually  a folder
 % 'parallel' to the code folder, i.e. in the same level as code folder)
-module_data_dir=[fileparts(fileparts(mfilename('fullpath'))) filesep 'data'];
+%module_data_dir=[fileparts(fileparts(mfilename('fullpath'))) filesep 'data'];
 
 % PARAMETERS
 %
@@ -68,6 +71,7 @@ if isempty(params.plot_centroids),params.plot_centroids=0;end
 if isempty(params.plot_centroids),params.plot_entity=0;end
 
 % load global centroids
+fprintf('loading centroids %s\n',centroids_file);
 centroids=climada_centroids_load(centroids_file);
 
 if params.plot_centroids % plot the centroids
@@ -82,6 +86,7 @@ if params.plot_centroids % plot the centroids
 end % params.plot_centroids
 
 % load global entity
+fprintf('loading entity %s\n',entity_file);
 entity=climada_entity_load(entity_file);
 
 if params.plot_entity % plot the centroids
@@ -90,6 +95,7 @@ if params.plot_entity % plot the centroids
 end % params.plot_entity
 
 % load tropical cyclone hazard set
+fprintf('loading hazard %s\n',hazard_file);
 hazard=climada_hazard_load(hazard_file);
 
 % calculate the event damage set (EDS) to check whether all fine
