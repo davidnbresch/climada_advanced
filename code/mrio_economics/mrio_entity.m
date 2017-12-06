@@ -1,36 +1,33 @@
-function res=mrio_entity(params)
-% climada template
+function entity=mrio_entity(params)
+% mrio entity
 % MODULE:
 %   advanced
 % NAME:
 %   mrio_entity
 % PURPOSE:
-%   load centroids and prepare entities for mrio (multi resolution I/O)
+%   load centroids and prepare entities for mrio (multi resolution I/O table project)
 %
-%   NOTE: this template also contains the use of climada_progress2stdout
+%   NOTE: see PARAMETERS in code
 %
-%   previous call: <note the most usual previous call here>
+%   previous call: see isimip_gdp_entity to generate the global centroids and entity
 %   next call: <note the most usual next function call here>
 % CALLING SEQUENCE:
-%   res=climada_template(param1,param2);
+%   entity=mrio_entity(params)
 % EXAMPLE:
-%   climada_template(param1,param2);
+%   entity=mrio_entity(params)
 % INPUTS:
-%   param1:
-%       > promted for if not given
-%   OPTION param1: a structure with the fields...
-%       this way, parameters can be passed on a fields, see below
+%   params: a structure with the fields
+%       plot_centroids: =1 to plot the centroids, =0 not (default)
+%       plot_entity: =1 to plot the entity, =0 not (default)
 % OPTIONAL INPUT PARAMETERS:
 %   param2: as an example
 % OUTPUTS:
 %   res: the output, empty if not successful
 % MODIFICATION HISTORY:
-% David N. Bresch, david.bresch@gmail.com, 20160603
-% David N. Bresch, david.bresch@gmail.com, 20170212, climada_progress2stdout
-% David N. Bresch, david.bresch@gmail.com, 20170313, reverted from erroneous save under another name
+% David N. Bresch, david.bresch@gmail.com, 20171206, initial
 %-
 
-res=[]; % init output
+entity=[]; % init output
 
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
@@ -39,9 +36,7 @@ if ~climada_init_vars,return;end % init/import global variables
 
 % poor man's version to check arguments
 % and to set default value where  appropriate
-if ~exist('param1','var'),param1=[];end % OR:
-if ~exist('param1','var'),param1=struct;end % in case we want to pass all parameters as structure
-if ~exist('param2','var'),param2=[];end
+if ~exist('params','var'),params=struct;end % in case we want to pass all parameters as structure
 
 % locate the module's (or this code's) data folder (usually  a folder
 % 'parallel' to the code folder, i.e. in the same level as code folder)
@@ -49,25 +44,34 @@ module_data_dir=[fileparts(fileparts(mfilename('fullpath'))) filesep 'data'];
 
 % PARAMETERS
 %
-% whether we check the centroids (plot them etc.)
-centroids_file='GLB_NatID_grid_0360as_adv_1';
-check_centroids=1;
-%
 % define all parameters here - no parameters to be defined in code below
 %
-% set default value for param2 if not given
-if isempty(param2),param2=2;end
+% the global centroids
+centroids_file='GLB_NatID_grid_0360as_adv_1';
 %
-% if we want to pass all parameters via the first argument, we can do so:
-if isstruct(param1)
-    if ~isfield(param1,'field1'),param1.field1='param1_field1';end
-    if ~isfield(param1,'field2'),param1.field2=2;end
+% the global entity
+entity_file='GLB_0360as_ismip_2018';
+
+% the (TEST) hazard
+hazard_file='GLB_0360as_TC_hist'; % historic
+%hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
+
+
+% setup structure to pass all parameters:
+if isstruct(params)
+    if ~isfield(params,'plot_centroids'),params.plot_centroids=[];end
+    if ~isfield(params,'plot_entity'),params.plot_entity=[];end
 end
 
-% load centroids
+% set defaults
+if isempty(params.plot_centroids),params.plot_centroids=0;end
+if isempty(params.plot_centroids),params.plot_entity=0;end
+
+% load global centroids
 centroids=climada_centroids_load(centroids_file);
 
-if check_centroids % plot the centroids
+if params.plot_centroids % plot the centroids
+    figure('Name','centroids');
     country_pos=(centroids.centroid_ID<3e6); % find high(er) resolution centroids within countries
     plot(centroids.lon(country_pos),centroids.lat(country_pos),'.g');hold on;
     grid_pos=(centroids.centroid_ID>=3e6); % find coarse resolution centroids for regular grid
@@ -75,35 +79,20 @@ if check_centroids % plot the centroids
     climada_plot_world_borders
     legend({'country centroids [10km]','grid centroids [100km]'})
     title('GLB NatID grid 0360as adv 1')
-end % check_centroids
+end % params.plot_centroids
 
-% template to prompt for filename if not given
-if isempty(param1) % local GUI
-    param1=[climada_global.data_dir filesep '*.mat'];
-    [filename, pathname] = uigetfile(param1, 'Open:');
-    if isequal(filename,0) || isequal(pathname,0)
-        return; % cancel
-    else
-        param1=fullfile(pathname,filename);
-    end
-end
+% load global entity
+entity=climada_entity_load(entity_file);
 
-% just to show what's in (should one call climada_template ;-)
-% param1
-% param2
-% module_data_dir
+if params.plot_entity % plot the centroids
+    figure('Name','entity');
+    climada_entity_plot(entity);
+end % params.plot_entity
 
-% template for-loop with progress to stdout
-n_events = 1000;
-fprintf('processing %i events\n',n_events);
-climada_progress2stdout    % init, see terminate below
-for event_i=1:n_events
-    
-    % your calculations here
-    for i=1:5000,sqrt(i)*exp(event_i);end % DUMMY
-    
-    climada_progress2stdout(event_i,n_events,100,'events'); % update
-end % event_i
-climada_progress2stdout(0) % terminate
+% load tropical cyclone hazard set
+hazard=climada_hazard_load(hazard_file);
 
-end % climada_template
+% calculate the event damage set (EDS) to check whether all fine
+%EDS=climada_EDS_calc(entity,hazard);
+
+end % mrio_entity
