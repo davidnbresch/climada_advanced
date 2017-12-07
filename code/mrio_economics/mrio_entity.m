@@ -5,7 +5,7 @@ function [entity,hazard]=mrio_entity(params) % uncomment to run as function
 % NAME:
 %   mrio_entity
 % PURPOSE:
-%   load centroids and prepare entities for mrio (multi resolution I/O table project)
+%   load centroids and prepare entities for mrio (multi regional I/O table project)
 %
 %   NOTE: see PARAMETERS in code
 %
@@ -27,7 +27,7 @@ function [entity,hazard]=mrio_entity(params) % uncomment to run as function
 %   hazard: the global historic TC hazard set
 % MODIFICATION HISTORY:
 % David N. Bresch, david.bresch@gmail.com, 20171206, initial
-% Ediz Herms, ediz.herms@outlook.com, 20171206, tested, everything works
+% Ediz Herms, ediz.herms@outlook.com, 20171207, normalize assets per country
 %-
 
 entity=[]; % init output
@@ -90,6 +90,14 @@ end % params.plot_centroids
 fprintf('loading entity %s\n',entity_file);
 entity=climada_entity_load(entity_file);
 
+% loop over countries
+for country=unique(entity.assets.NatID)
+    % select all non-NaN entities in a country
+    sel_pos = intersect(find(entity.assets.NatID==country),find(~isnan(entity.assets.Value)));
+    % normalize assets
+    entity.assets.Value(sel_pos) = entity.assets.Value(sel_pos)/sum(entity.assets.Value(sel_pos));
+end
+        
 if params.plot_entity % plot the centroids
     figure('Name','entity');
     climada_entity_plot(entity);
