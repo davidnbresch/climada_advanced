@@ -28,13 +28,12 @@ function [entity,hazard]=mrio_entity(params) % uncomment to run as function
 % MODIFICATION HISTORY:
 % David N. Bresch, david.bresch@gmail.com, 20171206, initial
 % Ediz Herms, ediz.herms@outlook.com, 20171207, normalize assets per country
-% Ediz Herms, ediz.herms@outlook.com, 20171208, check whether entity on country level is provided
 %-
 
 entity=[]; % init output
 hazard=[]; % init output
 
-%global climada_global
+global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 %%if climada_global.verbose_mode,fprintf('*** %s ***\n',mfilename);end % show routine name on stdout
@@ -91,34 +90,10 @@ end % params.plot_centroids
 fprintf('loading entity %s\n',entity_file);
 entity=climada_entity_load(entity_file);
 
-% look up whether we have more detailed data provided on country level
-entity_file_split = strsplit(entity_file,'_');
-
-directory = [climada_global.data_dir filesep 'entities'];  % Full path of the directory to be searched in
-filesAndFolders = dir(directory); % Returns all the files and folders in the directory
-filesInDir = filesAndFolders(~([filesAndFolders.isdir])); % Returns only the files in the directory                    
-stringToBeFound = entity_file_split(1);
-numOfFiles = length(filesInDir);
-i=1;
-
-while(i<=numOfFiles)
-    filename = filesInDir(i).name; % Store the name of the file
-    found = strfind(filename,stringToBeFound); % Search for the stringToBeFound (sector name) in filename
-    if ~isempty(found) && ~contains(filename,entity_file_split(2)) % proceed with the entities found except the global one
-        filename_split = strsplit(filename,'_');
-        countryname = filename_split(3);
-        foundString = strcat('Found file------', filename, '-----containing data for---', countryname);
-        disp(foundString); 
-    end
-    i = i+1;
-end
-
-% loop over countries
+% normalization of asset values for all countries
 for country=unique(entity.assets.NatID)
-    % select all non-NaN assets
-    sel_pos = intersect(find(entity.assets.NatID==country),find(~isnan(entity.assets.Value)));
-    % normalize assets
-    entity.assets.Value(sel_pos) = entity.assets.Value(sel_pos)/sum(entity.assets.Value(sel_pos));
+    sel_pos = intersect(find(entity.assets.NatID==country),find(~isnan(entity.assets.Value))); % select all non-NaN assets
+    entity.assets.Value(sel_pos) = entity.assets.Value(sel_pos)/sum(entity.assets.Value(sel_pos)); % normalize assets
 end
         
 if params.plot_entity % plot the centroids
@@ -131,6 +106,6 @@ fprintf('loading hazard %s\n',hazard_file);
 hazard=climada_hazard_load(hazard_file);
 
 % calculate the event damage set (EDS) to check whether all fine
-%EDS=climada_EDS_calc(entity,hazard);
+% EDS=climada_EDS_calc(entity,hazard);
 
 end % mrio_entity
