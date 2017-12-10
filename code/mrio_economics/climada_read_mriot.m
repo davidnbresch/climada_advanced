@@ -101,9 +101,10 @@ if ~climada_init_vars,return;end % init/import global variables
 if ~exist('mriot_file','var'),mriot_file=[];end 
 if ~exist('table_flag','var'),table_flag=[]; end
 
-% locate the module's (or this code's) data folder (usually  a folder
-% 'parallel' to the code folder, i.e. in the same level as code folder)
-module_data_dir=[fileparts(fileparts(mfilename('fullpath'))) filesep 'data'];
+% locate the module's data folder (here  one folder
+% below of the current folder, i.e. in the same level as code folder)
+
+module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
 
 % PARAMETERS
 
