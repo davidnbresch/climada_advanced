@@ -42,9 +42,6 @@ if ~climada_init_vars,return;end % init/import global variables
 % and to set default value where  appropriate
 if ~exist('params','var'),params=struct;end % in case we want to pass all parameters as structure
 
-if ~exist('params.plot_centroids','var'),params.plot_centroids=0;end
-if ~exist('params.plot_entity','var'),params.plot_entity=0;end
-
 % locate the module's (or this code's) data folder (usually  a folder
 % 'parallel' to the code folder, i.e. in the same level as code folder)
 %module_data_dir=[fileparts(fileparts(mfilename('fullpath'))) filesep 'data'];
