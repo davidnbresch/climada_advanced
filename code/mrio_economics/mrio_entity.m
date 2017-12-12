@@ -105,7 +105,4 @@ end % params.plot_entity
 fprintf('loading hazard %s\n',hazard_file);
 hazard=climada_hazard_load(hazard_file);
 
-% calculate the event damage set (EDS) to check whether all fine
-% EDS=climada_EDS_calc(entity,hazard);
-
 end % mrio_entity
