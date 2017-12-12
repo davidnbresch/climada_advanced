@@ -1,4 +1,4 @@
-%function [,]=mrio_master(country_name,sector_name) % uncomment to run as function
+%function [,] = mrio_master(country_name,sector_name) % uncomment to run as function
 % mrio master
 % MODULE:
 %   advanced
@@ -6,16 +6,13 @@
 %   mrio_master
 % PURPOSE:
 %   master script to run mrio calculation (multi regional I/O table project)
-%
-%   NOTE: see PARAMETERS in code
-%
 % CALLING SEQUENCE:
-%
+%   mrio_master(country_name, sector_name)
 % EXAMPLE:
-%
+%   mrio_master('Switzerland', 'Agriculture')
 % INPUTS:
-%   country_name: 
-%   sector_name: 
+%   country_name: name of country (string)
+%   sector_name: name of sector (string)
 % OPTIONAL INPUT PARAMETERS:
 %
 % OUTPUTS:
@@ -33,20 +30,35 @@ climada_read_mriot;
 
 % load centroids and prepare entities for mrio
 [entity,hazard]=mrio_entity;
-entity_temp = entity;
 
-% calculate event damage set
-EDS=climada_EDS_calc(entity,hazard);
+% calculation for all countries
+EDS_ED = zeros(1,length(unique(entity.assets.NatID)));
+i=1;
+for country=unique(entity.assets.NatID)
+    sel_pos = ismember(entity.assets.NatID,i);
+    entity_sel = entity;
+    entity_sel.assets.Value = entity.assets.Value .* sel_pos;  % set values = 0 for all assets outside country i.
 
-% Calculate Damage exceedence Frequency Curve (DFC)
-DFC = climada_EDS_DFC(EDS);
+    % calculate event damage set
+    EDS=climada_EDS_calc(entity_sel,hazard);
 
-% convert an event (per occurrence) damage set (EDS) into a year damage set (YDS)
-YDS = climada_EDS2YDS(EDS,hazard);
+    % Calculate Damage exceedence Frequency Curve (DFC)
+    DFC = climada_EDS_DFC(EDS);
 
-% Annual Average Loss per Country
-ED_in_country = accumarray(transpose(entity.assets.NatID),YDS.ED_at_centroid);
-
+    % convert an event (per occurrence) damage set (EDS) into a year damage set (YDS)
+    YDS = climada_EDS2YDS(EDS,hazard);
+    
+    switch risk_measure
+    case 1 % expected damage 
+        YDS.ED;
+    case 2 % 50y
+        sort_damages = sort(YDS.damage);
+        return_period = 50;
+        sel_pos = max(find(DFC.return_period >= return_period));
+        event_sel = DFC.damage(sel_pos);
+    end
+    
+end
 
 %%%%%%%%%% in construction 
 X = []; x = [];
@@ -80,4 +92,5 @@ end
 %        YDS.damage=YDS.damage/YDS_ED*EDS_ED;
 %    end % ~isempty(nonzero_pos)
     
- 
+% Annual Average Loss per Country
+%ED_in_country = accumarray(transpose(entity.assets.NatID),YDS.ED_at_centroid);
