@@ -67,10 +67,6 @@ if isstruct(params)
     if ~isfield(params,'plot_entity'),params.plot_entity=[];end
 end
 
-% set defaults
-if isempty(params.plot_centroids),params.plot_centroids=0;end
-if isempty(params.plot_centroids),params.plot_entity=0;end
-
 % load global centroids
 fprintf('loading centroids %s\n',centroids_file);
 centroids=climada_centroids_load(centroids_file);
