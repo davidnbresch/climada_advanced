@@ -42,6 +42,7 @@ function hazard=climada_hazard_merge(hazard,hazard2,merge_direction)
 %       hazard.comment: a free comment, contains the regexp passed to this function
 % MODIFICATION HISTORY:
 % David N. Bresch, david.bresch@gmail.com, 20171108, initial
+% David N. Bresch, david.bresch@gmail.com, 20181229, orig_yearset treated, too
 %-
 
 %global climada_global
@@ -75,6 +76,7 @@ if strcmpi(merge_direction,'centroids')
     no_cen     = size(hazard.lon,2);
     hazard.centroid_ID = 1:no_cen;
     hazard.intensity = [hazard.intensity hazard2.intensity];
+    if isfield(hazard,'fraction'),hazard.fraction=[hazard.fraction hazard2.fraction];end
     
 end % strcmpi(merge_direction,'centroids')
 
@@ -104,6 +106,11 @@ if strcmpi(merge_direction,'events')
     fprintf('hazard.frequency re-defined based on hazard.yyyy\n');
     hazard.frequency=ones(1,hazard.event_count)/hazard.orig_years;
     
+    if isfield(hazard,'orig_yearset')
+        fprintf('combining hazard.orig_yearset by just appending\n');
+        hazard.orig_yearset=[hazard.orig_yearset hazard2.orig_yearset];
+    end
+
 end % strcmpi(merge_direction,'events')
 
 if strcmpi(merge_direction,'both')
