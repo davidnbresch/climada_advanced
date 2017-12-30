@@ -43,6 +43,7 @@ function hazard=climada_hazard_merge(hazard,hazard2,merge_direction)
 % MODIFICATION HISTORY:
 % David N. Bresch, david.bresch@gmail.com, 20171108, initial
 % David N. Bresch, david.bresch@gmail.com, 20181229, orig_yearset treated, too
+% David N. Bresch, david.bresch@gmail.com, 20181230, frequency inferred
 %-
 
 %global climada_global
@@ -103,12 +104,18 @@ if strcmpi(merge_direction,'events')
     hazard.event_ID=1:hazard.event_count;
     hazard.orig_event_count=sum(hazard.orig_event_flag);
     
-    fprintf('hazard.frequency re-defined based on hazard.yyyy\n');
-    hazard.frequency=ones(1,hazard.event_count)/hazard.orig_years;
-    
-    if isfield(hazard,'orig_yearset')
+    n_prob_events=hazard.event_count/hazard.orig_event_count-1;
+    hazard.frequency = (hazard.frequency*0+1)/(hazard.orig_years*(1+n_prob_events));
+    fprintf('WARNING: re-defining frequency based on orig_years (%i) and #prob. events (%i) --> 1/%i years\n',...
+        hazard.orig_years,n_prob_events,ceil(1/hazard.frequency(1)));
+
+    if isfield(hazard,'orig_yearset') && isfield(hazard2,'orig_yearset') 
         fprintf('combining hazard.orig_yearset by just appending\n');
         hazard.orig_yearset=[hazard.orig_yearset hazard2.orig_yearset];
+    end
+    
+    if isfield(hazard,'t_elapsed_footprints') && isfield(hazard2,'t_elapsed_footprints')
+        hazard.t_elapsed_footprints = hazard.t_elapsed_footprints+hazard2.t_elapsed_footprints;
     end
 
 end % strcmpi(merge_direction,'events')
