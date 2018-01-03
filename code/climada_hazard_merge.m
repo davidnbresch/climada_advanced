@@ -50,7 +50,7 @@ function hazard=climada_hazard_merge(hazard,hazard2,merge_direction,hazard_file)
 % David N. Bresch, david.bresch@gmail.com, 20180203, hazard_file
 %-
 
-%global climada_global
+global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 % poor man's version to check arguments
