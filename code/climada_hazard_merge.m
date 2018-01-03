@@ -83,8 +83,10 @@ if strcmpi(merge_direction,'centroids')
     hazard.centroid_ID = 1:no_cen;
     hazard.intensity = [hazard.intensity hazard2.intensity];
     hazard2=rmfield(hazard2,'intensity'); % free up memory ASAP
-    if isfield(hazard,'fraction'),hazard.fraction=[hazard.fraction hazard2.fraction];end
-    hazard2=rmfield(hazard2,'fraction'); % free up memory ASAP
+    if isfield(hazard,'fraction')
+        hazard.fraction=[hazard.fraction hazard2.fraction];
+        hazard2=rmfield(hazard2,'fraction'); % free up memory ASAP
+    end
 
 elseif strcmpi(merge_direction,'events')
     
@@ -96,10 +98,12 @@ elseif strcmpi(merge_direction,'events')
     
     hazard.intensity=[hazard.intensity;hazard2.intensity];
     hazard2=rmfield(hazard2,'intensity'); % free up memory ASAP
-
-    if isfield(hazard,'fraction'),hazard.fraction=[hazard.fraction;hazard2.fraction];end
-    hazard2=rmfield(hazard2,'fraction'); % free up memory ASAP
-
+    
+    if isfield(hazard,'fraction')
+        hazard.fraction=[hazard.fraction;hazard2.fraction];
+        hazard2=rmfield(hazard2,'fraction'); % free up memory ASAP
+    end
+    
     hazard.frequency = [hazard.frequency hazard2.frequency];
     hazard.orig_event_flag = [hazard.orig_event_flag hazard2.orig_event_flag];
     hazard.yyyy = [hazard.yyyy hazard2.yyyy];
