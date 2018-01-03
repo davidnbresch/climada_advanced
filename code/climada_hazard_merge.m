@@ -1,4 +1,4 @@
-function hazard=climada_hazard_merge(hazard,hazard2,merge_direction)
+function hazard=climada_hazard_merge(hazard,hazard2,merge_direction,hazard_file)
 % climada WS Europe
 % MODULE:
 %   advanced
@@ -23,9 +23,12 @@ function hazard=climada_hazard_merge(hazard,hazard2,merge_direction)
 %   merge_direction: if ='centroids', merge in centroids direction, i.e.
 %       add centroids, but assume same events.
 %       ='events': merge in events direction, i.e. add events, but assume
-%       same centroids.
+%       same centroids (default)
 %       ='both': add in both directions, i.e. just add centroids to
-%       centroids and events to events
+%       centroids and events to events, results in sparse matrix of the
+%       form:    X 0
+%                0 Y where X=hazard, Y=hazard2
+%   hazard_file: if present, save to filename as specified. 
 % OUTPUTS:
 %   hazard: a climada hazard even set structure, see e.g. climada_tc_hazard_set
 %       for a detailed description of all fields. Key fields are:
@@ -42,8 +45,9 @@ function hazard=climada_hazard_merge(hazard,hazard2,merge_direction)
 %       hazard.comment: a free comment, contains the regexp passed to this function
 % MODIFICATION HISTORY:
 % David N. Bresch, david.bresch@gmail.com, 20171108, initial
-% David N. Bresch, david.bresch@gmail.com, 20181229, orig_yearset treated, too
-% David N. Bresch, david.bresch@gmail.com, 20181230, frequency inferred
+% David N. Bresch, david.bresch@gmail.com, 20171229, orig_yearset treated, too
+% David N. Bresch, david.bresch@gmail.com, 20171230, frequency inferred
+% David N. Bresch, david.bresch@gmail.com, 20180203, hazard_file
 %-
 
 %global climada_global
@@ -53,6 +57,7 @@ if ~climada_init_vars,return;end % init/import global variables
 if ~exist('hazard','var'),return;end
 if ~exist('hazard2','var'),return;end
 if ~exist('merge_direction','var'),merge_direction='events';end
+if ~exist('hazard_file','var'),hazard_file='';end
 
 if hazard.reference_year ~= hazard2.reference_year
     fprintf(['Warning: Reference years are not equal: ' int2str(hazard.reference_year) ' and ' int2str(hazard2.reference_year) '\n']);
@@ -123,5 +128,15 @@ end % strcmpi(merge_direction,'events')
 if strcmpi(merge_direction,'both')
     fprintf('NOT IMPLEMENTED YET\n');
 end % strcmpi(merge_direction,'both')
+
+if ~isempty(hazard_file)
+    % complete path, if missing
+    [fP,fN,fE]=fileparts(hazard_file);
+    if isempty(fP),fP=climada_global.hazards_dir;end
+    if isempty(fE),fE='.mat';end
+    hazard.filename=[fP filesep fN fE];
+    fprintf('> saving merged hazard as %s\n',hazard.filename);
+    save(hazard.filename,'hazard',climada_global.save_file_version);
+end
 
 end % climada_hazard_merge
