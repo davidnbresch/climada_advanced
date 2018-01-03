@@ -82,11 +82,11 @@ if strcmpi(merge_direction,'centroids')
     no_cen     = size(hazard.lon,2);
     hazard.centroid_ID = 1:no_cen;
     hazard.intensity = [hazard.intensity hazard2.intensity];
+    hazard2=rmfield(hazard2,'intensity'); % free up memory ASAP
     if isfield(hazard,'fraction'),hazard.fraction=[hazard.fraction hazard2.fraction];end
-    
-end % strcmpi(merge_direction,'centroids')
+    hazard2=rmfield(hazard2,'fraction'); % free up memory ASAP
 
-if strcmpi(merge_direction,'events')
+elseif strcmpi(merge_direction,'events')
     
     if length(hazard.lon) ~= length(hazard2.lon)
         fprintf(['Warning: centroids count differs: ' int2str(length(hazard.lon)) ' and ' int2str(length(hazard2.lon)) '\n']);
@@ -95,8 +95,11 @@ if strcmpi(merge_direction,'events')
     hazard.comment=[hazard.comment 'merged with ' hazard2.comment];
     
     hazard.intensity=[hazard.intensity;hazard2.intensity];
+    hazard2=rmfield(hazard2,'intensity'); % free up memory ASAP
+
     if isfield(hazard,'fraction'),hazard.fraction=[hazard.fraction;hazard2.fraction];end
-    
+    hazard2=rmfield(hazard2,'fraction'); % free up memory ASAP
+
     hazard.frequency = [hazard.frequency hazard2.frequency];
     hazard.orig_event_flag = [hazard.orig_event_flag hazard2.orig_event_flag];
     hazard.yyyy = [hazard.yyyy hazard2.yyyy];
@@ -126,8 +129,11 @@ if strcmpi(merge_direction,'events')
 end % strcmpi(merge_direction,'events')
 
 if strcmpi(merge_direction,'both')
-    fprintf('NOT IMPLEMENTED YET\n');
+    fprintf('NOT IMPLEMENTED YET, aborted\n');
+    hazard=[];return % return empty
 end % strcmpi(merge_direction,'both')
+
+clear hazard2 % free up memory ASAP
 
 if ~isempty(hazard_file)
     % complete path, if missing
