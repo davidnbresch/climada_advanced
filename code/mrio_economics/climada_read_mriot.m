@@ -11,10 +11,7 @@ function climada_mriot=climada_read_mriot(mriot_file,table_flag)
 %   
 %   previous call: 
 %
-%   next call: (function to aggregate full mrio struct into a six sector
-%       aggregated version (also struct) representing the economy based only 
-%       on the 6 climada_sectors ... NOT SURE IF NECESSARY/USEFUL.
-%       CONSIDER FURTHER.)
+%   next call: climada_aggregate_mriot 
 %
 % CALLING SEQUENCE:
 %  
@@ -85,6 +82,17 @@ function climada_mriot=climada_read_mriot(mriot_file,table_flag)
 %
 % NO IN-DEPTH TESTING OF RESULTS CONDUCTED YET!
 %
+% POSSIBLE EXTENSIONS TO BE IMPLEMENTED:
+% Maybe add an optional input argument "aggregate_flag" or so where, if 1,
+% the function directly calls climada_aggregate_mriot in the end and returns
+% the aggregated mriot as a second optional output (for more info, check header 
+% of function climada_aggregate_mriot).
+%
+% Possibly also add a "saving-flag" where, if 1, the resulting mriot struct
+% is saved as an .m file. So the user can choose do delete the result from
+% the workspace if computer working memory is at its limits.
+%
+%
 % MODIFICATION HISTORY:
 % Kaspar Tobler, 20171207 initializing function
 % Kaspar Tobler, 20171208 adding import capabilities for both WIOD and EXIOBASE table
@@ -93,7 +101,7 @@ function climada_mriot=climada_read_mriot(mriot_file,table_flag)
 
 climada_mriot=[]; % init output
 
-global climada_global %#ok supress warning
+global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 % poor man's version to check arguments
@@ -112,7 +120,7 @@ module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep '
 % THE FOLLOWING TWO PROMPTS WILL BE MADE MORE RESILIENT BY TRYING TO CATCH
 % ERRORS. CURRENTLY FUNCTION RETURNS ERROR IF USER INPUT FAILES.
 if isempty(mriot_file) %If empty, open file dialog.
-    [filename, pathname] = uigetfile([module_data_dir filesep '*.*'], 'Open a mrio table file:');
+    [filename, pathname] = uigetfile([module_data_dir filesep '*.*'], 'Open a mrio table file that meets user requirements:');
     if isequal(filename,0) || isequal(pathname,0)
         error('Please choose a mriot file.')
         %return; % cancel pressed by user
