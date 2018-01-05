@@ -19,18 +19,26 @@
 %
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial (under construction)
-%-
+% Kaspar Tobler, 20180105, added line to obtain aggregated mriot using function climada_aggregate_mriot
+% Kaspar Tobler, 20180105, added some notes/questions; see "Note KT".
 
 %global climada_global
 
 % read MRIO table
-climada_mriot = limada_read_mriot;
+climada_mriot = climada_read_mriot;
 
 % proceed with aggregated numbers / rough sector classification
+climada_aggregated_mriot = climada_aggregate_mriot(climada_mriot);
 
 % for sector = 1:climada_mriot(1).no_of_sectors
+% Note KT: rather for sector = 1:climada_aggregated_mriot.no_of_sectors
+%   since entities will only be prepared for the 6 main sectors.
 
 % load centroids and prepare entities for mrio
+% Note KT: once separate entity for each climada sector is ready, probably
+%   first get [~,hazard] separately as this is the same for every sector
+%   and then obtain the 6 entities with the above loop so as to avoid
+%   multiple loadings of the hazard. (?)
 [entity,hazard]=mrio_entity;
 
 % calculation for all countries
