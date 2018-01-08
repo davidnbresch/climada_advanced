@@ -21,6 +21,30 @@
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial (under construction)
 % Kaspar Tobler, 20180105, added line to obtain aggregated mriot using function climada_aggregate_mriot
 % Kaspar Tobler, 20180105, added some notes/questions; see "Note KT".
+%
+% General note KT: 
+%  I think we always need to calculate the direct risk for all countries and all sectors, 
+%  regardless of which subset of each a user is interested because only with 
+%  this information we can calculate the indirect risk of any such subset(s) 
+%  of interest. To get indirect risk of Taiwan Agriculture, we need to 
+%  have info on direct risk of ALL contributing sectors/countries which potentially
+%  come from all other sectors and all other countries.
+%  So before the Leontief calculations, the disaggregation of the direct
+%  risk for all countries and the 6 climada sectors onto all countries and
+%  all subsectors happens before the Leontief calculation.
+%  The prior step gives us direct risk for all subsectors and counries, now
+%  in absolute terms (the relative values are multiplied with total sector
+%  production of each subsector), on which we then apply the Leontief
+%  inverse.
+%  This means the leontief function (mrio_risk_calc) always has to
+%  transform direct to indirect risk for all sectors/countries.
+%  The user's choice of which country/sector subset he/she is interested in
+%  comes in only in the last step in what is returned as a result. This is
+%  computationally highly inefficient... maybe there is another approach
+%  possible... maybe already the disaggregation step could be done only for
+%  the countries/sectors of interest and calculating indirect risk
+%  (Leontief) based on the various main sector contributions to those...
+%  This should change results though versus a first full disaggregation... 
 
 %global climada_global
 
@@ -43,7 +67,7 @@ climada_aggregated_mriot = climada_aggregate_mriot(climada_mriot);
 
 % calculation for all countries
 for country=unique(entity.assets.NatID)
-    sel_pos = ismember(entity.assets.NatID,23);
+    sel_pos = ismember(entity.assets.NatID,23); 
     entity_sel = entity;
     entity_sel.assets.Value = entity.assets.Value .* sel_pos;  % set values = 0 for all assets outside country i.
 
@@ -82,4 +106,18 @@ end
 
 %end
 
-% quantifying indirect risk using the Leontief I-O model
+% Note KT: The result of the damage calculation should be a row vector of
+% length "no-of-climada-sectors" * "no-of-countries", grouped by country:
+% c1 c1 ... c1 c2 c2 ... c2 c3 c3 ... c3
+% s1 s2 ... s6 s1 s2 ... s6 s1 s2 ... s6
+
+% Note KT: Now disaggregate direct risk on all subsectors for each country based on 
+% each subsector's contribution to total industry output of each country.
+% Since we used normalized values so far, the weighting is implicity done by
+% simple multiplication of the so far obtained mainsector risk with the absolute 
+% subsector outputs... Does that make sense? Was that the idea behind the normalization? 
+
+% climada_disaggregate_risk(....)   Not finished building yet.
+
+% Finally, quantifying indirect risk using the Leontief I-O model
+% mrio_risk_calc
