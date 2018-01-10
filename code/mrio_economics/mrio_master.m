@@ -44,7 +44,12 @@
 %  possible... maybe already the disaggregation step could be done only for
 %  the countries/sectors of interest and calculating indirect risk
 %  (Leontief) based on the various main sector contributions to those...
-%  This should change results though versus a first full disaggregation... 
+%  This should change results though versus a first full disaggregation...
+%  But using full sector resolution throughout (except for EDS calculation, of
+%  course) would make entire aggregation step actually obsolete?? So then
+%  the approach to only disaggregate the sectors in the country(-ies) the
+%  user is interested in would make more sense.
+%
 
 %global climada_global
 
@@ -54,12 +59,17 @@ climada_mriot = climada_read_mriot;
 % proceed with aggregated numbers / rough sector classification
 climada_aggregated_mriot = climada_aggregate_mriot(climada_mriot);
 
-% for sector = 1:climada_mriot(1).no_of_sectors
-% Note KT: rather for sector = 1:climada_aggregated_mriot.no_of_sectors
-%   since entities will only be prepared for the 6 main sectors.
+% for sector = 1:climada_mriot(1).climada_aggregated_mriot.no_of_sectors
+% Note KT: 
+%   Actually, to keep the same structure as the mriot tables, which is
+%   always country1-sec1-sec2-secX country2-sec1-sec2-secX etc. it could be
+%   better to make the outer loop over the countries? The resulting direct
+%   risk array should definitely be filled in the order as denoted in a
+%   climada_aggregated_mriot struct, so that we don't lose orientation on
+%   which value represents which country/sector combination...
 
 % load centroids and prepare entities for mrio
-% Note KT: once separate entity for each climada sector is ready, probably
+% Note KT: once separate e   ntity for each climada sector is ready, probably
 %   first get [~,hazard] separately as this is the same for every sector
 %   and then obtain the 6 entities with the above loop so as to avoid
 %   multiple loadings of the hazard. (?)
@@ -110,6 +120,11 @@ end
 % length "no-of-climada-sectors" * "no-of-countries", grouped by country:
 % c1 c1 ... c1 c2 c2 ... c2 c3 c3 ... c3
 % s1 s2 ... s6 s1 s2 ... s6 s1 s2 ... s6
+% Ideally, probably, it will be integrated into a two-field structure, with
+% one field containing a simple numeric array with the actual values and the
+% other field containing again info on sectors and countries... then again,
+% maybe not, since same info also in aggregated mriot
+% (memory-inefficient)...
 
 % Note KT: Now disaggregate direct risk on all subsectors for each country based on 
 % each subsector's contribution to total industry output of each country.
