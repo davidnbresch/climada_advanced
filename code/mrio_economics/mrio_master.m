@@ -21,78 +21,25 @@
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial (under construction)
 % Kaspar Tobler, 20180105, added line to obtain aggregated mriot using function climada_aggregate_mriot
 % Kaspar Tobler, 20180105, added some notes/questions; see "Note KT".
-%
-% General note KT: 
-%  I think we always need to calculate the direct risk for all countries and all sectors, 
-%  regardless of which subset of each a user is interested because only with 
-%  this information we can calculate the indirect risk of any such subset(s) 
-%  of interest. To get indirect risk of Taiwan Agriculture, we need to 
-%  have info on direct risk of ALL contributing sectors/countries which potentially
-%  come from all other sectors and all other countries.
-%  So before the Leontief calculations, the disaggregation of the direct
-%  risk for all countries and the 6 climada sectors onto all countries and
-%  all subsectors happens before the Leontief calculation.
-%  The prior step gives us direct risk for all subsectors and counries, now
-%  in absolute terms (the relative values are multiplied with total sector
-%  production of each subsector), on which we then apply the Leontief
-%  inverse.
-%  This means the leontief function (mrio_risk_calc) always has to
-%  transform direct to indirect risk for all sectors/countries.
-%  The user's choice of which country/sector subset he/she is interested in
-%  comes in only in the last step in what is returned as a result. This is
-%  computationally highly inefficient... maybe there is another approach
-%  possible... maybe already the disaggregation step could be done only for
-%  the countries/sectors of interest and calculating indirect risk
-%  (Leontief) based on the various main sector contributions to those...
-%  This should change results though versus a first full disaggregation...
-%  But using full sector resolution throughout (except for EDS calculation, of
-%  course) would make entire aggregation step actually obsolete?? So then
-%  the approach to only disaggregate the sectors in the country(-ies) the
-%  user is interested in would make more sense.
-%
 
 %global climada_global
+%if ~climada_init_vars,return;end % init/import global variables
 
 % read MRIO table
 climada_mriot = climada_read_mriot;
 
-<<<<<<< HEAD
-% proceed with aggregated numbers
-
-risk_direct = zeros(0,climada_mriot.no_of_sectors*climada_mriot.no_of_countries);
-country_risk_direct = zeros(0,climada_mriot.no_of_countries);
-
-% load centroids and prepare entities for mrio risk estimation 
-[entity,hazard] = mrio_entity(climada_mriot);
-
-country_ISO3 = entity.assets.NatID_RegID.ISO3; % above list is too fine-grided for our purpose (e.g. treats Hawaii as own country)
-mrio_country_ISO3 = unique(climada_mriot.countries_iso);
-=======
 % proceed with aggregated numbers / rough sector classification
 climada_aggregated_mriot = climada_aggregate_mriot(climada_mriot);
 
-% for sector = 1:climada_mriot(1).climada_aggregated_mriot.no_of_sectors
-% Note KT: 
-%   Actually, to keep the same structure as the mriot tables, which is
-%   always country1-sec1-sec2-secX country2-sec1-sec2-secX etc. it could be
-%   better to make the outer loop over the countries? The resulting direct
-%   risk array should definitely be filled in the order as denoted in a
-%   climada_aggregated_mriot struct, so that we don't lose orientation on
-%   which value represents which country/sector combination...
-
-% load centroids and prepare entities for mrio
-% Note KT: once separate e   ntity for each climada sector is ready, probably
+% load centroids and prepare entities for mrio risk estimation 
+% Note KT: once separate entity for each climada sector is ready, probably
 %   first get [~,hazard] separately as this is the same for every sector
 %   and then obtain the 6 entities with the above loop so as to avoid
 %   multiple loadings of the hazard. (?)
-[entity,hazard]=mrio_entity;
+[entity,hazard] = mrio_entity(climada_aggregated_mriot);
 
-% calculation for all countries
-for country=unique(entity.assets.NatID)
-    sel_pos = ismember(entity.assets.NatID,23); 
-    entity_sel = entity;
-    entity_sel.assets.Value = entity.assets.Value .* sel_pos;  % set values = 0 for all assets outside country i.
->>>>>>> 68c615d9c9fe668cea22bc2cb8dff2c12559ecd2
+country_ISO3 = entity.assets.NatID_RegID.ISO3;
+mrio_country_ISO3 = unique(climada_aggregated_mriot.countries_iso);
 
 % calculation for all countries as specified in mrio table
 for i = 1:length(mrio_country_ISO3)
@@ -151,31 +98,9 @@ for i = 1:length(mrio_country_ISO3)
 end
 
 % disaggregate direct risk to all subsectors for each country
+% climada_disaggregate_risk(....)   Not finished building yet.
 
 %country_risk_direct = cumsum(risk_direct);
 
-<<<<<<< HEAD
-% estimation of indirect risk using Leontief I/O model 
-[risk] = mrio_leontief_calc(climada_mriot, risk_direct)
-=======
-% Note KT: The result of the damage calculation should be a row vector of
-% length "no-of-climada-sectors" * "no-of-countries", grouped by country:
-% c1 c1 ... c1 c2 c2 ... c2 c3 c3 ... c3
-% s1 s2 ... s6 s1 s2 ... s6 s1 s2 ... s6
-% Ideally, probably, it will be integrated into a two-field structure, with
-% one field containing a simple numeric array with the actual values and the
-% other field containing again info on sectors and countries... then again,
-% maybe not, since same info also in aggregated mriot
-% (memory-inefficient)...
-
-% Note KT: Now disaggregate direct risk on all subsectors for each country based on 
-% each subsector's contribution to total industry output of each country.
-% Since we used normalized values so far, the weighting is implicity done by
-% simple multiplication of the so far obtained mainsector risk with the absolute 
-% subsector outputs... Does that make sense? Was that the idea behind the normalization? 
-
-% climada_disaggregate_risk(....)   Not finished building yet.
-
 % Finally, quantifying indirect risk using the Leontief I-O model
-% mrio_risk_calc
->>>>>>> 68c615d9c9fe668cea22bc2cb8dff2c12559ecd2
+[risk] = mrio_leontief_calc(climada_mriot, risk_direct)

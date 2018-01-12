@@ -35,10 +35,6 @@ function [entity,hazard] = mrio_entity(climada_mriot, params) % uncomment to run
 % Ediz Herms, ediz.herms@outlook.com, 20180112, ...mrio table as input
 %-
 
-params = struct;
-params.plot_centroids = 1;
-params.plot_entity=1; 
-
 entity = []; % init output
 hazard = []; % init output
 
