@@ -132,3 +132,4 @@ end
 % country_risk = inv(eye(size(climada_mriot.mrio_data)) - leontief_inverse) * country_risk_direct;
 % Change order of matrix multiplication:
     country_risk =  country_risk_direct * inv(eye(size(climada_mriot.mrio_data)) - leontief_inverse);
+>>>>>>> 68c615d9c9fe668cea22bc2cb8dff2c12559ecd2
