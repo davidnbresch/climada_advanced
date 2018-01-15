@@ -1,5 +1,5 @@
-function [risk,leontief_inverse] = mrio_leontief_calc(climada_mriot, risk_direct) % uncomment to run as function
-% mrio entity
+function [risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_mainsector_risk, climada_mriot) % uncomment to run as function
+% mrio leontief calc
 % MODULE:
 %   advanced
 % NAME:
@@ -10,23 +10,25 @@ function [risk,leontief_inverse] = mrio_leontief_calc(climada_mriot, risk_direct
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
-%
+%   direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot);
 %   next call:  % just to illustrate
-%
+%   
 % CALLING SEQUENCE:
-%   [risk] = mrio_leontief_calc(climada_mriot, risk_direct)
+%   [risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_mainsector_risk, climada_mriot);
 % EXAMPLE:
-%   climada_read_mriot;
-%   mrio_master('Switzerland','Agriculture','100y');
-%   [risk] = mrio_leontief_calc(climada_mrio, risk_direct);
+%   climada_mriot = climada_read_mriot;
+%   entity = mrio_entity(climada_mriot); 
+%   hazard = climada_hazard_load;
+%   direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot);
+%   [risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_mainsector_risk, climada_mriot);
 % INPUTS:
+%   risk_direct: row vector which contains the direct risk per country based on the risk measure chosen
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %   mriot structure whose basic properties are the same regardless of the
 %   provided mriot it is based on, see climada_read_mriot;
-%   risk_direct: row vector which contains the direct risk per country based on the risk measure chosen
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
-%   risk: the risk per country (direct + indirect) based on the risk measure chosen
+%   risk: risk per country and sector (direct + indirect) based on the risk measure chosen
 %   leontief_inverse: the leontief inverse matrix which relates final demand to production
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial
@@ -34,7 +36,8 @@ function [risk,leontief_inverse] = mrio_leontief_calc(climada_mriot, risk_direct
 % Kaspar Tobler, 20180105, changed order of matrix multiplication calculation of country_risk.
 %-
 
-climada_mriot.mrio_data(isnan(climada_mriot.mrio_data)) = 0; 
+climada_nan_mriot = isnan(climada_mriot.mrio_data); % save nan values to trace affected relationships and values
+climada_mriot.mrio_data(isnan(climada_mriot.mrio_data)) = 0; % for calculations we need to replace NaN with zeroes
 
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
@@ -43,9 +46,6 @@ total_output = nansum(climada_mriot.mrio_data,2); % total output per sector per 
 
 % Calculate technical coefficient matrix
 for i = 1:climada_mriot.no_of_sectors*climada_mriot.no_of_countries
-    sel_pos = find(~isnan(climada_mriot.mrio_data(:,i)));
-    sel_nan = find(isnan(climada_mriot.mrio_data(:,i)));
-    climada_mriot.mrio_data(sel_nan,i) = 0;
     if ~isnan(climada_mriot.mrio_data(:,i)./total_output(i))
         techn_coeffs(:,i) = climada_mriot.mrio_data(:,i)./total_output(i); % normalize with total output
     else 
@@ -62,3 +62,5 @@ leontief_inverse = inv(eye(size(climada_mriot.mrio_data)) - techn_coeffs);
 risk = risk_direct * leontief_inverse;
 
 %country_risk = cumsum(risk);
+
+end % mrio leontief calc

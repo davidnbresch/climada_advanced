@@ -1,4 +1,4 @@
-%function [,] = mrio_master(country_name, sector_name, risk_measure) % uncomment to run as function
+%function [risk, leontief_inverse, climada_nan_mriot] = mrio_master(country_name, sector_name, risk_measure) % uncomment to run as function
 % mrio master
 % MODULE:
 %   advanced
@@ -7,57 +7,60 @@
 % PURPOSE:
 %   master script to run mrio calculation (multi regional I/O table project)
 % CALLING SEQUENCE:
-%   mrio_master(country_name, sector_name)
+%   mrio_master(country_name, sector_name, risk_measure)
 % EXAMPLE:
-%   mrio_master('Switzerland','Agriculture','EAD')
+%   mrio_master('Switzerland', 'Agriculture', 'EAD')
+%   mrio_master
 % INPUTS:
+%  
+% OPTIONAL INPUT PARAMETERS:
 %   country_name: name of country (string)
 %   sector_name: name of sector (string)
-% OPTIONAL INPUT PARAMETERS:
 %   risk_measure: risk measure to be applied (string), default is the Expected Annual Damage (EAD)
 % OUTPUTS:
-%
+%   risk: risk per country and sector based on the risk measure chosen
+%   leontief_inverse: the leontief inverse matrix which relates final demand to production
+%   climada_nan_mriot: a matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial (under construction)
 % Kaspar Tobler, 20180105, added line to obtain aggregated mriot using function climada_aggregate_mriot
 % Kaspar Tobler, 20180105, added some notes/questions; see "Note KT".
 
-% import/setup global variables
+%import/setup global variables
 %global climada_global
 %if ~climada_init_vars,return;end
-
-climada_global.waitbar = 0;
-
-% PARAMETERS
-%           
+         
+% poor man's version to check arguments
 if ~exist('risk_measure', 'var'), risk_measure = []; end
-if isempty(risk_measure),risk_measure = 'EAD'; end
+if ~exist('country_name', 'var'), country_name = []; end
+if ~exist('sector_name', 'var'), sector_name = []; end
+if ~exist('silent_mode','var'), silent_mode = 0; end
+
+% Parameters
+if isempty(risk_measure), risk_measure = 'EAD'; end
+climada_global.waitbar = 0;
 
 % read MRIO table
 climada_mriot = climada_read_mriot;
 
 % proceed with aggregated numbers / rough sector classification
-climada_aggregated_mriot = climada_aggregate_mriot(climada_mriot);
+% climada_aggregated_mriot = climada_aggregate_mriot(climada_mriot);
 
-% load centroids and prepare entities for mrio risk estimation 
-% Note KT: once separate entity for each climada sector is ready, probably
-%   first get [~,hazard] separately as this is the same for every sector
-%   and then obtain the 6 entities with the above loop so as to avoid
-%   multiple loadings of the hazard. (?)
-[entity] = mrio_entity(climada_mriot);
-
-% the (TEST) hazard
+% load (TEST) hazard
 hazard_file = 'GLB_0360as_TC_hist'; % historic
-%hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
+% hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
 hazard = climada_hazard_load(hazard_file);
 
+% load centroids and prepare entities for mrio risk estimation 
+entity = mrio_entity(climada_mriot);
+
 % calculate direct risk for all countries and sectors as specified in mrio table
-[direct_risk] = mrio_direct_risk_calc(entity, hazard, climada_mriot)
+direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot);
 
 % disaggregate direct risk to all subsectors for each country
-% climada_disaggregate_risk(....)   Not finished building yet.
+% direct_subsector_risk = climada_disaggregate_risk(direct_mainsector_risk)   Not finished building yet.
 
-%country_risk_direct = cumsum(risk_direct);
+% country_risk_direct = cumsum(risk_direct);
 
 % Finally, quantifying indirect risk using the Leontief I-O model
-[risk] = mrio_leontief_calc(climada_mriot, risk_direct)
+[risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);

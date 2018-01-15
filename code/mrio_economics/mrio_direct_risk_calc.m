@@ -1,4 +1,4 @@
-function [direct_risk] = mrio_direct_risk_calc(entity, hazard, climada_mriot) % uncomment to run as function
+function direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot) % uncomment to run as function
 % mrio direct risk ralc
 % MODULE:
 %   advanced
@@ -6,29 +6,32 @@ function [direct_risk] = mrio_direct_risk_calc(entity, hazard, climada_mriot) % 
 %   mrio_direct_risk_calc
 % PURPOSE:
 %   Caculate direct risk per sector and country given an encoded entity (assets and damage functions), 
-%   a hazard event set, a risk measure calculate the direct risk and a general climada MRIO table.
+%   a hazard event set, a risk measure and a general climada MRIO table.
 %
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
 %   climada_mriot = climada_read_mriot;
-%   [entity] = mrio_entity(climada_mriot);
+%   entity = mrio_entity(climada_mriot);
 %   hazard = climada_hazard_load;
 %   next call:  % just to illustrate
-%   [risk, leontief_inverse] = mrio_leontief_calc(climada_mriot, risk_direct)
+%   [risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(climada_mriot, risk_direct);
 % CALLING SEQUENCE:
-%   [direct_risk] = mrio_direct_risk_calc(entity, hazard, climada_mriot)
+%   direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot);
 % EXAMPLE:
 %   climada_read_mriot;
-%   mrio_master('Switzerland','Agriculture','100y');
-%   [risk] = mrio_leontief_calc(climada_mrio, risk_direct);
+%   entity = mrio_entity(climada_mriot);
+%   hazard = climada_hazard_load;
+%   direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot);
 % INPUTS:
+%   entity: a struct, see climada_entity_read for details
+%   hazard: a struct, see e.g. climada_tc_hazard_set
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %   mriot structure whose basic properties are the same regardless of the
 %   provided mriot it is based on, see climada_read_mriot;
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
-%   direct_risk: the direct risk per country based on the given risk measure 
+%   direct_mainsector_risk: the direct risk per country based on the given risk measure 
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180115, initial
 %-
@@ -44,7 +47,7 @@ for i = 1:length(mrio_country_ISO3)
     
     % for sector = 1:climada_aggregated_mriot.no_of_sectors (here to have same structure as in mrio)
     
-    %[entity] = mrio_entity(climada_aggregate_mriot);
+    % entity = mrio_entity(climada_mriot);
     
     country = mrio_country_ISO3(i); % extract ISO code
 
@@ -72,27 +75,29 @@ for i = 1:length(mrio_country_ISO3)
     % quantify risk with specified risk measure 
     switch risk_measure
         case 'EAD' % Expected Annual Damage
-            risk_direct(i) = YDS.ED;
+            direct_mainsector_risk(i) = YDS.ED;
         case '100y-event' %
             return_period = 100;
             sort_damages = sort(YDS.damage);
             sel_pos = max(find(DFC.return_period >= return_period));
-            risk_direct(i) = DFC.damage(sel_pos);
+            direct_mainsector_risk(i) = DFC.damage(sel_pos);
         case '50y-event' %
             return_period = 50;
             sort_damages = sort(YDS.damage);
             sel_pos = max(find(DFC.return_period >= return_period));
-            risk_direct(i) = DFC.damage(sel_pos);
+            direct_mainsector_risk(i) = DFC.damage(sel_pos);
         case '20y-event' %
             return_period = 20;
             sort_damages = sort(YDS.damage);
             sel_pos = max(find(DFC.return_period >= return_period));
-            risk_direct(i) = DFC.damage(sel_pos);
+            direct_mainsector_risk(i) = DFC.damage(sel_pos);
         case 'worst-case' %
             sel_pos = max(find(DFC.return_period));
-            risk_direct(i) = DFC.damage(sel_pos);
+            direct_mainsector_risk(i) = DFC.damage(sel_pos);
         otherwise
             % ask user to choose out of a list and return to beginning of switch statement
     end
     %end
 end
+
+end % mrio_direct_risk_calc
