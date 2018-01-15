@@ -23,8 +23,6 @@
 %   climada_nan_mriot: a matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial (under construction)
-% Kaspar Tobler, 20180105, added line to obtain aggregated mriot using function climada_aggregate_mriot
-% Kaspar Tobler, 20180105, added some notes/questions; see "Note KT".
 
 %import/setup global variables
 %global climada_global
@@ -41,10 +39,10 @@ if isempty(risk_measure), risk_measure = 'EAD'; end
 climada_global.waitbar = 0;
 
 % read MRIO table
-climada_mriot = climada_read_mriot;
+climada_mriot = mrio_read_table;
 
 % proceed with aggregated numbers / rough sector classification
-% climada_aggregated_mriot = climada_aggregate_mriot(climada_mriot);
+aggregated_mriot = mrio_aggregate_table(climada_mriot);
 
 % load (TEST) hazard
 hazard_file = 'GLB_0360as_TC_hist'; % historic
@@ -58,7 +56,7 @@ entity = mrio_entity(climada_mriot);
 direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot);
 
 % disaggregate direct risk to all subsectors for each country
-% direct_subsector_risk = climada_disaggregate_risk(direct_mainsector_risk)   Not finished building yet.
+direct_subsector_risk = mrio_disaggregate_risk(direct_mainsector_risk);
 
 % country_risk_direct = cumsum(risk_direct);
 
