@@ -1,4 +1,4 @@
-function [entity,hazard] = mrio_entity(climada_mriot, params) % uncomment to run as function
+function [entity, hazard] = mrio_entity(climada_mriot, params) % uncomment to run as function
 % mrio entity
 % MODULE:
 %   advanced
@@ -12,11 +12,11 @@ function [entity,hazard] = mrio_entity(climada_mriot, params) % uncomment to run
 %   previous call: see isimip_gdp_entity to generate the global centroids and entity
 %   next call: EDS = climada_EDS_calc(entity,hazard); % just to illustrate
 % CALLING SEQUENCE:
-%   [entity,hazard] = mrio_entity(climada_mriot, params)
+%   [entity, hazard] = mrio_entity(climada_mriot, params)
 % EXAMPLE:
 %   climada_mriot = climada_read_mriot;
 %   params.plot_centroids = 1; params.plot_entity = 1;
-%   [entity,hazard] = mrio_entity(climada_mriot, params)
+%   [entity, hazard] = mrio_entity(climada_mriot, params)
 % INPUTS:
 %   climada_mriot: a struct with ten fields, one of them being countries_iso.
 %   The latter is important for this function. The struct represents a general climada
@@ -41,6 +41,8 @@ hazard = []; % init output
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
+
+
 %%if climada_global.verbose_mode,fprintf('*** %s ***\n',mfilename);end % show routine name on stdout
 
 % poor man's version to check arguments
@@ -62,7 +64,7 @@ centroids_file = 'GLB_NatID_grid_0360as_adv_1';
 entity_file = 'GLB_0360as_ismip_2018';
 
 % the (TEST) hazard
-hazard_file = 'GLB_0360as_TC_hist'; % historic
+%hazard_file = 'GLB_0360as_TC_hist'; % historic
 %hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
 
 
@@ -91,7 +93,7 @@ end % params.plot_centroids
 fprintf('loading entity %s\n',entity_file);
 entity = climada_entity_load(entity_file);
 
-country_ISO3 = entity.assets.NatID_RegID.ISO3;
+countries_ISO3 = entity.assets.NatID_RegID.ISO3;
 mrio_country_ISO3 = unique(climada_mriot.countries_iso);
 
 % normalization of asset values for all countries as specified in mrio table
@@ -100,11 +102,11 @@ for i = 1:length(mrio_country_ISO3)
     country = mrio_country_ISO3(i); % extract ISO code
     
     if country ~= 'ROW'
-        sel_country_pos = find(ismember(country_ISO3, country)); 
+        sel_country_pos = find(ismember(countries_ISO3, country)); 
         sel_pos = intersect(find(ismember(entity.assets.NatID,sel_country_pos)),find(~isnan(entity.assets.Value))); % select all non-NaN assets % select all non-NaN assets of this country
     else % 'Rest of World' (RoW) is viewed as a country 
-        list_RoW_ISO3 = setdiff(country_ISO3,mrio_country_ISO3); % find all countries that are not individually listed in the MRIO table 
-        list_RoW_NatID = find(ismember(country_ISO3,list_RoW_ISO3)); % extract NatID
+        list_RoW_ISO3 = setdiff(countries_ISO3,mrio_country_ISO3); % find all countries that are not individually listed in the MRIO table 
+        list_RoW_NatID = find(ismember(countries_ISO3,list_RoW_ISO3)); % extract NatID
         sel_pos = intersect(find(ismember(entity.assets.NatID,list_RoW_NatID)),find(~isnan(entity.assets.Value))); % select all non-NaN RoW assets
     end
     
@@ -117,7 +119,7 @@ if params.plot_entity % plot the centroids
 end % params.plot_entity
 
 % load tropical cyclone hazard set
-fprintf('loading hazard %s\n',hazard_file);
-hazard = climada_hazard_load(hazard_file);
+%fprintf('loading hazard %s\n',hazard_file);
+%hazard = climada_hazard_load(hazard_file);
 
 end % mrio_entity
