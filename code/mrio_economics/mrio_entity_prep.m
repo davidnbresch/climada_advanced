@@ -1,9 +1,9 @@
-function entity = mrio_entity(climada_mriot, params) % uncomment to run as function
-% mrio entity
+function entity = mrio_entity_prep(climada_mriot, params) % uncomment to run as function
+% mrio entity prep
 % MODULE:
 %   advanced
 % NAME:
-%   mrio_entity
+%   mrio_entity_prep
 % PURPOSE:
 %   load centroids and prepare entities for mrio (multi regional I/O table project)
 %
@@ -12,11 +12,11 @@ function entity = mrio_entity(climada_mriot, params) % uncomment to run as funct
 %   previous call: see isimip_gdp_entity to generate the global centroids and entity
 %   next call: EDS = climada_EDS_calc(entity,hazard); % just to illustrate
 % CALLING SEQUENCE:
-%   [entity, hazard] = mrio_entity(climada_mriot, params);
+%   [entity, hazard] = mrio_entity_prep(climada_mriot, params);
 % EXAMPLE:
 %   climada_mriot = climada_read_mriot;
 %   params.plot_centroids = 1; params.plot_entity = 1;
-%   [entity, hazard] = mrio_entity(climada_mriot, params);
+%   [entity, hazard] = mrio_entity_prep(climada_mriot, params);
 % INPUTS:
 %   climada_mriot: a struct with ten fields, one of them being countries_iso.
 %   The latter is important for this function. The struct represents a general climada
@@ -122,4 +122,4 @@ end % params.plot_entity
 %fprintf('loading hazard %s\n',hazard_file);
 %hazard = climada_hazard_load(hazard_file);
 
-end % mrio_entity
+end % mrio_entity_prep
