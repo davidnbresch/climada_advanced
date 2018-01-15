@@ -1,4 +1,4 @@
-function climada_mriot=climada_read_mriot(mriot_file,table_flag)
+function climada_mriot=mrio_read_table(mriot_file,table_flag)
 % MODULE:
 %   climada_advanced
 % NAME:
@@ -9,16 +9,16 @@ function climada_mriot=climada_read_mriot(mriot_file,table_flag)
 %   table and WIOD. CHECK USER-REQUIREMENTS FOR TABLES PASSED AS ARGUMENTS. 
 %   IF NOT ADHERED TO, FUNCTION DOES NOT WORK AS EXPECTED.
 %   
-%   previous call: 
+%   previous call:
 %
 %   next call: climada_aggregate_mriot 
 %
 % CALLING SEQUENCE:
 %  
 % EXAMPLE:
-%   climada_read_mriot; no arguments provided. Prompted for via GUI.
-%   climada_read_mriot('WIOT2014_Nov16_ROW.xlsx',wiod); importing a WIOD table.
-%   climada_read_mriot('mrIot_version2.2.2.txt',exio); importing an EXIOBASE table.
+%   mrio_read_table; no arguments provided. Prompted for via GUI.
+%   mrio_read_table('WIOT2014_Nov16_ROW.xlsx',wiod); importing a WIOD table.
+%   mrio_read_table('mrIot_version2.2.2.txt',exio); importing an EXIOBASE table.
 %
 % INPUTS:
 %
@@ -257,6 +257,26 @@ climada_sect_name_temp = repmat(sectors(2:end,2),no_countries,1); %Stack up 2nd 
 climada_mriot.climada_sect_name = categorical(climada_sect_name_temp)';
 clear climada_sect_name_temp
 
+% Check whether user requirements for mapping table are met regarding the
+% naming of the climada sectors (have to follow syntax of valid matlab
+% identifiers). Since this is of later importance, we try to remedy the most
+% common possible mistakes here. Currently doesn't fully work. Check back
+% later. Once ok, also implement for exiobase subfunction.
+%     unique_climada_sectors = unique(climada_mriot.climada_sect_name,'stable');
+%         for sector_i = 1:length(unique_climada_sectors)
+%             if ~isvarname(char(unique_climada_sectors(sector_i)))
+%                 warning('The names used for the sector mapping did not follow the requirements. Trying to remedy.')
+%                 % Construct a valid matlab identifier:
+%                 valid_name = matlab.lang.makeValidName(char(unique_climada_sectors(sector_i)));
+%                 valid_categorical = categorical({valid_name});
+%                 % Now we have to change all relevant entries in the
+%                 % climada_mriot struct to avoid:
+%                 sel_pos = climada_mriot.climada_sect_name == unique_climada_sectors(sector_i);
+%                 climada_mriot.climada_sect_name(sel_pos) = valid_categorical;
+%             end
+%         end
+% Finished test/remedy block.
+
 climada_sect_id_temp = repmat(sectors(2:end,3),no_countries,1); %Stack up 3rd col (corresponding cliamda sector id (1,2,3,4,5 or 6). 
 climada_mriot.climada_sect_id = cell2mat(climada_sect_id_temp)';
 clear climada_sect_id_temp
@@ -439,4 +459,5 @@ climada_mriot.no_of_sectors = no_sectors;
 
         
 
-%end % Main function read_mriot (wraps local functions to have shared variable workspace
+%end % Main function read_mriot (wraps local functions to have shared
+%variable workspace --> Currently not necessary.

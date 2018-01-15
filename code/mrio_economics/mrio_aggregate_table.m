@@ -1,4 +1,4 @@
-function climada_aggregated_mriot=climada_aggregate_mriot(climada_mriot)
+function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot)
 % MODULE:
 %   climada_advanced
 % NAME:
@@ -8,18 +8,24 @@ function climada_aggregated_mriot=climada_aggregate_mriot(climada_mriot)
 %   table that consists only of the six climada sectors. It does retain the original
 %   number of countries, however.
 %   
-%   previous call: climada_read_mriot 
+%   previous call: mrio_read_table 
 %
 %   next call: (function to calculate country- and sector-specific DIRECT tropical
 %       cylone risk associated with the six climada sectors as represented
 %       in the aggregated mriot.)
 %
 % CALLING SEQUENCE:
+%   mrio_read_table;
+%   mrio_aggregate_table;
 %  
 % EXAMPLE:
-%   climada_read_mriot; no arguments provided. Prompted for via GUI.
-%   climada_read_mriot('WIOT2014_Nov16_ROW.xlsx',wiod); importing a WIOD table.
-%   climada_read_mriot('mrIot_version2.2.2.txt',exio); importing an EXIOBASE table.
+%   [aggregated_mriot, climada_mriot]= mrio_aggregate_table; no arguments provided. User is prompted whether a
+%       required climada_mriot struct should be created. The latter is
+%       returned as the second output.
+%   aggregated_mriot = mrio_aggregate_table; NOT RECOMMENDED. As above, but
+%       the created climada_mriot struct is not returned (only the
+%       aggregated version).
+%   aggregated_mriot = mrio_aggregate_table(climada_mriot); existing climada_mriot struct provided as argument.
 %
 % INPUTS:
 %
@@ -30,16 +36,17 @@ function climada_aggregated_mriot=climada_aggregate_mriot(climada_mriot)
 %   continuing with current function or whether current function should be aborted.
 %  
 % OUTPUTS:
-%   climada_aggregate_mriot: a structure with ten fields. It represents an 
-%   aggregated version of the general climada mriot structure. Aggregated
-%   here means that all subsectors as represented in the full mriot are
-%   taken together so that only the six climada sectors are represented in
-%   the table: agriculture, forestry&fishing, mining&quarrying, manufacturing,
-%   utilities supply and services. A field retains the information on which subsectors
-%   have been aggregated into each climada sector. 
-%   No aggregation is done on the countries.
-%   For comparability, the resulting structure retains an 
-%   analogous - well - structure,  to the full table.
+%   aggregated_mriot: 
+%       a structure with ten fields. It represents an 
+%       aggregated version of the general climada mriot structure. Aggregated
+%       here means that all subsectors as represented in the full mriot are
+%       taken together so that only the six climada sectors are represented in
+%       the table: agriculture, forestry_fishing, mining_quarrying, manufacturing,
+%       utilities supply and services. A field retains the information on which subsectors
+%       have been aggregated into each climada sector. 
+%       No aggregation is done on the countries.
+%       For comparability, the resulting structure retains an 
+%       analogous - well - structure,  to the full table.
 %   The fields are:
 %       countries: a categorical array containing the full list of all
 %           countries in the order they appear in the
@@ -74,21 +81,26 @@ function climada_aggregated_mriot=climada_aggregate_mriot(climada_mriot)
 %           climada_mriot struct.
 %       no_of_sectors: as above but for number of sectors. Here always 6,
 %           unless basic climada sectors are extended in future. 
+%       
+%   climada_mriot: optinally and only if user did not provide a
+%       climada_mriot structure as input which was then created within
+%       function. A structure as it is created by mrio_read_table.
 %
 % GENERAL NOTES:
 %
 % NO IN-DEPTH TESTING OF RESULTS CONDUCTED YET!
 %
-% In next step, consider extending climada_read_mriot with a flag which
-% directly calls climada_aggregate_mriot from within the prior function,
+% In next step, consider extending mrio_read_table with a flag which
+% directly calls mrio_aggregate_table from within the prior function,
 % returning both the full and the aggregated table directly (could lead to
 % some function workspace memory issues)...
 %
 % MODIFICATION HISTORY:
 % Kaspar Tobler, 20171220 initializing function
 % Kaspar Tobler, 20180104 finishing raw prototype version. Basic capabilities are provided and work.
+% Kaspar Tobler, 20180112 add climada_mriot as optional output if no such structure is provided as input and it thus created within function using mrio_read_table.
 
-climada_aggregated_mriot=[]; % init output
+aggregated_mriot=[]; % init output
 
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
@@ -108,16 +120,16 @@ module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep '
 % function climada_read_mriot should be called which generates such a
 % struct. Without it, we cannot proceed.
 if isempty(climada_mriot) %If empty, open file dialog.
-    [choice] = questdlg('You did not provide a climada_mriot structure. Should the function climada_read_mriot be called to import a mriot table? This takes approx. 1-3 minutes and all necessary user requirements have to be met. If you abort, the entire operation is aborted as without a climada_mriot struct, we cannot proceed.',...
+    [choice] = questdlg('You did not provide a climada_mriot structure. Should the function mrio_read_table be called to import a mriot table? This takes approx. 1-3 minutes and all necessary user requirements have to be met. If you abort, the entire operation is aborted as without a climada_mriot struct, we cannot proceed.',...
         'Check for climada_mriot structure',...
         'Yes, run necessary function.','No, abort.','Yes, run necessary function.'); % Repeated string specifies default choice.
     if isequal(choice,'') || isequal(choice,'No, abort.') % User chose to abort or closed the dialog window without choice.
-        error('Without a climada_mriot structure, function climada_aggregate_mriot cannot proceed. Please provide a structure as input argument or let the current function run the necessary procedure.')
+        error('Without a climada_mriot structure, function mrio_aggregate_table cannot proceed. Please provide a structure as input argument or let the current function run the necessary procedure.')
     else
-        questdlg('The function now runs climada_read_mriot to obtain the necessary data. You are promted for several inputs. The import takes approx. 1-3 minutes.',...
+        questdlg('The function now runs mrio_read_table to obtain the necessary data. You are promted for several inputs. The import takes approx. 1-3 minutes. Note that if you want to go ahead according to standard procedure, you will need the climada_mriot struct, which is provided by the current function as a second output.',...
             'Import climada_mriot struct.','Ok','Ok'); % Repeated string specifies default choice.
         clear ans
-        climada_mriot = climada_read_mriot;
+        climada_mriot = mrio_read_table;
     end
 end
 
@@ -137,7 +149,15 @@ unique_climada_sectors = unique(climada_mriot.climada_sect_name,'stable');
 
 %TEMPORARY WORK-AROUND FOR PROBLEM THAT ORDER OF CLIMADA SECTORS IS
 %CONFUSED DUE TO "SERVICES" APPEARING ONCE BEFOE UTILITIES. BUT SHOULD BE
-%LAST (CLIMADA_SECTOR_ID = 6):
+%LAST (CLIMADA_SECTOR_ID = 6). THIS IS ACTUALLY QUITE A LARGE ISSUE, SINCE
+%IT WILL BE DIFFERENT FOR DIFFERENT MRIOTS AND THE ORDER OF THE CLIMADA
+%SECTOR DOES NOT NECESSARILY HAVE TO BE ALWAYS THE SAME UNLESS(!) WE DEFINE
+%IT TO BE A USER REQUIREMENT FOR THE MAPPING TABLE THAT IT IS. THIS OPTION
+%WOULD BE EASIEST TO IMPLEMENT. BUT(!!) IT REQUIRES THAT THE MRIOT IS
+%STRUCTURED IN A WAY THAT ALL SUBSECTOR BELONGING TO THE SAME MAINSECTOR
+%(NOT EXPLICITLY DEFINED IN A MRIOT) ARE CLUSTERED TOGETHER. THE WIOD AND
+%EXIOBASE ARE CURRENTLY BOTH STRUCTURED THIS WAY (AND IT DOES MAKE MUST SENSE
+%TO DO SO), BUT WHAT ABOUT OTHER TABLES?..
 if contains(char(unique_climada_sectors(end-1)),'service','IgnoreCase',true)
     swap = unique_climada_sectors(end-1);
     unique_climada_sectors(end-1) = unique_climada_sectors(end);
@@ -154,25 +174,25 @@ no_of_climada_sectors = length(categories(climada_mriot.climada_sect_name));
 data_length = no_of_climada_sectors*no_of_countries;
 
 % Setting up resulting struct:
-climada_aggregated_mriot(1).countries = [];
-climada_aggregated_mriot(1).countries_iso = [];
-climada_aggregated_mriot(1).sectors = [];
-climada_aggregated_mriot(1).aggregation_info = [];
-climada_aggregated_mriot(1).mrio_data = [];
-climada_aggregated_mriot(1).table_type = climada_mriot.table_type;
-climada_aggregated_mriot(1).filename = climada_mriot.filename;
-climada_aggregated_mriot(1).no_of_countries = climada_mriot.no_of_countries;
-climada_aggregated_mriot(1).no_of_sectors = no_of_climada_sectors;
+aggregated_mriot(1).countries = [];
+aggregated_mriot(1).countries_iso = [];
+aggregated_mriot(1).sectors = [];
+aggregated_mriot(1).aggregation_info = [];
+aggregated_mriot(1).mrio_data = [];
+aggregated_mriot(1).table_type = climada_mriot.table_type;
+aggregated_mriot(1).filename = climada_mriot.filename;
+aggregated_mriot(1).no_of_countries = climada_mriot.no_of_countries;
+aggregated_mriot(1).no_of_sectors = no_of_climada_sectors;
 % The set-up for the field aggregation_info (itself a struct):
 for i = 1:no_of_climada_sectors
-    field_name = matlab.lang.makeValidName(char(unique_climada_sectors(i)));
-    aggregation_info(1).(field_name) = []; % Parentheses allow dynamic creation of field names based on provided string.
+   field_name = char(unique_climada_sectors(i));
+   aggregation_info(1).(field_name) = []; % Parentheses allow dynamic creation of field names based on provided string.
 end
-climada_aggregated_mriot(1).aggregation_info = aggregation_info;
+aggregated_mriot(1).aggregation_info = aggregation_info;
 clear aggregation_info;
 
 % Pre-allocate new (aggregated) mrio_data field:
-climada_aggregated_mriot.mrio_data = zeros(data_length,data_length);
+aggregated_mriot.mrio_data = zeros(data_length,data_length);
 
 % Aggregate original mrio_data to aggregated version, where all subsector
 % commodity exchanges are summed up under the respective climada main
@@ -203,7 +223,7 @@ for col_i = 1:length(climada_mriot.sectors) % Full resolution length for column 
         end
         % First get all positions (i.e. row-indices) over which we have to sum up the original mrio data:
         sum_i = ((climada_mriot.climada_sect_id == climada_sector_i) & climada_mriot.countries_iso == unique_iso(country_i))'; % Transpose to a (logical) column vector
-        climada_aggregated_mriot.mrio_data(row_i,col_i) = sum(climada_mriot.mrio_data(sum_i,col_i));
+        aggregated_mriot.mrio_data(row_i,col_i) = sum(climada_mriot.mrio_data(sum_i,col_i));
     end %inner row loop
 end %outer column loop
 %toc % Approx. 1 minute.
@@ -223,43 +243,43 @@ for row_i = 1:data_length
         end
         % First get all positions (i.e. here column-indices) over which we have to sum up the original mrio data:
         sum_i = ((climada_mriot.climada_sect_id == climada_sector_i) & climada_mriot.countries_iso == unique_iso(country_i)); % Here no transposing since we want a row vector.
-        climada_aggregated_mriot.mrio_data(row_i,col_i) = sum(climada_aggregated_mriot.mrio_data(row_i,sum_i));
+        aggregated_mriot.mrio_data(row_i,col_i) = sum(aggregated_mriot.mrio_data(row_i,sum_i));
     end %inner column loop
 end %outer row loop
 % toc % Approx. 5 seconds.
 % Remove all now obsolete columns with indices > data_length:
-        climada_aggregated_mriot.mrio_data(:,(data_length+1):end) = [];
+        aggregated_mriot.mrio_data(:,(data_length+1):end) = [];
 
 % Now add remaining fields to the structure:
 % First, the more complicated countries and countries_iso fields.
 % Note that there is an quivalent loop-construct in function
 % climada_read_mriot.
-tic
-   climada_aggregated_mriot.countries = categorical(zeros(1,no_of_countries*no_of_climada_sectors));
-   climada_aggregated_mriot.countries_iso = categorical(zeros(1,no_of_countries*no_of_climada_sectors));
+% tic
+   aggregated_mriot.countries = categorical(zeros(1,no_of_countries*no_of_climada_sectors));
+   aggregated_mriot.countries_iso = categorical(zeros(1,no_of_countries*no_of_climada_sectors));
    j = 1;     % Needed to index into mriot.countries and mriot.countries_iso at correct positions for
               % insertion of temp_country and temp_iso arrays.
    for country_i = 1:no_of_countries
        temp_countries = repmat(unique_countries(country_i),1,no_of_climada_sectors);
        temp_iso = repmat(unique_iso(country_i),1,no_of_climada_sectors);
-       climada_aggregated_mriot.countries(j:j+no_of_climada_sectors-1) = temp_countries;
-       climada_aggregated_mriot.countries_iso(j:j+no_of_climada_sectors-1) = temp_iso;
+       aggregated_mriot.countries(j:j+no_of_climada_sectors-1) = temp_countries;
+       aggregated_mriot.countries_iso(j:j+no_of_climada_sectors-1) = temp_iso;
        j = j + no_of_climada_sectors; % See above
    end
-   if ~isequal(length(climada_aggregated_mriot.countries),length(climada_aggregated_mriot.countries_iso),no_of_climada_sectors*no_of_countries)
+   if ~isequal(length(aggregated_mriot.countries),length(aggregated_mriot.countries_iso),no_of_climada_sectors*no_of_countries)
        warning('Something went wrong'); %Specify better warnings later
    end
-toc
+% toc % Approx 0.1 seconds
 
 % Now the simpler sectors:
-climada_aggregated_mriot.sectors = repmat(unique_climada_sectors,1,no_of_countries);
+aggregated_mriot.sectors = repmat(unique_climada_sectors,1,no_of_countries);
  
 % Finally, the field with the aggregation info (itself a struct with k
 % fields, where k = no. of climada sectors (here 6)).
 for i = 1:no_of_climada_sectors
-    field_name = matlab.lang.makeValidName(char(unique_climada_sectors(i)));
+    field_name = char(unique_climada_sectors(i));
     sub_sectors = climada_mriot.sectors(climada_mriot.climada_sect_name == unique_climada_sectors(i));
-    climada_aggregated_mriot.aggregation_info.(field_name) = unique(sub_sectors,'stable');
+    aggregated_mriot.aggregation_info.(field_name) = unique(sub_sectors,'stable');
 end
 
 
