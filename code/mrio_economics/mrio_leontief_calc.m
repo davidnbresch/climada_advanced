@@ -25,7 +25,7 @@ function [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = m
 %   direct_subsector_risk: row vector which contains the direct risk per country based on the risk measure chosen
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
-%       provided mriot it is based on, see climada_read_mriot;
+%       provided mriot it is based on, see mrio_read_table;
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
 %   subsector_risk: risk per subsector/country based on the risk measure chosen
@@ -56,7 +56,9 @@ if ~exist('direct_subsector_risk', 'var'), direct_subsector_risk = []; end
 % module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data']; 
 
 % PARAMETERS
-if isempty(climada_mriot), climada_mriot = mrio_read_table; end
+if isempty(climada_mriot), 
+    fprintf('loading centroids %s\n',centroids_file); climada_mriot = mrio_read_table; 
+end
 if isempty(direct_subsector_risk), direct_mainsector_risk = mrio_direct_risk_calc('', '', climada_mriot, ''); end
 
 climada_nan_mriot = isnan(climada_mriot.mrio_data); % save NaN values to trace affected relationships and values

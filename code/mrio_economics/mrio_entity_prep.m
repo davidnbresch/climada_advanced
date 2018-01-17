@@ -15,16 +15,16 @@ function entity = mrio_entity_prep(climada_mriot, params) % uncomment to run as 
 %   next call: 
 %   direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, risk_measure); % just to illustrate
 % CALLING SEQUENCE:
-%   [entity, hazard] = mrio_entity_prep(climada_mriot, params);
+%   entity = mrio_entity_prep(climada_mriot, params);
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
 %   params.plot_centroids = 1; params.plot_entity = 1;
-%   [entity, hazard] = mrio_entity_prep(climada_mriot, params);
+%   entity = mrio_entity_prep(climada_mriot, params);
 % INPUTS:
 %   climada_mriot: a struct with ten fields, one of them being countries_iso.
 %       The latter is important for this function. The struct represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
-%       provided mriot it is based on, see climada_read_mriot; 
+%       provided mriot it is based on, see mrio_read_table; 
 % OPTIONAL INPUT PARAMETERS:
 %   params: a structure with the fields
 %       plot_centroids: =1 to plot the centroids, =0 not (default)
@@ -55,7 +55,9 @@ if ~exist('climada_mriot', 'var'), climada_mriot = []; end
 centroids_file = 'GLB_NatID_grid_0360as_adv_1'; % the global centroids
 entity_file = 'GLB_0360as_ismip_2018'; % the global entity
 
-if isempty(climada_mriot), climada_mriot = mrio_read_table; end
+if isempty(climada_mriot), 
+    fprintf('loading centroids %s\n',centroids_file); climada_mriot = mrio_read_table; 
+end
 if isstruct(params)
     if ~isfield(params,'plot_centroids'), params.plot_centroids = []; end
     if ~isfield(params,'plot_entity'), params.plot_entity = []; end

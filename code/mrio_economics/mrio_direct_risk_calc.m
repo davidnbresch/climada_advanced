@@ -28,7 +28,7 @@ function direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_
 %   hazard: a struct, see e.g. climada_tc_hazard_set
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
-%       provided mriot it is based on, see climada_read_mriot;
+%       provided mriot it is based on, see mrio_read_table;
 % OPTIONAL INPUT PARAMETERS:
 %   risk_measure: risk measure to be applied (string), default is the Expected Annual Damage (EAD)
 % OUTPUTS:
@@ -54,11 +54,13 @@ if ~exist('risk_measure', 'var'), risk_measure = []; end
 
 % PARAMETERS
 if isempty(hazard), hazard = climada_hazard_load; end
-if isempty(climada_mriot), climada_mriot = mrio_read_table; end
+if isempty(climada_mriot), 
+    fprintf('loading centroids %s\n',centroids_file); climada_mriot = mrio_read_table; 
+end
 if isempty(risk_measure), risk_measure = 'EAD'; end
 
 countries_ISO3 = entity.assets.NatID_RegID.ISO3; % TO DO: entity lösung finden 
-mrio_countries_ISO3 = unique(aggregated_mriot.countries_iso, 'stable');
+mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 
 n_mainsectors = length(categories(climada_mriot.climada_sect_name));
 n_mrio_countries = length(mrio_countries_ISO3);

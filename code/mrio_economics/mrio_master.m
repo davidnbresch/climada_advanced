@@ -43,7 +43,7 @@ climada_global.waitbar = 0;
 climada_mriot = mrio_read_table;
 
 % aggregated MRIO table:
-aggregated_mriot = mrio_aggregate_table;
+aggregated_mriot = mrio_aggregate_table(climada_mriot);
 
 % load (TEST) hazard
 hazard_file = 'GLB_0360as_TC_hist'; % historic
@@ -57,7 +57,7 @@ entity = mrio_entity_prep(climada_mriot);
 direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, risk_measure);
 
 % disaggregate direct risk to all subsectors for each country
-direct_subsector_risk = mrio_disaggregate_risk(direct_mainsector_risk,climada_mriot,aggregated_mriot);
+direct_subsector_risk = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot);
 
 % finally, quantifying indirect risk using the Leontief I-O model
 [subsector_risk, country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
