@@ -9,8 +9,11 @@ function entity = mrio_entity_prep(climada_mriot, params) % uncomment to run as 
 %
 %   NOTE: see PARAMETERS in code
 %
-%   previous call: see isimip_gdp_entity to generate the global centroids and entity
-%   next call: direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, risk_measure); % just to illustrate
+%   previous call: 
+%   see isimip_gdp_entity to generate the global centroids and entity
+%   climada_mriot = mrio_read_table;
+%   next call: 
+%   direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, risk_measure); % just to illustrate
 % CALLING SEQUENCE:
 %   [entity, hazard] = mrio_entity_prep(climada_mriot, params);
 % EXAMPLE:
@@ -19,9 +22,9 @@ function entity = mrio_entity_prep(climada_mriot, params) % uncomment to run as 
 %   [entity, hazard] = mrio_entity_prep(climada_mriot, params);
 % INPUTS:
 %   climada_mriot: a struct with ten fields, one of them being countries_iso.
-%   The latter is important for this function. The struct represents a general climada
-%   mriot structure whose basic properties are the same regardless of the
-%   provided mriot it is based on, see climada_read_mriot; 
+%       The latter is important for this function. The struct represents a general climada
+%       mriot structure whose basic properties are the same regardless of the
+%       provided mriot it is based on, see climada_read_mriot; 
 % OPTIONAL INPUT PARAMETERS:
 %   params: a structure with the fields
 %       plot_centroids: =1 to plot the centroids, =0 not (default)

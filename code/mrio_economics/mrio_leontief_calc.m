@@ -24,8 +24,8 @@ function [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = m
 % INPUTS:
 %   direct_subsector_risk: row vector which contains the direct risk per country based on the risk measure chosen
 %   climada_mriot: a structure with ten fields. It represents a general climada
-%   mriot structure whose basic properties are the same regardless of the
-%   provided mriot it is based on, see climada_read_mriot;
+%       mriot structure whose basic properties are the same regardless of the
+%       provided mriot it is based on, see climada_read_mriot;
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
 %   subsector_risk: risk per subsector/country based on the risk measure chosen

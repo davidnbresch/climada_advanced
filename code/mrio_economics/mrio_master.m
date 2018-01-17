@@ -1,4 +1,4 @@
-%function [risk, leontief_inverse, climada_nan_mriot] = mrio_master(country_name, sector_name, risk_measure) % uncomment to run as function
+%function [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_master(admin0_name, subsector_name, risk_measure) % uncomment to run as function
 % mrio master
 % MODULE:
 %   advanced
@@ -14,9 +14,10 @@
 % INPUTS:
 %  
 % OPTIONAL INPUT PARAMETERS:
-%   country_name: name of country (string)
-%   sector_name: name of sector (string)
-%   risk_measure: risk measure to be applied (string), default is the Expected Annual Damage (EAD)
+%   admin0_name: the country name, either full (like 'Puerto Rico')
+%       or ISO3 (like 'PRI'). See climada_country_name for names/ISO3
+%   subsector_name: the subsector name, see e.g. mrio_read_table
+%   risk_measure: the risk measure to be applied (string), default is the Expected Annual Damage (EAD)
 % OUTPUTS:
 %   risk: risk per country and sector based on the risk measure chosen
 %   leontief_inverse: the leontief inverse matrix which relates final demand to production
@@ -30,8 +31,8 @@
          
 % poor man's version to check arguments
 if ~exist('risk_measure', 'var'), risk_measure = []; end
-%if ~exist('country_name', 'var'), country_name = []; end
-%if ~exist('sector_name', 'var'), sector_name = []; end
+%if ~exist('admin0_name', 'var'), country_name = []; end
+%if ~exist('subsector_name', 'var'), sector_name = []; end
 %if ~exist('silent_mode','var'), silent_mode = 0; end
 
 % PARAMETERS
@@ -47,7 +48,7 @@ hazard_file = 'GLB_0360as_TC_hist'; % historic
 hazard = climada_hazard_load(hazard_file);
 
 % load centroids and prepare entities for mrio risk estimation 
-entity = mrio_entity(climada_mriot);
+entity = mrio_entity_prep(climada_mriot);
 
 % calculate direct risk for all countries and sectors as specified in mrio table
 direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, risk_measure);

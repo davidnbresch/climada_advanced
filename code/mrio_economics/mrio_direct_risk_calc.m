@@ -27,8 +27,8 @@ function direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_
 %   entity: a struct, see climada_entity_read for details
 %   hazard: a struct, see e.g. climada_tc_hazard_set
 %   climada_mriot: a structure with ten fields. It represents a general climada
-%   mriot structure whose basic properties are the same regardless of the
-%   provided mriot it is based on, see climada_read_mriot;
+%       mriot structure whose basic properties are the same regardless of the
+%       provided mriot it is based on, see climada_read_mriot;
 % OPTIONAL INPUT PARAMETERS:
 %   risk_measure: risk measure to be applied (string), default is the Expected Annual Damage (EAD)
 % OUTPUTS:
