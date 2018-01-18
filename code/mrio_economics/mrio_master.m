@@ -1,4 +1,4 @@
-%function [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_master(admin0_name, subsector_name, risk_measure) % uncomment to run as function
+% function [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_master(admin0_name, subsector_name, risk_measure) % uncomment to run as function
 % mrio master
 % MODULE:
 %   advanced
@@ -40,26 +40,33 @@ if isempty(risk_measure), risk_measure = 'EAD'; end
 climada_global.waitbar = 0;
 
 % read MRIO table
-climada_mriot = mrio_read_table;
+fprintf('Reading MRIO table...\n');tic;
+climada_mriot = mrio_read_table;toc
 
 % aggregated MRIO table:
-aggregated_mriot = mrio_aggregate_table(climada_mriot);
+fprintf('Aggregating MRIO table...\n');tic;
+aggregated_mriot = mrio_aggregate_table(climada_mriot);toc
 
 % load (TEST) hazard
+fprintf('Loading hazard set...\n');tic;
 hazard_file = 'GLB_0360as_TC_hist'; % historic
 % hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
-hazard = climada_hazard_load(hazard_file);
+hazard = climada_hazard_load(hazard_file);toc
 
 % load centroids and prepare entities for mrio risk estimation 
-entity = mrio_entity_prep(climada_mriot);
+fprintf('Loading centroids and prepare entities for mrio risk estimation...\n');tic;
+entity = mrio_entity_prep(climada_mriot);toc
 
 % calculate direct risk for all countries and sectors as specified in mrio table
-direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, risk_measure);
+fprintf('Calculating direct risk for all countries and sectors as specified in mrio table...\n');tic;
+direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, risk_measure);toc
 
 % disaggregate direct risk to all subsectors for each country
-direct_subsector_risk = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot);
+fprintf('Disaggregate direct risk to all subsectors for each country...\n');tic;
+direct_subsector_risk = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot);toc
 
 % finally, quantifying indirect risk using the Leontief I-O model
-[subsector_risk, country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
+fprintf('Quantifying indirect risk using the Leontief I-O model...\n');tic;
+[subsector_risk, country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);toc
 
 % end % mrio_master

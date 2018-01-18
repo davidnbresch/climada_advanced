@@ -111,8 +111,12 @@ if ~exist('table_flag','var'),table_flag=[]; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
-
-module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+% account for different directory structures
+if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
+    module_data_dir=[climada_global.modules_dir filesep 'advanced' filesep 'data'];
+else
+    module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+end
 
 % PARAMETERS
 
