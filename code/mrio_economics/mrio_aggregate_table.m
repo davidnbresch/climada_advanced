@@ -99,6 +99,8 @@ function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot)
 % Kaspar Tobler, 20171220 initializing function
 % Kaspar Tobler, 20180104 finishing raw prototype version. Basic capabilities are provided and work.
 % Kaspar Tobler, 20180112 add climada_mriot as optional output if no such structure is provided as input and it thus created within function using mrio_read_table.
+% Kaspar Tobler, 20180118 added an additional field of climada_sect_id analogous to the field in the climada_mriot struct.
+
 
 aggregated_mriot=[]; % init output
 
@@ -136,13 +138,17 @@ end
 % Get no. of sectors and no. of countries in provided mriot:
 no_of_sectors = climada_mriot.no_of_sectors; %#ok
 no_of_countries = climada_mriot.no_of_countries;
+% Get no. of climada_sectors (the main sectors):
+% (Not hardcoded to 6 in case changes in future)
+no_of_climada_sectors = length(categories(climada_mriot.climada_sect_name));
 
 % Get array of unique country ISO3 codes, country names and sector names 
-% as well as climada sector names, in order as they appear in the mriot:
+% as well as climada sector names and climada sector IDs in order as they appear in the mriot:
 unique_iso = unique(climada_mriot.countries_iso,'stable');
 unique_countries = unique(climada_mriot.countries,'stable');
 unique_sectors = unique(climada_mriot.sectors,'stable'); %#ok
 unique_climada_sectors = unique(climada_mriot.climada_sect_name,'stable');
+unique_climada_sect_ids = 1:no_of_climada_sectors;
 % Use unique() instead of categories() since the latter does not keep the
 % original order. The 'stable' argument locks the order of the unique
 % values as they appear in the full array.
@@ -164,10 +170,6 @@ if contains(char(unique_climada_sectors(end-1)),'serv','IgnoreCase',true)
     unique_climada_sectors(end) = swap;
 end
 
-% Get no. of climada_sectors (the main sectors):
-% (Not hardcoded to 6 in case changes in future)
-no_of_climada_sectors = length(categories(climada_mriot.climada_sect_name));
-
 % Data length; the length of the new sectors and countries arrays
 % as well as each mrio_data matrix dimension. Simply the product of the no.
 % of climada sectors and the no. of countries in the mriot:
@@ -177,6 +179,7 @@ data_length = no_of_climada_sectors*no_of_countries;
 aggregated_mriot(1).countries = [];
 aggregated_mriot(1).countries_iso = [];
 aggregated_mriot(1).sectors = [];
+aggregated_mriot(1).climada_sect_id = [];
 aggregated_mriot(1).aggregation_info = [];
 aggregated_mriot(1).mrio_data = [];
 aggregated_mriot(1).table_type = climada_mriot.table_type;
@@ -273,6 +276,9 @@ end %outer row loop
 
 % Now the simpler sectors:
 aggregated_mriot.sectors = repmat(unique_climada_sectors,1,no_of_countries);
+% And equivalently the climada_sect_id:
+aggregated_mriot.climada_sect_id = repmat(unique_climada_sect_ids,1,no_of_countries);
+
  
 % Finally, the field with the aggregation info (itself a struct with k
 % fields, where k = no. of climada sectors (here 6)).
