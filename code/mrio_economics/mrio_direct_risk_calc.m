@@ -50,7 +50,11 @@ if ~exist('risk_measure', 'var'), risk_measure = []; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
-% module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data']; 
+if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
+    module_data_dir=[climada_global.modules_dir filesep 'advanced' filesep 'data'];
+else
+    module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+end
 
 % PARAMETERS
 if isempty(hazard), hazard = climada_hazard_load; end
@@ -65,7 +69,7 @@ mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 n_mainsectors = length(categories(climada_mriot.climada_sect_name));
 n_mrio_countries = length(mrio_countries_ISO3);
 
-for mainsector_i = 1:n_mainsectors
+for mainsector_j = 1:n_mainsectors
     
     % load centroids and prepare entities for mrio risk estimation 
     % entity = mrio_entity_prep(climada_mriot); % at the moment we are not differentiating between sectors (!!!)
@@ -91,7 +95,7 @@ for mainsector_i = 1:n_mainsectors
         EDS = climada_EDS_calc(entity_sel,hazard,'' ,'' ,2 ,'');
 
         % Calculate Damage exceedence Frequency Curve (DFC)
-        % DFC = climada_EDS_DFC(EDS);
+        % DFC = climada_EDS2DFC(EDS);
 
         % convert an event (per occurrence) damage set (EDS) into a year damage set (YDS)
         YDS = climada_EDS2YDS(EDS, hazard);
@@ -99,31 +103,32 @@ for mainsector_i = 1:n_mainsectors
         % quantify risk with specified risk measure 
         switch risk_measure
             case 'EAD' % Expected Annual Damage
-                direct_mainsector_risk(mainsector_i+n_mainsectors*(mrio_country_i-1)) = YDS.ED;
+                direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = YDS.ED;
             case '100y-event' % TO DO 
                 return_period = 100;
-                sort_damages = sort(YDS.damage);
                 sel_pos = max(find(DFC.return_period >= return_period));
-                direct_mainsector_risk(mainsector_i+n_mainsectors*(mrio_country_i-1)) = DFC.damage(sel_pos);
+                direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = DFC.damage(sel_pos);
             case '50y-event' % TO DO 
                 return_period = 50;
-                sort_damages = sort(YDS.damage);
                 sel_pos = max(find(DFC.return_period >= return_period));
-                direct_mainsector_risk(mainsector_i+n_mainsectors*(mrio_country_i-1)) = DFC.damage(sel_pos);
+                direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = DFC.damage(sel_pos);
             case '20y-event' % TO DO 
                 return_period = 20;
-                sort_damages = sort(YDS.damage);
                 sel_pos = max(find(DFC.return_period >= return_period));
-                direct_mainsector_risk(mainsector_i+n_mainsectors*(mrio_country_i-1)) = DFC.damage(sel_pos);
+                direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = DFC.damage(sel_pos);
+            case '10y-event' % TO DO 
+                return_period = 10;
+                sel_pos = max(find(DFC.return_period >= return_period));
+                direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = DFC.damage(sel_pos);
             case 'worst-case' % TO DO 
                 sel_pos = max(find(DFC.return_period));
-                direct_mainsector_risk(mainsector_i+n_mainsectors*(mrio_country_i-1)) = DFC.damage(sel_pos);
+                direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = DFC.damage(sel_pos);
             otherwise
                 % TO DO
         end % switch risk_measure
         
     end % mrio_country_i
     
-end % mainsector_i
+end % mainsector_j
 
 end % mrio_direct_risk_calc

@@ -17,7 +17,7 @@
 %   admin0_name: the country name, either full (like 'Puerto Rico')
 %       or ISO3 (like 'PRI'). See climada_country_name for names/ISO3
 %   subsector_name: the subsector name, see e.g. mrio_read_table
-%   risk_measure: the risk measure to be applied (string), default is the Expected Annual Damage (EAD)
+%   risk_measure: the risk measure to be applied (string), default is ='EAD' (Expected Annual Damage)
 % OUTPUTS:
 %   risk: risk per country and sector based on the risk measure chosen
 %   leontief_inverse: the leontief inverse matrix which relates final demand to production
@@ -38,6 +38,8 @@ if ~exist('risk_measure', 'var'), risk_measure = []; end
 % PARAMETERS
 if isempty(risk_measure), risk_measure = 'EAD'; end
 climada_global.waitbar = 0;
+hazard_file = 'GLB_0360as_TC_hist'; % historic
+% hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
 
 % read MRIO table
 climada_mriot = mrio_read_table;
@@ -46,8 +48,7 @@ climada_mriot = mrio_read_table;
 aggregated_mriot = mrio_aggregate_table(climada_mriot);
 
 % load (TEST) hazard
-hazard_file = 'GLB_0360as_TC_hist'; % historic
-% hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
+
 hazard = climada_hazard_load(hazard_file);
 
 % load centroids and prepare entities for mrio risk estimation 

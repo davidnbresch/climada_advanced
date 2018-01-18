@@ -49,7 +49,11 @@ if ~exist('climada_mriot', 'var'), climada_mriot = []; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
-% module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data']; 
+if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
+    module_data_dir=[climada_global.modules_dir filesep 'advanced' filesep 'data'];
+else
+    module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+end
 
 % PARAMETERS
 centroids_file = 'GLB_NatID_grid_0360as_adv_1'; % the global centroids

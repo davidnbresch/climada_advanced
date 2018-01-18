@@ -53,7 +53,11 @@ if ~exist('direct_subsector_risk', 'var'), direct_subsector_risk = []; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
-% module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data']; 
+if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
+    module_data_dir=[climada_global.modules_dir filesep 'advanced' filesep 'data'];
+else
+    module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+end
 
 % PARAMETERS
 if isempty(climada_mriot), 
@@ -87,9 +91,9 @@ subsector_risk = direct_subsector_risk * leontief_inverse;
 
 country_risk = zeros(1,n_mrio_countries); % init
 for mrio_country_i = 1:n_mrio_countries
-    for subsector_i = 1:n_subsectors 
-        country_risk(mrio_country_i) = country_risk(mrio_country_i) + subsector_risk((mrio_country_i-1) * n_subsectors+subsector_i);
-    end % subsector_i
+    for subsector_j = 1:n_subsectors 
+        country_risk(mrio_country_i) = country_risk(mrio_country_i) + subsector_risk((mrio_country_i-1) * n_subsectors+subsector_j);
+    end % subsector_j
 end % mrio_country_i
 
 end % mrio leontief calc
