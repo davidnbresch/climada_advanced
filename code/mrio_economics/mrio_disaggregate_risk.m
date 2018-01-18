@@ -1,4 +1,4 @@
-function direct_subsector_risk=mrio_disaggregate_risk(direct_mainsector_risk,climada_mriot,aggregated_mriot, countries)
+function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(direct_mainsector_risk,climada_mriot,aggregated_mriot, countries)
 %
 %MODULE:
 %   climada_advanced
@@ -46,7 +46,8 @@ function direct_subsector_risk=mrio_disaggregate_risk(direct_mainsector_risk,cli
 %       order of entries follows the same as in the entire process, i.e.
 %       entry mapping is still possible via the climada_mriot.setors and
 %       climada_mriot.countries arrays.
-%  
+%  direct_country_risk: a row vector containing the direct risk per country (aggregated across all subsectors) 
+%       based on the risk measure chosen.
 %
 % GENERAL NOTES:
 %
@@ -94,6 +95,7 @@ function direct_subsector_risk=mrio_disaggregate_risk(direct_mainsector_risk,cli
 %%%%%%%%%%
 
 direct_subsector_risk=[]; % init output
+direct_country_risk=[]; % init output
 
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
@@ -179,6 +181,14 @@ end
 
 % toc
 
+% aggregate direct risk across all sectors per country
+direct_country_risk = zeros(1,n_mrio_countries); % init
+for mrio_country_i = 1:n_mrio_countries
+    for mainsector_j = 1:n_mainsectors 
+        direct_country_risk(mrio_country_i) = country_risk(mrio_country_i) + direct_subsector_risk((mrio_country_i-1) * n_subsectors+mainsector_j);
+    end % subsector_j
+end % mrio_country_i
+
 % Calculate absolute main sector risk (simple element-wise multiplication):
 direct_mainsector_risk_abs = direct_mainsector_risk.*total_mainsector_production;
 
@@ -256,6 +266,5 @@ function plot_absolute_risk    %#ok
         end
         all_col = table(all_col1,all_col2,all_col3,'VariableNames',{'R','G','B'}); %#ok
 end
-
 
 end %Wrap local functions to have shared variable workspace.

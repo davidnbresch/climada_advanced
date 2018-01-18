@@ -63,7 +63,7 @@ direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, ri
 
 % disaggregate direct risk to all subsectors for each country
 fprintf('Disaggregate direct risk to all subsectors for each country...\n');tic;
-direct_subsector_risk = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot);toc
+[direct_subsector_risk, direct_country_risk] = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot);toc
 
 % finally, quantifying indirect risk using the Leontief I-O model
 fprintf('Quantifying indirect risk using the Leontief I-O model...\n');tic;

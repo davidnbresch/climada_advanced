@@ -89,6 +89,7 @@ leontief_inverse = inv(eye(size(climada_mriot.mrio_data)) - techn_coeffs);
 % risk calculation
 subsector_risk = direct_subsector_risk * leontief_inverse;
 
+% aggregate direct risk across all sectors of a country
 country_risk = zeros(1,n_mrio_countries); % init
 for mrio_country_i = 1:n_mrio_countries
     for subsector_j = 1:n_subsectors 
