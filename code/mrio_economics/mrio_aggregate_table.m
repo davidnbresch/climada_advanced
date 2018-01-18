@@ -148,7 +148,7 @@ unique_climada_sectors = unique(climada_mriot.climada_sect_name,'stable');
 % values as they appear in the full array.
 
 %TEMPORARY WORK-AROUND FOR PROBLEM THAT ORDER OF CLIMADA SECTORS IS
-%CONFUSED DUE TO "SERVICES" APPEARING ONCE BEFOE UTILITIES. BUT SHOULD BE
+%CONFUSED DUE TO "SERVICES" APPEARING ONCE BEFOE UTILITIES IN THE WIOD TABLE. BUT SHOULD BE
 %LAST (CLIMADA_SECTOR_ID = 6). THIS IS ACTUALLY QUITE A LARGE ISSUE, SINCE
 %IT WILL BE DIFFERENT FOR DIFFERENT MRIOTS AND THE ORDER OF THE CLIMADA
 %SECTOR DOES NOT NECESSARILY HAVE TO BE ALWAYS THE SAME UNLESS(!) WE DEFINE
@@ -156,9 +156,9 @@ unique_climada_sectors = unique(climada_mriot.climada_sect_name,'stable');
 %WOULD BE EASIEST TO IMPLEMENT. BUT(!!) IT REQUIRES THAT THE MRIOT IS
 %STRUCTURED IN A WAY THAT ALL SUBSECTOR BELONGING TO THE SAME MAINSECTOR
 %(NOT EXPLICITLY DEFINED IN A MRIOT) ARE CLUSTERED TOGETHER. THE WIOD AND
-%EXIOBASE ARE CURRENTLY BOTH STRUCTURED THIS WAY (AND IT DOES MAKE MUST SENSE
+%EXIOBASE ARE CURRENTLY BOTH STRUCTURED THIS WAY (AND IT DOES MAKE MOST SENSE
 %TO DO SO), BUT WHAT ABOUT OTHER TABLES?..
-if contains(char(unique_climada_sectors(end-1)),'service','IgnoreCase',true)
+if contains(char(unique_climada_sectors(end-1)),'serv','IgnoreCase',true)
     swap = unique_climada_sectors(end-1);
     unique_climada_sectors(end-1) = unique_climada_sectors(end);
     unique_climada_sectors(end) = swap;

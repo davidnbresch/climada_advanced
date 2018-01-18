@@ -97,7 +97,8 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 % Kaspar Tobler, 20171207 initializing function
 % Kaspar Tobler, 20171208 adding import capabilities for both WIOD and EXIOBASE table
 % Kaspar Tobler, 20171209 finishing raw prototype version such that function works for WIOD and EXIOBASE tables. 
-%
+% Kaspar Tobler, 20180117 corrected local function read_exiobase: climada_sector_id was saved as categorical whereas it should be double (otherwise aggregation doesn't work). Now ok.
+% Kaspar Tobler, 20180117 adapted Exiobase input to account of fact that there are five different ROW regions and for fact that certain used country names are not recognised by climada_country_name. 
 
 climada_mriot=[]; % init output
 
@@ -179,7 +180,7 @@ if strcmpi(table_flag(1:2),'ex') %In case user provided flag containing typo onl
     % are not shown in the matlab variable editor (there seems to be a
     % max. length of around 4000 elements; longer arrays are not shown). 
     % This is normal behavior.
-    warning('The long categorical arrays climada_mriot.countries etc. are not shown in the matlab variable editor (there seems to be a max. length of around 4000 elements; longer arrays are not shown). This is normal behavior.')
+    warning('The long categorical arrays climada_mriot.countries etc. are not shown in the matlab variable editor (there seems to be a max. length of around 4000 elements; longer arrays are not shown). This is NORMAL behavior.')
     
 end % read exiobase type mriot
 
@@ -378,10 +379,28 @@ function climada_mriot = read_exiobase(mriot_file,climada_mriot)
    % list using climada_country_name:
    exio_iso3 = categorical(zeros(no_countries,1));
    for country_i = 1:no_countries
-       [~,iso3] = climada_country_name(exio_countries(country_i));
+       current_country = char(exio_countries(country_i));
+       if contains(current_country,{'south korea'},'IgnoreCase',true) || contains(current_country,{'republic of korea'},'IgnoreCase',true)
+            current_country = 'Korea';  % climada_country_name only accepts "Korea" as country name for South Korea;
+       elseif contains(current_country,{'russi'},'IgnoreCase',true)
+            current_country = 'Russia';  % E.g. Russian Federation (as used in Exiobase types_version2.2.2) not accepted for Russia.
+       elseif contains(current_country,{'slovak'},'IgnoreCase',true)
+            current_country = 'Slovakia'; % E.g. Slovak Republic not accepted
+       end
+       % Above test could be made more general, e.g. by checking whether
+       % current_country is contained in list = climada_country_name; (all valid argument names) and, if not, user dialog to 
+       % choose actual country of interest out of drop-down list with all accepted countries.
+                 
+       [~,iso3] = climada_country_name(current_country);
+       
        iso3 = {iso3}; % Convert to (one-element) cell array so it can be converted to categorical
-       if isempty(iso3{1}) % The EXIO Rest of World names don't correspond to an ISO-code
-           iso3 = {'ROW'};
+       if isempty(iso3{1}) % The EXIO Rest of World names don't correspond to an ISO-code. 
+                           % There are several different ROW-regions in
+                           % EXIOBASe. We keep the original name also for
+                           % the ISO Code to avoid confusion.
+           iso3 = matlab.lang.makeValidName(char(current_country));
+           iso3 = {iso3};
+                
        end
        exio_iso3(country_i) = categorical(iso3);
    end
@@ -422,9 +441,9 @@ function climada_mriot = read_exiobase(mriot_file,climada_mriot)
         climada_mriot.sectors = repmat(sector_name,no_countries,1)'; % Use row-vector
    climada_sect_name = categorical(exio_sectors{:,'climada_sect_name'});
         climada_mriot.climada_sect_name = repmat(climada_sect_name,no_countries,1)'; % Use row-vector
-   climada_sect_id = categorical(exio_sectors{:,'climada_sect_id'});
+   climada_sect_id = exio_sectors{:,'climada_sect_id'};
         climada_mriot.climada_sect_id = repmat(climada_sect_id,no_countries,1)'; % Use row-vector
-   
+
    % Now import actual mrio table data from main EXIOBASE table file (txt);
    % ignore labels and only import commodity exchange value matrix. Note,
    % raw text file is ~800mb. Import will be a 
