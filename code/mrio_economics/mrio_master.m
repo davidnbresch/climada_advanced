@@ -35,22 +35,14 @@ if ~exist('risk_measure', 'var'), risk_measure = []; end
 %if ~exist('subsector_name', 'var'), sector_name = []; end
 %if ~exist('silent_mode','var'), silent_mode = 0; end
 
-% PARAMETERS
-climada_global.waitbar = 0;
+% DEFAULT PARAMETERS; useful in development phase to go through all
+% calculations with default values so that no file dialogs etc. are opened:
+params = mrio_get_params;
 if isempty(risk_measure), risk_measure = 'EAD'; end
-params.centroids_file = 'GLB_NatID_grid_0360as_adv_1'; % the global centroids
-params.entity_file.agri = 'GLB_0360as_ismip_2018'; % the global Agriculture (agri) entity
-params.entity_file.for = 'GLB_0360as_ismip_2018'; % the global Forestry and Fishing (for) entity
-params.entity_file.min = 'GLB_0360as_ismip_2018'; % the global Mining and Quarrying (min) entity
-params.entity_file.manu = 'GLB_0360as_ismip_2018'; % the global Manufacturing (manu) entity
-params.entity_file.serv = 'GLB_0360as_ismip_2018'; % the global Services (serv) entity
-params.entity_file.utilities = 'GLB_0360as_ismip_2018'; % the global Electricity, Gas and Water supply (utilities) entity
-params.hazard_file = 'GLB_0360as_TC_hist'; % historic
-% params.hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
 
 % read MRIO table
 fprintf('Reading MRIO table...\n');tic;
-climada_mriot = mrio_read_table;toc
+climada_mriot = mrio_read_table(params.mriot.file_name,params.mriot.table_flag);toc
 
 % aggregated MRIO table:
 fprintf('Aggregating MRIO table...\n');tic;
