@@ -59,11 +59,7 @@ entity = mrio_entity_prep(climada_mriot);toc
 
 % calculate direct risk for all countries and sectors as specified in mrio table
 fprintf('Calculating direct risk for all countries and sectors as specified in mrio table...\n');tic;
-direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, risk_measure);toc
-
-% disaggregate direct risk to all subsectors for each country
-fprintf('Disaggregate direct risk to all subsectors for each country...\n');tic;
-[direct_subsector_risk, direct_country_risk] = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot);toc
+[direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(entity, hazard, climada_mriot, aggregated_mriot, risk_measure);toc
 
 % finally, quantifying indirect risk using the Leontief I-O model
 fprintf('Quantifying indirect risk using the Leontief I-O model...\n');tic;
