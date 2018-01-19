@@ -22,21 +22,26 @@ function [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = m
 %   direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot);
 %   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % INPUTS:
-%   direct_subsector_risk: row vector which contains the direct risk per country based on the risk measure chosen
+%   direct_subsector_risk: table which contains the direct risk per country
+%       based on the risk measure chosen in one variable and three "label" variables 
+%       containing corresponding country names, country iso codes and sector names.
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
 %       provided mriot it is based on, see mrio_read_table;
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
-%   subsector_risk: risk per subsector/country based on the risk measure chosen
-%   country_risk: risk per country based on the risk measure chosen
+%   subsector_risk: table with indirect risk per subsector/country combination 
+%       based on the risk measure chosen in one variable and three "label" variables 
+%       containing corresponding country names, country ISO codes and sector names.
+%   country_risk: table with indirect risk per country based on the risk measure chosen
+%       in one variable and two "label" variables containing corresponding 
+%       country names and country ISO codes.
 %   leontief_inverse: the leontief inverse matrix which relates final demand to production
 %   climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial
-% Kaspar Tobler, 20180105, added a few notes/questions. See "Note KT".
-% Kaspar Tobler, 20180105, changed order of matrix multiplication calculation of subsector_risk.
-%-
+% Kaspar Tobler, 20180119 implement returned results as tables to improve readability (countries and sectors corresponding to the values are visible on first sight).
+
 
 subsector_risk = []; % init output
 country_risk = []; % init output
@@ -74,6 +79,13 @@ n_mrio_countries = climada_mriot.no_of_countries;
 total_output = nansum(climada_mriot.mrio_data,2); % total output per sector per country (sum up row ignoring NaN-values)
 techn_coeffs = []; % init
 
+% Direct subsector risk as array (not table) for internal use:
+for var_i = 1:length(direct_subsector_risk.Properties.VariableNames)    % Keeping it flexible in case future vesions of table change order of variables or variable names.
+    if isnumeric(direct_subsector_risk{1,var_i})
+        direct_subsector_risk = direct_subsector_risk{:,var_i}';
+    end
+end
+
 % technical coefficient matrix
 for row_i = 1:n_subsectors*n_mrio_countries
     if ~isnan(climada_mriot.mrio_data(:,row_i)./total_output(row_i))
@@ -96,5 +108,15 @@ for mrio_country_i = 1:n_mrio_countries
         country_risk(mrio_country_i) = country_risk(mrio_country_i) + subsector_risk((mrio_country_i-1) * n_subsectors+subsector_j);
     end % subsector_j
 end % mrio_country_i
+
+%%% For better readability, we return final results as tables so that
+%%% countries and sectors corresponding to the values are visible on
+%%% first sight. Further, a table allows reordering of values, which might come in handy:
+
+subsector_risk = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.sectors',subsector_risk', ...
+                                'VariableNames',{'Country','CountryISO','Subsector','TotalSubsectorRisk'});
+country_risk = table(unique(climada_mriot.countries','stable'),unique(climada_mriot.countries_iso','stable'),country_risk',...
+                                'VariableNames',{'Country','CountryISO','TotalCountryRisk'});
+
 
 end % mrio leontief calc

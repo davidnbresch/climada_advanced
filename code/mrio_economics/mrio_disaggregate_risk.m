@@ -41,13 +41,16 @@ function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(dire
 %       sort. Likely not in this function but earlier in the entire process
 %       though...
 % OUTPUTS:
-%   direct_subsector_risk: a row vector containing direct risk for each
+%   direct_subsector_risk: a table containing as one variable the direct risk for each
 %       subsector/country combination covered in the original mriot. The
 %       order of entries follows the same as in the entire process, i.e.
 %       entry mapping is still possible via the climada_mriot.setors and
-%       climada_mriot.countries arrays.
-%  direct_country_risk: a row vector containing the direct risk per country (aggregated across all subsectors) 
-%       based on the risk measure chosen.
+%       climada_mriot.countries arrays. The table further contins three
+%       more variables with the country names, country ISO codes and sector names
+%       corresponging to the direct risk values.
+%  direct_country_risk: a table containing as one variable the direct risk per country (aggregated across all subsectors) 
+%       based on the risk measure chosen. Further a variable with correpsonding country
+%       names and country ISO codes, respectively.
 %
 % GENERAL NOTES:
 %
@@ -86,7 +89,9 @@ function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(dire
 % Kaspar Tobler, 20180108 further conceptual work/changes in concept...
 % Kaspar Tobler, 20180109-12 keep working on core functionality
 % Kaspar Tobler, 20180112 core functionality for no choice of specific countries finished and working.
-% Kaspar Tobler, 20180115-16 Further smaller changes as well as begin drafting of plotting functions. 
+% Kaspar Tobler, 20180115-16 further smaller changes as well as begin drafting of plotting functions. 
+% Ediz Herms, 20180118 adding direct country risk calculation.
+% Kaspar Tobler, 20180119 implement returned results as tables to improve readability (countries and sectors corresponding to the values are visible on first sight).
 
 % ONLY FOR DEVELOPMENT PERIOD: CREATE AN EXAMPLE INPUT ARRAY:
 % Assume that the order of values (representing direct risk for each
@@ -189,8 +194,19 @@ for mrio_country_i = 1:no_of_countries
     end % subsector_j
 end % mrio_country_i
 
+
+%%% For better readability, we return final results as tables so that
+%%% countries and sectors corresponding to the values are visible on
+%%% first sight. Further, a table allows reordering of values:
+
+direct_subsector_risk = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.sectors',direct_subsector_risk', ...
+                                'VariableNames',{'Country','CountryISO','Subsector','DirectSubsectorRisk'});
+direct_country_risk = table(unique(climada_mriot.countries','stable'),unique(climada_mriot.countries_iso','stable'),direct_country_risk',...
+                                'VariableNames',{'Country','CountryISO','DirectCountryRisk'});
+
 % Calculate absolute main sector risk (simple element-wise multiplication):
 direct_mainsector_risk_abs = direct_mainsector_risk.*total_mainsector_production;
+
 
 %%% plot_absolute_risk;
 
