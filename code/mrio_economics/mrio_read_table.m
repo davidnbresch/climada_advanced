@@ -140,15 +140,24 @@ if isempty(table_flag) %If empty, provide GUI list.
            'SelectionMode','single','Name','Choose MRIO type','ListSize',[300 100]);
     if isequal(selection,3) || isequal(ok,0)  %If 'OTHER' chosen or canceled. 
         error('Currently, this function only works with either WIOD, EXIOBASE OR EORA26 tables.')
-    end   
+    else  
+    %Set table_flag based on selection dialog:
+    switch selection
+        case 1
+            table_flag = 'wiod';
+        case 2
+            table_flag = 'exiobase';
+    end
+    end
 end % if table_flag is empty
-%Set table_flag based on selection dialog:
-switch selection
-    case 1
-        table_flag = 'wiod';
-    case 2
-        table_flag = 'exiobase';
-end
+
+
+% If only filename and no path is passed, add the latter:
+% complete path, if missing
+[fP,fN,fE]=fileparts(mriot_file);
+if isempty(fP),fP=module_data_dir;end
+if strcmpi(table_flag,'wiod'),fP=[fP filesep 'wiod'];elseif strcmpi(table_flag(1:4),'exio'),fP=[fP filesep 'exiobase']; end
+mriot_file=[fP filesep fN fE];
 
 % Setting up mriot structure:
 climada_mriot(1).countries = [];
