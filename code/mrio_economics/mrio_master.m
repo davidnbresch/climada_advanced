@@ -36,10 +36,17 @@ if ~exist('risk_measure', 'var'), risk_measure = []; end
 %if ~exist('silent_mode','var'), silent_mode = 0; end
 
 % PARAMETERS
-if isempty(risk_measure), risk_measure = 'EAD'; end
 climada_global.waitbar = 0;
-hazard_file = 'GLB_0360as_TC_hist'; % historic
-% hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
+if isempty(risk_measure), risk_measure = 'EAD'; end
+params.centroids_file = 'GLB_NatID_grid_0360as_adv_1'; % the global centroids
+params.entity_file.agri = 'GLB_0360as_ismip_2018'; % the global Agriculture (agri) entity
+params.entity_file.for = 'GLB_0360as_ismip_2018'; % the global Forestry and Fishing (for) entity
+params.entity_file.min = 'GLB_0360as_ismip_2018'; % the global Mining and Quarrying (min) entity
+params.entity_file.manu = 'GLB_0360as_ismip_2018'; % the global Manufacturing (manu) entity
+params.entity_file.serv = 'GLB_0360as_ismip_2018'; % the global Services (serv) entity
+params.entity_file.utilities = 'GLB_0360as_ismip_2018'; % the global Electricity, Gas and Water supply (utilities) entity
+params.hazard_file = 'GLB_0360as_TC_hist'; % historic
+% params.hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
 
 % read MRIO table
 fprintf('Reading MRIO table...\n');tic;
@@ -51,11 +58,11 @@ aggregated_mriot = mrio_aggregate_table(climada_mriot);toc
 
 % load (TEST) hazard
 fprintf('Loading hazard set...\n');tic;
-hazard = climada_hazard_load(hazard_file);toc
+hazard = climada_hazard_load(params.hazard_file);toc
 
 % load centroids and prepare entities for mrio risk estimation 
 fprintf('Loading centroids and prepare entities for mrio risk estimation...\n');tic;
-entity = mrio_entity_prep(climada_mriot);toc
+entity = mrio_entity_prep(params.entity_file.agri, params.centroids_file, climada_mriot);toc
 
 % calculate direct risk for all countries and sectors as specified in mrio table
 fprintf('Calculating direct risk for all countries and sectors as specified in mrio table...\n');tic;

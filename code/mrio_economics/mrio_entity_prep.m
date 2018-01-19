@@ -1,4 +1,4 @@
-function entity = mrio_entity_prep(climada_mriot, params) % uncomment to run as function
+function entity = mrio_entity_prep(entity_file, centroids_file, climada_mriot) % uncomment to run as function
 % mrio entity prep
 % MODULE:
 %   advanced
@@ -13,28 +13,30 @@ function entity = mrio_entity_prep(climada_mriot, params) % uncomment to run as 
 %   see isimip_gdp_entity to generate the global centroids and entity
 %   climada_mriot = mrio_read_table;
 %   next call: 
-%   direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, risk_measure); % just to illustrate
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(entity, hazard, climada_mriot, aggregated_mriot, risk_measure); % just to illustrate
 % CALLING SEQUENCE:
-%   entity = mrio_entity_prep(climada_mriot, params);
+%   entity = mrio_entity_prep(entity_file, centroids_file, climada_mriot)
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
-%   params.plot_centroids = 1; params.plot_entity = 1;
-%   entity = mrio_entity_prep(climada_mriot, params);
+%   entity = entity = mrio_entity_prep('', '', climada_mriot)
 % INPUTS:
+%   entity_filename: the filename of the Excel (.xls, .xlsx or .ods) file with the assets
+%       If no path provided, default path in climada_global.entities_dir is used
+%       > promted for if not given
+%   centroids_filename: the filename of the Excel file with the centroids
+%       > promted for if not given
 %   climada_mriot: a struct with ten fields, one of them being countries_iso.
 %       The latter is important for this function. The struct represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
 %       provided mriot it is based on, see mrio_read_table; 
 % OPTIONAL INPUT PARAMETERS:
-%   params: a structure with the fields
-%       plot_centroids: =1 to plot the centroids, =0 not (default)
-%       plot_entity: =1 to plot the entity, =0 not (default)
 % OUTPUTS:
 %   entity: the global entity
 % MODIFICATION HISTORY:
 % David N. Bresch, david.bresch@gmail.com, 20171206, initial
 % Ediz Herms, ediz.herms@outlook.com, 20171207, normalize assets per country
 % Ediz Herms, ediz.herms@outlook.com, 20180112, ...mrio table as input
+% Ediz Herms, ediz.herms@outlook.com, 20180118, prompt for input if not given
 %-
 
 entity = []; % init output
@@ -44,7 +46,8 @@ if ~climada_init_vars,return;end % init/import global variables
 
 % poor man's version to check arguments
 % and to set default value where  appropriate
-if ~exist('params', 'var'), params = struct; end % in case we want to pass all parameters as structure
+if ~exist('entity_file', 'var'), entity_file = []; end 
+if ~exist('centroids_file', 'var'), centroids_file = []; end 
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end 
 
 % locate the module's data folder (here  one folder
@@ -56,34 +59,34 @@ else
 end
 
 % PARAMETERS
-centroids_file = 'GLB_NatID_grid_0360as_adv_1'; % the global centroids
-entity_file = 'GLB_0360as_ismip_2018'; % the global entity
-
-if isempty(climada_mriot), 
-    fprintf('loading centroids %s\n',centroids_file); climada_mriot = mrio_read_table; 
+% prompt for entity_filename if not given
+if isempty(entity_file) % local GUI
+    entity_file = [module_data_dir filesep 'entities'];
+    [filename, pathname] = uigetfile(entity_file, 'Select entity file:');
+    if isequal(filename,0) || isequal(pathname,0)
+        return; % cancel
+    else
+        entity_file = fullfile(pathname,filename);
+    end
 end
-if isstruct(params)
-    if ~isfield(params,'plot_centroids'), params.plot_centroids = []; end
-    if ~isfield(params,'plot_entity'), params.plot_entity = []; end
+% prompt for centroids_filename if not given
+if isempty(centroids_file) % local GUI
+    centroids_file = [module_data_dir filesep 'centroids'];
+    [filename, pathname] = uigetfile(centroids_file, 'Select centroids file:');
+    if isequal(filename,0) || isequal(pathname,0)
+        return; % cancel
+    else
+        centroids_file = fullfile(pathname,filename);
+    end
 end
-
+if isempty(climada_mriot), climada_mriot = mrio_read_table; end
+    
 % load global centroids
-fprintf('loading centroids %s\n',centroids_file);
+fprintf('Loading centroids %s\n',centroids_file);
 centroids = climada_centroids_load(centroids_file);
 
-if params.plot_centroids % plot the centroids
-    figure('Name', 'centroids');
-    country_pos = (centroids.centroid_ID < 3e6); % find high(er) resolution centroids within countries
-    plot(centroids.lon(country_pos), centroids.lat(country_pos), '.g'); hold on;
-    grid_pos = (centroids.centroid_ID >= 3e6); % find coarse resolution centroids for regular grid
-    plot(centroids.lon(grid_pos), centroids.lat(grid_pos), '.r', 'MarkerSize', .1)
-    climada_plot_world_borders
-    legend({'country centroids [10km]','grid centroids [100km]'})
-    title('GLB NatID grid 0360as adv 1')
-end % params.plot_centroids
-
 % load global entity
-fprintf('loading entity %s\n',entity_file);
+fprintf('Loading entity %s\n',entity_file);
 entity = climada_entity_load(entity_file);
 
 countries_ISO3 = entity.assets.NatID_RegID.ISO3;
@@ -103,10 +106,5 @@ for mrio_country_i = 1:n_mrio_countries
     end
     entity.assets.Value(sel_pos) = entity.assets.Value(sel_pos)/sum(entity.assets.Value(sel_pos)); % normalize assets
 end % mrio_country_i
-
-if params.plot_entity % plot the centroids
-    figure('Name', 'entity');
-    climada_entity_plot(entity);
-end % params.plot_entity
 
 end % mrio_entity_prep
