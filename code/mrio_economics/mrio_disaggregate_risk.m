@@ -189,8 +189,8 @@ end
 % aggregate direct risk across all sectors per country
 direct_country_risk = zeros(1,no_of_countries); % init
 for mrio_country_i = 1:no_of_countries
-    for mainsector_j = 1:no_of_subsectors 
-        direct_country_risk(mrio_country_i) = direct_country_risk(mrio_country_i) + direct_subsector_risk((mrio_country_i-1) * no_of_subsectors+mainsector_j);
+    for subsector_j = 1:no_of_subsectors 
+        direct_country_risk(mrio_country_i) = direct_country_risk(mrio_country_i) + direct_subsector_risk((mrio_country_i-1) * no_of_subsectors+subsector_j);
     end % subsector_j
 end % mrio_country_i
 
