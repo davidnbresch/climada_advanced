@@ -1,9 +1,9 @@
 function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(direct_mainsector_risk,climada_mriot,aggregated_mriot, countries)
-%
-%MODULE:
+% mrio disaggregate risk
+% MODULE:
 %   climada_advanced
 % NAME:
-%   read_mriot
+%   mrio_disaggregate_risk
 % PURPOSE:
 %   Disaggregates a direct main sector risk (row-)vector with direct risk for each
 %   main-sector/country combination back into a full resolution vector with
@@ -18,9 +18,8 @@ function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(dire
 %       mrio_leontief_calc 
 %
 % CALLING SEQUENCE:
-%  
+%   [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(direct_mainsector_risk,climada_mriot,aggregated_mriot, countries)
 % EXAMPLE:
-%   
 %
 % INPUTS:
 %   direct_mainsector_risk: a row vector as produced from the core
