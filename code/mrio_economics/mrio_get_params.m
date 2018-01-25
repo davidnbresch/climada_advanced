@@ -28,8 +28,9 @@ global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 climada_global.waitbar = 0;
-params.mriot.file_name = 'WIOT2014_Nov16_ROW.xlsx';
-params.mriot.table_flag = 'wiod';
+params.mriot.file_name = 'WIOT2014_Nov16_ROW.xlsx';  %% When changing, also change table flag! 
+                                                     %%%Exiobase: 'mrIot_version2.2.2.txt' /// WIOD: 'WIOT2014_Nov16_ROW.xlsx'
+params.mriot.table_flag = 'wiod';   %% 'wiod or 'exiobase'
 params.centroids_file = 'GLB_NatID_grid_0360as_adv_1'; % the global centroids
 params.entity_file.agri = 'GLB_0360as_ismip_2018'; % the global Agriculture (agri) entity
 params.entity_file.for = 'GLB_0360as_ismip_2018'; % the global Forestry and Fishing (for) entity
