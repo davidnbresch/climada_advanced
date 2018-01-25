@@ -99,6 +99,7 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 % Kaspar Tobler, 20171209 finishing raw prototype version such that function works for WIOD and EXIOBASE tables. 
 % Kaspar Tobler, 20180117 corrected local function read_exiobase: climada_sector_id was saved as categorical whereas it should be double (otherwise aggregation doesn't work). Now ok.
 % Kaspar Tobler, 20180117 adapted Exiobase input to account of fact that there are five different ROW regions and for fact that certain used country names are not recognised by climada_country_name. 
+% Kaspar Tobler, 20180125 made import of exiobase more resilient regarding the treatment of the "types" file. Now also possible to have several versions of it in folder and choose one via user-dialog.
 
 climada_mriot=[]; % init output
 
@@ -154,10 +155,17 @@ end % if table_flag is empty
 
 % If only filename and no path is passed, add the latter:
 % complete path, if missing
+% HAVE ANOTHER CLOSE LOOK!
 [fP,fN,fE]=fileparts(mriot_file);
-if isempty(fP),fP=module_data_dir;end
-if strcmpi(table_flag,'wiod'),fP=[fP filesep 'wiod'];elseif strcmpi(table_flag(1:4),'exio'),fP=[fP filesep 'exiobase']; end
-mriot_file=[fP filesep fN fE];
+if isempty(fP)
+    fP=module_data_dir;
+    if strcmpi(table_flag,'wiod')
+        fP=[fP filesep 'wiod'];
+    elseif strcmpi(table_flag(1:4),'exio')
+        fP=[fP filesep 'exiobase']; 
+    end
+    mriot_file=[fP filesep fN fE];
+end
 
 % Setting up mriot structure:
 climada_mriot(1).countries = [];
@@ -184,7 +192,7 @@ end % Read WIOD type mriot
 % First attempt for exiobase table:
 if strcmpi(table_flag(1:2),'ex') %In case user provided flag containing typo only compare first two letters.
     
-    climada_mriot = read_exiobase(mriot_file,climada_mriot);
+    climada_mriot = read_exiobase(mriot_file,climada_mriot,module_data_dir); %% For exiobase we need the path info in the local function since we also have to find and load the exiobase "types" file, ideally automatically.
     % The long categorical arrays climada_mriot.countries etc.
     % are not shown in the matlab variable editor (there seems to be a
     % max. length of around 4000 elements; longer arrays are not shown). 
@@ -198,6 +206,7 @@ end % read exiobase type mriot
 %%%%%%%%%%%%%%  READ WIOD TABLES; LOCAL FUNCTION
 
 function climada_mriot = read_wiod(mriot_file,climada_mriot)
+
 
 % For platform independence, has to be a .xlsx file, not the WIOD default 
     % .xlsb, with which matlab can only deal on windows if excel installed:
@@ -350,14 +359,30 @@ end
 
 
 %%%%%%%%%%%%%%   READ EXIO TABLES; LOCAL FUNCTION
-function climada_mriot = read_exiobase(mriot_file,climada_mriot)
+function climada_mriot = read_exiobase(mriot_file,climada_mriot,module_data_dir)
+
+global climada_global
+
    % For EXIOBASE, main table is in a txt file (user input) and label info is 
    % stored in a separate excel file called types_[version_no]. 
    % We first get this filename. It is by default located in same dir as main table:
-   exio_types_file = dir([fileparts(mriot_file) '\' '*types*.xls*']);
-   % If cannot find fitting file, open file dialog:
+   exio_types_file = dir([fileparts(mriot_file) filesep '*types*.xls*']);
+   %%% In case there are several copies of "types" files found (e.g.
+   %%% different versions, let user choose with which one to go forward:
+   if length(exio_types_file) > 1
+    [selection, ok] = listdlg('ListString',{exio_types_file.name},...
+           'SelectionMode','single','Name','Choose "types" file...','PromptString','We found several exiobase "types" files. Please choose one to work with.','ListSize',[400 100]);
+    if isequal(ok,0)  %If 'OTHER' chosen or canceled. 
+        error('Without choosing an exiobase "types" file the function cannot proceed.')
+    else  
+    %Set exio_types_file based on selection dialog:
+    exio_types_file = exio_types_file(selection);
+    end
+   end
+       
+   % If cannot find fitting file at all, open file dialog:
        if isempty(exio_types_file)
-            [filename, pathname] = uigetfile([module_data_dir filesep '*types*.xls*'], 'Open the EXIOBASE types file:');
+            [filename, pathname] = uigetfile([module_data_dir filesep '*.xls*'], 'Open the EXIOBASE types file:');
             if isequal(filename,0) || isequal(pathname,0)
                 error('Please choose the EXIOBASE types files. Cannot proceed without.')
                 %return; % cancel pressed by user
