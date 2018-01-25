@@ -83,6 +83,8 @@ mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 n_mainsectors = length(categories(climada_mriot.climada_sect_name));
 n_mrio_countries = length(mrio_countries_ISO3);
 
+% direct risk calculation per mainsector and per country
+direct_mainsector_risk = zeros(n_mainsectors*n_mrio_countries);
 for mainsector_j = 1:n_mainsectors
     
     % load centroids and prepare entities for mrio risk estimation 
