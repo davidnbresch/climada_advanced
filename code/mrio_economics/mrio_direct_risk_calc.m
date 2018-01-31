@@ -1,4 +1,4 @@
-function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(entity, hazard, climada_mriot, aggregated_mriot, risk_measure) % uncomment to run as function
+function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure) % uncomment to run as function
 % mrio direct risk ralc
 % MODULE:
 %   advanced
@@ -13,18 +13,30 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(en
 %   previous call: 
 %
 %   next call:  % just to illustrate
-%   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot)
+%   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % CALLING SEQUENCE:
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(entity, hazard, climada_mriot, aggregated_mriot);
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure);
 % EXAMPLE:
+%   params = mrio_get_params;
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
-%   entity = mrio_entity_prep(climada_mriot);
-%   hazard = climada_hazard_load;
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(entity, hazard, climada_mriot, aggregated_mriot);
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot);
 % INPUTS:
-%   entity: a struct, see climada_entity_read for details
-%   hazard: a struct, see e.g. climada_tc_hazard_set
+%   params: a structure with the fields
+%       mriot: a structure with the fields
+%           filename: the filename (and path, optional) of a previously
+%               saved mrio table structure. If no path provided, default path ../data is used
+%               > promted for if empty
+%           table_flag: flag to mark which table type. If not provided, prompted for via GUI.
+%       centroids_file: the filename (and path, optional) of a previously saved centroids
+%           structure. If no path provided, default path ../data/centroids is used
+%           > promted for if empty
+%       entity_file: N-by-1 cell array with the filenames (and path, optional) of previously saved and prepared entity
+%           structures, see mrio_entity_prep. If no path provided, default path ../data/entities is used
+%           > promted for if empty
+%       hazard_file: the filename (and path, optional) of a hazard
+%           structure. If no path provided, default path ../data/hazard is used
+%           > promted for if empty
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
 %       provided mriot it is based on, see mrio_read_table;
@@ -56,8 +68,6 @@ global climada_global
 if ~climada_init_vars, return; end % init/import global variables
 
 % poor man's version to check arguments
-if ~exist('entity', 'var'), entity = []; end 
-if ~exist('hazard', 'var'), hazard = []; end 
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end
 if ~exist('aggregated_mriot', 'var'), aggregated_mriot = []; end
 if ~exist('risk_measure', 'var'), risk_measure = []; end
@@ -71,25 +81,41 @@ else
 end
 
 % PARAMETERS
-if isempty(entity), entity = mrio_entity_prep; end
-if isempty(hazard), hazard = climada_hazard_load; end
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(aggregated_mriot), aggregated_mriot = mrio_aggregate_table(climada_mriot); end
 if isempty(risk_measure), risk_measure = 'EAD'; end
 
-countries_ISO3 = entity.assets.NatID_RegID.ISO3; % TO DO: entity lösung finden 
+% If only filename and no path is passed, add the latter:
+% complete path, if missing
+[fP, fN, fE] = fileparts(params.hazard_file);
+if isempty(fP), hazard_file = [module_data_dir filesep 'hazards' filesep fN fE]; end
+
+hazard = climada_hazard_load(hazard_file);
+
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 
 n_mainsectors = length(categories(climada_mriot.climada_sect_name));
 n_mrio_countries = length(mrio_countries_ISO3);
 
 % direct risk calculation per mainsector and per country
-direct_mainsector_risk = zeros(n_mainsectors*n_mrio_countries);
+direct_mainsector_risk = zeros(1,n_mainsectors*n_mrio_countries);
 for mainsector_j = 1:n_mainsectors
     
-    % load centroids and prepare entities for mrio risk estimation 
-    % entity = mrio_entity_prep(climada_mriot); % at the moment we are not differentiating between sectors (!!!)
-
+    % load entity
+    pathname = [module_data_dir filesep 'entities']; 
+    filename = params.entity_file{mainsector_j};
+    entity_file = fullfile(pathname,filename); % add path to filename
+    entity = climada_entity_load(entity_file); % at the moment we are not differentiating between all sectors (!!!)
+    
+    if isfield(entity.assets, 'ISO3_list')
+        countries_ISO3 = entity.assets.ISO3_list(:,1);
+    elseif isfield(entity.assets, 'NatID_RegID')
+        countries_ISO3 = entity.assets.NatID_RegID.ISO3;
+    else
+        error('Please prepare entities first.')
+        % return % ask user to prepare entities first    
+    end
+    
     % calculation for all countries as specified in mrio table
     for mrio_country_i = 1:n_mrio_countries
 
@@ -111,15 +137,15 @@ for mainsector_j = 1:n_mainsectors
         EDS = climada_EDS_calc(entity_sel,hazard,'' ,'' ,2 ,'');
 
         % Calculate Damage exceedence Frequency Curve (DFC)
-        % DFC = climada_EDS2DFC(EDS);
+        %DFC = climada_EDS2DFC(EDS);
 
         % convert an event (per occurrence) damage set (EDS) into a year damage set (YDS)
-        YDS = climada_EDS2YDS(EDS, hazard);
+        %YDS = climada_EDS2YDS(EDS, hazard);
 
         % quantify risk with specified risk measure 
         switch risk_measure
             case 'EAD' % Expected Annual Damage
-                direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = YDS.ED;
+                direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = EDS.ED;
             case '100y-event' % TO DO 
                 return_period = 100;
                 sel_pos = max(find(DFC.return_period >= return_period));
@@ -140,7 +166,7 @@ for mainsector_j = 1:n_mainsectors
                 sel_pos = max(find(DFC.return_period));
                 direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = DFC.damage(sel_pos);
             otherwise
-                % TO DO
+                error('Please specify risk measure properly.')
         end % switch risk_measure
         
     end % mrio_country_i
