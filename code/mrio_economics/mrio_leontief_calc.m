@@ -10,16 +10,15 @@ function [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = m
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
-%   direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot);
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure);
 %   next call:  % just to illustrate
 %   
 % CALLING SEQUENCE:
-%   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_mainsector_risk, climada_mriot);
+%   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot)
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
-%   entity = mrio_entity_prep(climada_mriot); 
-%   hazard = climada_hazard_load;
-%   direct_mainsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot);
+%   aggregated_mriot = mrio_aggregate_table(climada_mriot);
+%   direct_subsector_risk = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure);
 %   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % INPUTS:
 %   direct_subsector_risk: table which contains the direct risk per country
@@ -64,9 +63,7 @@ else
 end
 
 % PARAMETERS
-if isempty(climada_mriot), 
-    fprintf('loading centroids %s\n',centroids_file); climada_mriot = mrio_read_table; 
-end
+if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(direct_subsector_risk), direct_subsector_risk = mrio_direct_risk_calc('', '', climada_mriot, ''); end
 
 climada_nan_mriot = isnan(climada_mriot.mrio_data); % save NaN values to trace affected relationships and values
@@ -107,9 +104,33 @@ for cell_i = 1:length(direct_subsector_risk)
 end
 
 % risk calculation
-subsector_risk = (direct_intensity_vector * leontief_inverse) .* transpose(total_output);
 
-% aggregate direct risk across all sectors of a country
+% aggregate risk
+% subsector_risk = (direct_intensity_vector * leontief_inverse) .* transpose(total_output);
+% max risk
+% subsector_risk = zeros(1, length(direct_subsector_risk));
+% for column_i = 1:n_subsectors*n_mrio_countries
+%     subsector_risk(column_i) = max(direct_intensity_vector .* leontief_inverse(:,column_i)') * total_output(column_i);
+% end
+
+% weighted average 
+% total_input = nansum(climada_mriot.mrio_data, 1);
+% subsector_risk = zeros(1, length(direct_subsector_risk));
+% for column_i = 1:n_subsectors*n_mrio_countries
+%     weights = zeros(length(direct_subsector_risk),1);
+%     if ~isnan(climada_mriot.mrio_data(:,column_i)./total_input(column_i))
+%         weights = climada_mriot.mrio_data(:,column_i)./total_input(column_i); % normalize with total output
+%     end
+%     subsector_risk(column_i) = ((direct_intensity_vector .* leontief_inverse(:,column_i)') * weights) * total_output(column_i);
+% end
+
+% mean
+subsector_risk = zeros(1, length(direct_subsector_risk));
+for column_i = 1:n_subsectors*n_mrio_countries
+    subsector_risk(column_i) = mean(direct_intensity_vector .* leontief_inverse(:,column_i)') * total_output(column_i); % + direct_subsector_risk(column_i);
+end
+
+% aggregate indirect risk across all sectors of a country
 country_risk = zeros(1,n_mrio_countries); % init
 for mrio_country_i = 1:n_mrio_countries
     for subsector_j = 1:n_subsectors 
