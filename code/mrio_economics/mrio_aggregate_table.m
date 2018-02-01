@@ -1,8 +1,9 @@
 function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot, ROW_flag, full_aggregation_flag)
+% mrio aggregate table
 % MODULE:
 %   climada_advanced
 % NAME:
-%   read_mriot
+%   mrio_aggregate_table
 % PURPOSE:
 %   Transforms a full climada mrio table struct (usually "climada_mriot") into an aggregated  
 %   table that consists only of the six climada sectors. It does retain the original
