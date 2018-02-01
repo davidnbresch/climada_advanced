@@ -128,7 +128,6 @@ end % cell_i
 indirect_subsector_risk = zeros(1, length(direct_subsector_risk));
 for column_i = 1:n_subsectors*n_mrio_countries
     indirect_subsector_risk(column_i) = mean(direct_intensity_vector .* leontief_inverse(:,column_i)') * total_output(column_i); % + direct_subsector_risk(column_i);
-    end
 end % column_i
 
 % aggregate indirect risk across all sectors of a country
