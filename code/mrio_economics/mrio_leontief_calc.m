@@ -1,4 +1,4 @@
-function [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot) % uncomment to run as function
+function [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot) % uncomment to run as function
 % mrio leontief calc
 % MODULE:
 %   advanced
@@ -41,6 +41,8 @@ function [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = m
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial
 % Kaspar Tobler, 20180119 implement returned results as tables to improve readability (countries and sectors corresponding to the values are visible on first sight).
 
+indirect_subsector_risk = []; % init output
+indirect_country_risk = []; % init output
 subsector_risk = []; % init output
 country_risk = []; % init output
 leontief_inverse = []; % init output
@@ -77,7 +79,7 @@ for var_i = 1:length(direct_subsector_risk.Properties.VariableNames) % Keeping i
     if isnumeric(direct_subsector_risk{1,var_i})
         direct_subsector_risk = direct_subsector_risk{:,var_i}';
     end
-end
+end % var_i
 
 % technical coefficient matrix
 techn_coeffs = zeros(size(climada_mriot.mrio_data)); % init
@@ -88,7 +90,7 @@ for column_i = 1:n_subsectors*n_mrio_countries
     else 
         techn_coeffs(:,column_i) = 0;
     end
-end % row_i
+end % column_i
 
 % leontief inverse 
 leontief_inverse = inv(eye(size(climada_mriot.mrio_data)) - techn_coeffs);
@@ -98,10 +100,8 @@ direct_intensity_vector = zeros(1,length(direct_subsector_risk)); % init
 for cell_i = 1:length(direct_subsector_risk)
     if ~isnan(direct_subsector_risk(cell_i)/total_output(cell_i))
         direct_intensity_vector(cell_i) = direct_subsector_risk(cell_i)/total_output(cell_i);
-    else
-        direct_intensity_vector(cell_i) = 0;
     end
-end
+end % cell_i
 
 % risk calculation
 
@@ -111,7 +111,7 @@ end
 % subsector_risk = zeros(1, length(direct_subsector_risk));
 % for column_i = 1:n_subsectors*n_mrio_countries
 %     subsector_risk(column_i) = max(direct_intensity_vector .* leontief_inverse(:,column_i)') * total_output(column_i);
-% end
+% end % column_i
 
 % weighted average 
 % total_input = nansum(climada_mriot.mrio_data, 1);
@@ -122,19 +122,22 @@ end
 %         weights = climada_mriot.mrio_data(:,column_i)./total_input(column_i); % normalize with total output
 %     end
 %     subsector_risk(column_i) = ((direct_intensity_vector .* leontief_inverse(:,column_i)') * weights) * total_output(column_i);
-% end
+% end % column_i
 
 % mean
-subsector_risk = zeros(1, length(direct_subsector_risk));
+indirect_subsector_risk = zeros(1, length(direct_subsector_risk));
 for column_i = 1:n_subsectors*n_mrio_countries
-    subsector_risk(column_i) = mean(direct_intensity_vector .* leontief_inverse(:,column_i)') * total_output(column_i); % + direct_subsector_risk(column_i);
-end
+    indirect_subsector_risk(column_i) = mean(direct_intensity_vector .* leontief_inverse(:,column_i)') * total_output(column_i); % + direct_subsector_risk(column_i);
+    end
+end % column_i
 
 % aggregate indirect risk across all sectors of a country
-country_risk = zeros(1,n_mrio_countries); % init
+indirect_country_risk = zeros(1,n_mrio_countries); % init
+direct_country_risk = zeros(1,n_mrio_countries); % init
 for mrio_country_i = 1:n_mrio_countries
     for subsector_j = 1:n_subsectors 
-        country_risk(mrio_country_i) = country_risk(mrio_country_i) + subsector_risk((mrio_country_i-1) * n_subsectors+subsector_j);
+        indirect_country_risk(mrio_country_i) = indirect_country_risk(mrio_country_i) + indirect_subsector_risk((mrio_country_i-1) * n_subsectors+subsector_j);
+        direct_country_risk(mrio_country_i) = direct_country_risk(mrio_country_i) + direct_subsector_risk((mrio_country_i-1) * n_subsectors+subsector_j);
     end % subsector_j
 end % mrio_country_i
 
@@ -142,10 +145,15 @@ end % mrio_country_i
 %%% countries and sectors corresponding to the values are visible on
 %%% first sight. Further, a table allows reordering of values, which might come in handy:
 
-subsector_risk = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.sectors',subsector_risk', ...
-                                'VariableNames',{'Country','CountryISO','Subsector','TotalSubsectorRisk'});
-country_risk = table(unique(climada_mriot.countries','stable'),unique(climada_mriot.countries_iso','stable'),country_risk',...
-                                'VariableNames',{'Country','CountryISO','TotalCountryRisk'});
+total_subsector_risk = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.sectors',direct_subsector_risk',indirect_subsector_risk',(direct_subsector_risk+indirect_subsector_risk)', ...
+                                'VariableNames',{'Country','CountryISO','Subsector','DirectSubsectorRisk','IndirectSubsectorRisk','TotalSubsectorRisk'});
+total_country_risk = table(unique(climada_mriot.countries','stable'),unique(climada_mriot.countries_iso','stable'),direct_country_risk',indirect_country_risk',(direct_country_risk+indirect_country_risk)',...
+                                'VariableNames',{'Country','CountryISO','DirectCountryRisk','IndirectCountryRisk','TotalCountryRisk'});
+                            
+indirect_subsector_risk = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.sectors',indirect_subsector_risk', ...
+                                'VariableNames',{'Country','CountryISO','Subsector','IndirectSubsectorRisk'});
+indirect_country_risk = table(unique(climada_mriot.countries','stable'),unique(climada_mriot.countries_iso','stable'),indirect_country_risk',...
+                                'VariableNames',{'Country','CountryISO','IndirectCountryRisk'});
 
 
 end % mrio leontief calc

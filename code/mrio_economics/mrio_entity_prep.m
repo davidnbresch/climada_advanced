@@ -55,6 +55,7 @@ if ~exist('entity_file', 'var'), entity_file = []; end
 if ~exist('centroids_file', 'var'), centroids_file = []; end 
 if ~exist('hazard_file', 'var'), hazard_file = []; end 
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end 
+if ~exist('encode_flag', 'var'), encode_flag = []; end 
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -111,6 +112,7 @@ else % complete path, if missing
     end
 end
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
+if isempty(encode_flag), encode_flag = 0; end
     
 % load global centroids
 fprintf('Loading centroids %s\n',centroids_file);
