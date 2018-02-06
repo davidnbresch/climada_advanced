@@ -10,16 +10,16 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
-%   direct_subsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, aggregated_mriot);
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure);
 %   next call:  % just to illustrate
 %   
 % CALLING SEQUENCE:
-%   [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
+%   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot)
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
-%   direct_subsector_risk = mrio_direct_risk_calc(entity, hazard, climada_mriot, aggregated_mriot);
-%   [total_subsector_risk, total_country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
+%   direct_subsector_risk = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure);
+%   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % INPUTS:
 %   direct_subsector_risk: table which contains the direct risk per country
 %       based on the risk measure chosen in one variable and three "label" variables 
@@ -29,16 +29,10 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %       provided mriot it is based on, see mrio_read_table;
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
-%   total_subsector_risk: table with total (indirect + direct) risk per subsector/country combination 
+%   subsector_risk: table with indirect risk per subsector/country combination 
 %       based on the risk measure chosen in one variable and three "label" variables 
 %       containing corresponding country names, country ISO codes and sector names.
-%   total_country_risk: table with total (indirect + direct) risk per country based on the risk measure chosen
-%       in one variable and two "label" variables containing corresponding 
-%       country names and country ISO codes.
-%   indirect_subsector_risk: table with indirect risk per subsector/country combination 
-%       based on the risk measure chosen in one variable and three "label" variables 
-%       containing corresponding country names, country ISO codes and sector names.
-%   indirect_country_risk: table with indirect risk per country based on the risk measure chosen
+%   country_risk: table with indirect risk per country based on the risk measure chosen
 %       in one variable and two "label" variables containing corresponding 
 %       country names and country ISO codes.
 %   leontief_inverse: the leontief inverse matrix which relates final demand to production
@@ -49,8 +43,8 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 
 indirect_subsector_risk = []; % init output
 indirect_country_risk = []; % init output
-total_subsector_risk = []; % init output
-total_country_risk = []; % init output
+subsector_risk = []; % init output
+country_risk = []; % init output
 leontief_inverse = []; % init output
 climada_nan_mriot = []; % init output 
 
