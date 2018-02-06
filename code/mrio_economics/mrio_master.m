@@ -52,7 +52,8 @@ if ~exist('risk_measure', 'var'), risk_measure = []; end
 
 % DEFAULT PARAMETERS; useful in development phase to go through all
 % calculations with default values so that no file dialogs etc. are opened:
-params = mrio_get_params;
+params = mrio_get_params; % Can also be used with input arguments 'wiod' or 'exiobase' to choose prefered MRIO table. 
+                          % If no argument is passed, default is the WIOD table.
 if isempty(risk_measure), risk_measure = 'EAD'; end
 
 % read MRIO table
@@ -61,7 +62,7 @@ climada_mriot = mrio_read_table(params.mriot.file_name,params.mriot.table_flag);
 
 % aggregated MRIO table:
 fprintf('Aggregating MRIO table...\n');tic;
-aggregated_mriot = mrio_aggregate_table(climada_mriot);toc
+aggregated_mriot = mrio_aggregate_table(climada_mriot,params.full_aggregation);toc
 
 % calculate direct risk for all countries and sectors as specified in mrio table
 fprintf('Calculating direct risk for all countries and sectors as specified in mrio table...\n');tic;
@@ -70,5 +71,17 @@ fprintf('Calculating direct risk for all countries and sectors as specified in m
 % finally, quantifying indirect risk using the Leontief I-O model
 fprintf('Quantifying indirect risk using the Leontief I-O model...\n');tic;
 [total_subsector_risk, total_country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);toc
+
+% calculating the ratios of direct to indirect risk for both the subsectors
+% and the country risk. The resulting values are incorporated into the
+% final result tables as an additional variable.
+fprintf('Calculating direct to indirect risk ratios...\n');tic;
+[totals_ubsector_risk, total_country_risk] = mrio_risk_ratios_calc(direct_subsector_risk,totals_ubsector_risk,direct_country_risk,total_country_risk);toc
+
+% if specified in params struct, write final results to an excel file for better readability:
+if params.write_xls == 1 
+    fprintf('Writing final results to an excel file located in module/data/results ...\n');tic;
+    mrio_write_results_xls(direct_subsector_risk,direct_country_risk,totals_ubsector_risk,total_country_risk);
+end
 
 % end % mrio_master
