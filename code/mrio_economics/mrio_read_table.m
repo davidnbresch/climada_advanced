@@ -32,7 +32,7 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 %       Flag is also used in resulting climada mriot structure to keep info on 
 %       table's origins.
 % OUTPUTS:
-%   climada_mriot: a structure with ten fields. It represents a general climada
+%   climada_mriot: a structure with 11 fields. It represents a general climada
 %   mriot structure whose basic properties are the same regardless of the
 %   provided mriot it is based on. The fields are:
 %       countries: a categorical array containing the full list of all
@@ -66,6 +66,8 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 %           struct is based on). Different for different table types and
 %           might change with future releases.
 %       no_of_sectors: as above but for number of sectors.
+%       
+%       unit: unit used in the original mriot.
 %
 % GENERAL NOTES:
 % The function is not as flexible as it could be due to difficulties with
@@ -155,7 +157,6 @@ end % if table_flag is empty
 
 % If only filename and no path is passed, add the latter:
 % complete path, if missing
-% HAVE ANOTHER CLOSE LOOK!
 [fP,fN,fE]=fileparts(mriot_file);
 if isempty(fP)
     fP=module_data_dir;
@@ -178,6 +179,7 @@ climada_mriot(1).table_type = table_flag;
 climada_mriot(1).filename = mriot_file;
 climada_mriot(1).no_of_countries = 0;
 climada_mriot(1).no_of_sectors = 0;
+climada_mriot(1).unit = '';
 
 %%% If input is a WIOD table:
 
@@ -345,6 +347,9 @@ clear mrio_data
 climada_mriot.no_of_countries = no_countries;
 climada_mriot.no_of_sectors = no_sectors;
 
+% Unit:
+climada_mriot.unit = '1e6USD';
+
 % Final some sanity checks: equal no. of elements in each field and equal length of
 % both data matrix dimensions? Otherwise return error, since further calculations
 % will be erroneous.
@@ -503,6 +508,15 @@ global climada_global
 % Set no. of countries/sectors fields:
 climada_mriot.no_of_countries = no_countries;
 climada_mriot.no_of_sectors = no_sectors;
+
+% Unit:
+% (Currently highly inefficient since entire column is read even though
+% only one value needed. Still only takes ~10s, but nevertheless too long... Check back later.
+fid = fopen(mriot_file);
+units = textscan(fid, '%*s %*s %s %*[^\n]','HeaderLines',2,'Delimiter','\t');
+fclose(fid);
+units = units{1};
+climada_mriot.unit = units{1};
        
  % Final sanity checks:
  if ~isequal(length(climada_mriot.sectors),length(climada_mriot.countries_iso),...
