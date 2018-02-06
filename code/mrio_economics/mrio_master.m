@@ -76,12 +76,12 @@ fprintf('Quantifying indirect risk using the Leontief I-O model...\n');tic;
 % and the country risk. The resulting values are incorporated into the
 % final result tables as an additional variable.
 fprintf('Calculating direct to indirect risk ratios...\n');tic;
-[totals_ubsector_risk, total_country_risk] = mrio_risk_ratios_calc(direct_subsector_risk,totals_ubsector_risk,direct_country_risk,total_country_risk);toc
+[total_subsector_risk, total_country_risk] = mrio_risk_ratios_calc(direct_subsector_risk,total_subsector_risk,direct_country_risk,total_country_risk);toc
 
 % if specified in params struct, write final results to an excel file for better readability:
 if params.write_xls == 1 
     fprintf('Writing final results to an excel file located in module/data/results ...\n');tic;
-    mrio_write_results_xls(direct_subsector_risk,direct_country_risk,totals_ubsector_risk,total_country_risk);
+    mrio_write_results_xls(direct_subsector_risk,direct_country_risk,total_subsector_risk,total_country_risk);
 end
 
 % end % mrio_master
