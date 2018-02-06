@@ -27,7 +27,8 @@ function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(dire
 %       country. Length has to be "no_of_main_sectors" * "no_of_countries"
 %   climada_mriot: a climada mriot struct as produced by mrio_read_table
 %   aggregated_mriot: an aggregated climada mriot struct as
-%       produced by mrio_aggregate_table.
+%       produced by mrio_aggregate_table. Can either be a full aggregation
+%       or a minimal one. Meaning of terms see in mrio_aggregate_table.
 %   ALSO SEE COMMENTS BELOW ("GENERAL NOTES").   
 %
 % OPTIONAL INPUT PARAMETERS:
@@ -137,55 +138,37 @@ total_subsector_production = sum(climada_mriot.mrio_data,2)';
 % country by simple multiplication with each sector's total production in 
 % these countries... 
 
-% tic
         % Temporary array for testing phase:
-             test_sel_pos_all = {};
-             
-if isempty(countries) % No specific countries of interest by user, do for all.
-       direct_subsector_risk = zeros(1,no_of_subsectors*no_of_countries);
-       
-    for mainsector_i = 1:no_of_mainsectors  %#ok
-        main_fields = fields(aggregated_mriot.aggregation_info);
-        current_mainsector = char(main_fields(mainsector_i));
-        
+        % test_sel_pos_all = {};     
+direct_subsector_risk = zeros(1,no_of_subsectors*no_of_countries);     
+for mainsector_i = 1:no_of_mainsectors  %#ok
+    main_fields = fields(aggregated_mriot.aggregation_info);
+    current_mainsector = char(main_fields(mainsector_i));
         for subsector_i = 1:numel(aggregated_mriot.aggregation_info.(current_mainsector)) % How many subsectors belong to current mainsector.
             temp_subsectors = aggregated_mriot.aggregation_info.(current_mainsector);
             current_subsector = char(temp_subsectors(subsector_i));           
-                
+
             sel_subsector_pos = climada_mriot.sectors == current_subsector;
-            
+
             % Create testing cell array whith with we can check that we never 
             % overwrite previous entries:
-                test_sel_pos_all{end+1} = find(sel_subsector_pos);    %#ok
-            
+            %    test_sel_pos_all{end+1} = find(sel_subsector_pos);    %#ok
+
             direct_subsector_risk(sel_subsector_pos) = direct_mainsector_risk(aggregated_mriot.sectors == current_mainsector) .* total_subsector_production(sel_subsector_pos);
-            
+
         end
-    end   
+end   
     
-% Next step: map risks on global map to have a first glance at likeliness of results.    
-        
-else % User provided one or more countries. We only obtain disaggregated risk 
-     % for these. LARGE ISSUE: THIS WILL SIGNIFICANTLY COMPLICATE LEONTIEF 
-     % CALCULATIONS SINCE MATRIX/VECTOR DIMENSIONS WILL BE DIFFERENT. THE
-     % LEONTIEF FUNCTION WILL HAVE TO WORK WITH A MRIOT TABLE WHERE ONLY
-     % THE RELEVANT COUNTRIES ARE IN FULL RESOLUTION, WHICH IS A FORM WE
-     % DON'T HAVE YET. COULD BE PROVIDED THOUGH...
-     % FOR NOW, WE STICK WITH THE GLOBAL CALCULATIONS ONLY.
-     
-     %subsectors_risk = mainsectors_risk_global; % For the countries other than the chosen ones, we keep the aggregated risk.      
-
-end
-
-       % Testing; each entry in test_sel_pos should only occure once.
+% Next step: map risks on global map to have a first glance at likeliness of results.       
+            
+            % Testing; each entry in test_sel_pos should only occure once.
             % pos_as_mat = cell2mat(test_sel_pos_all);
             % unique_pos = unique(pos_as_mat);  
             % test_pos = length(pos_as_mat) == length(unique_pos);
             % Passed test (20180112).
 
-% toc
-
-% aggregate direct risk across all sectors per country
+% aggregate direct risk across all sectors per country to obtain direct
+% country risk:
 direct_country_risk = zeros(1,no_of_countries); % init
 for mrio_country_i = 1:no_of_countries
     for subsector_j = 1:no_of_subsectors 
@@ -203,9 +186,11 @@ direct_subsector_risk = table(climada_mriot.countries',climada_mriot.countries_i
 direct_country_risk = table(unique(climada_mriot.countries','stable'),unique(climada_mriot.countries_iso','stable'),direct_country_risk',...
                                 'VariableNames',{'Country','CountryISO','DirectCountryRisk'});
 
-% Calculate absolute main sector risk (simple element-wise multiplication):
-direct_mainsector_risk_abs = direct_mainsector_risk.*total_mainsector_production;
-
+% Calculate absolute main sector risk (simple element-wise multiplication).
+% Only possible if aggregated_mriot has fully aggregated mrio data fiel:
+if ~ischar(aggregated_mriot.mrio_data)
+    direct_mainsector_risk_abs = direct_mainsector_risk.*total_mainsector_production;
+end
 
 %%% plot_absolute_risk;
 
