@@ -68,47 +68,32 @@ end
 % PARAMETERS
 % prompt for entity_filename if not given
 if isempty(entity_file) % local GUI
-    entity_file = [module_data_dir filesep 'entities'];
+    entity_file = [climada_global.entities_dir];
     [filename, pathname] = uigetfile(entity_file, 'Select entity file:');
     if isequal(filename,0) || isequal(pathname,0)
         return; % cancel
     else
         entity_file = fullfile(pathname,filename);
     end
-else % complete path, if missing
-    [fP, fN, fE] = fileparts(char(entity_file));
-    if isempty(fP) 
-        entity_file = [module_data_dir filesep 'entities' filesep fN fE]; 
-    end
 end
 % prompt for centroids_filename if not given
 if isempty(centroids_file) % local GUI
-    centroids_file = [module_data_dir filesep 'centroids'];
+    centroids_file = [climada_global.centroids_dir];
     [filename, pathname] = uigetfile(centroids_file, 'Select centroids file:');
     if isequal(filename,0) || isequal(pathname,0)
         return; % cancel
     else
         centroids_file = fullfile(pathname,filename);
     end
-else % complete path, if missing
-    [fP, fN, fE] = fileparts(centroids_file);
-    if isempty(fP) 
-        centroids_file = [module_data_dir filesep 'centroids' filesep fN fE]; 
-    end
 end
 % prompt for hazard filename if not given
 if isempty(hazard_file) % local GUI
-    hazard_file = [module_data_dir filesep 'hazards'];
+    hazard_file = [climada_global.hazards_dir];
     [filename, pathname] = uigetfile(hazard_file, 'Select hazard file:');
     if isequal(filename,0) || isequal(pathname,0)
         return; % cancel
     else
         hazard_file = fullfile(pathname,filename);
-    end
-else % complete path, if missing
-    [fP, fN, fE] = fileparts(hazard_file);
-    if isempty(fP)
-        hazard_file = [module_data_dir filesep 'hazards' filesep fN fE]; 
     end
 end
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
@@ -164,8 +149,8 @@ for mrio_country_i = 1:n_mrio_countries
 end % mrio_country_i
 
 % save entity as .mat file for fast access
-entity_save_file = [entity_file '_prep.mat']
-fprintf('saving entity as %s\n',entity_save_file);
+entity_save_file = [entity_file '_prep.mat'];
+fprintf('saving entity as %s\n', entity_save_file);
 climada_entity_save(entity, entity_save_file);
 
 end % mrio_entity_prep

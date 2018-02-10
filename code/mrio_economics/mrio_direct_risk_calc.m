@@ -85,12 +85,7 @@ if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(aggregated_mriot), aggregated_mriot = mrio_aggregate_table(climada_mriot); end
 if isempty(risk_measure), risk_measure = 'EAD'; end
 
-% If only filename and no path is passed, add the latter:
-% complete path, if missing
-[fP, fN, fE] = fileparts(params.hazard_file);
-if isempty(fP), hazard_file = [module_data_dir filesep 'hazards' filesep fN fE]; end
-
-hazard = climada_hazard_load(hazard_file);
+hazard = climada_hazard_load(params.hazard_file);
 
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 
@@ -102,9 +97,7 @@ direct_mainsector_risk = zeros(1,n_mainsectors*n_mrio_countries);
 for mainsector_j = 1:n_mainsectors
     
     % load entity
-    pathname = [module_data_dir filesep 'entities']; 
-    filename = params.entity_file{mainsector_j};
-    entity_file = fullfile(pathname,filename); % add path to filename
+    entity_file = params.entity_file{mainsector_j};
     entity = climada_entity_load(entity_file); % at the moment we are not differentiating between all sectors (!!!)
     
     if isfield(entity.assets, 'ISO3_list')
