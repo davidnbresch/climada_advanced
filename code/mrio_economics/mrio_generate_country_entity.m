@@ -17,7 +17,7 @@ function mrio_generate_country_entity(GLB_entity, climada_mriot)
 % CALLING SEQUENCE:
 %   mrio_generate_country_entity(entity, climada_mriot);
 % EXAMPLE:
-%   mrio_generate_country_entity(entity, climada_mriot)
+%   mrio_generate_country_entity(entity, climada_mriot);
 % INPUTS:
 %   entity: a (global) climada entity structure, see climada_entity_read for a full
 %       description of all fields
