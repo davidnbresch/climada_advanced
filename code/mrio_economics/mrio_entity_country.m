@@ -75,6 +75,10 @@ else
 end
 n_mrio_countries = length(mrio_countries_ISO3);
 
+fprintf('generate %i country entities and prepare for mrio ...\n',n_mrio_countries);
+
+climada_progress2stdout % init, see terminate below
+
 % create all entities for the mrio countries if not already done
 for mrio_country_i = 1:n_mrio_countries
     country_ISO3_i = char(mrio_countries_ISO3(mrio_country_i));
@@ -115,6 +119,10 @@ for mrio_country_i = 1:n_mrio_countries
         
     end
     
+    climada_progress2stdout(mrio_country_i,n_mrio_countries,5,'processed countries'); % update
+    
 end % mrio_country_i
+
+climada_progress2stdout(0) % terminate
 
 end % mrio_entity_country
