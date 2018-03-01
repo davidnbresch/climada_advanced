@@ -137,7 +137,7 @@ if ~climada_init_vars,return;end % init/import global variables
 % poor man's version to check arguments
 % and to set default value where  appropriate
 if ~exist('climada_mriot','var'),climada_mriot=[];end 
-if ~exist('ROW_flag','var'),ROW_flag=0;end 
+if ~exist('ROW_flag','var') || isequal(ROW_flag,'') ,ROW_flag=0;end 
 if ~exist('full_aggregation_flag','var'),full_aggregation_flag=0;end 
 
 
@@ -178,7 +178,7 @@ unique_iso = unique(climada_mriot.countries_iso,'stable');
 unique_countries = unique(climada_mriot.countries,'stable');
 unique_sectors = unique(climada_mriot.sectors,'stable'); %#ok
 unique_climada_sectors = unique(climada_mriot.climada_sect_name,'stable');
-unique_climada_sect_ids = 1:no_of_climada_sectors;
+unique_climada_sect_ids = unique(climada_mriot.climada_sect_id,'stable');
 % Use unique() instead of categories() since the latter does not keep the
 % original order. The 'stable' argument locks the order of the unique
 % values as they appear in the full array.
@@ -203,7 +203,7 @@ aggregated_mriot(1).filename = climada_mriot.filename;
 aggregated_mriot(1).no_of_countries = climada_mriot.no_of_countries;
 aggregated_mriot(1).no_of_sectors = no_of_climada_sectors;
 aggregated_mriot(1).aggregated_ROW = false;
-aggregated_mrio(1).unit = climada_mriot.unit;
+aggregated_mriot(1).unit = climada_mriot.unit;   
 % The set-up for the field aggregation_info (itself a struct):
 for i = 1:no_of_climada_sectors
    field_name = char(unique_climada_sectors(i));
@@ -212,101 +212,72 @@ end
 aggregated_mriot(1).aggregation_info = aggregation_info;
 clear aggregation_info;
 
-%%% The following few dozens of lines deal with the aggregation of the mrio
-%%% data. We only do this if the user chose to do so, i.e. if the
-%%% full_aggregation_flag is set to 1. 
+%% Dealing with several RoW-Regions:
+
+% Exiobase currently (Version 2.2.2) has five RoW regions:
+% RoW Asia and Pacific, RoW America, RoW Europe, RoW Africa, RoW Middle East.
+% We implement two different options to deal with this (user-choice).
+% Option 1: all RoW regions are aggregated into just one general RoW. Function argument RoW_flag = 1.
+% Option 2: we keep the (for this project) most relevant RoW Asis and Pacific and RoW America,
+%   but aggregate the remaining three into a general RoW. Function argument RoW_flag = 2.
+% We use two local functions to do this.
+
+no_of_ROW = nnz(count(string(unique_countries),'RoW'));
+if isequal(no_of_ROW,0), no_of_ROW = nnz(count(string(unique_countries),'ROW'));end
+if ROW_flag == 1 && ~(no_of_ROW>1),warning('User asked for aggregation of several ROW regions into one, but provided MRIOT only has one ROW region.');end
+
+if ROW_flag == 1 && no_of_ROW > 1   % Only aggregate if user wants to. Also, if provided mriot doesn't have several ROW regions, aggregation isn't meaningful.
+    
+    one_RoW;       % Call with no target and no argument.
+    
+end % if ROW_flag == 1 && no_of_ROW > 1
+
+if ROW_flag == 2 && no_of_ROW > 1
+    
+    three_RoW;      % Call with no target and no argument.
+    
+end % if ROW_flag == 2 && no_of_ROW > 1
+
+%% Full aggregation of the mrio data only done this if the user chose to do so, i.e. if full_aggregation_flag is set to 1. 
 if isequal(full_aggregation_flag,1)
 
-% Pre-allocate new (aggregated) mrio_data field. 
-aggregated_mriot.mrio_data = zeros(data_length,data_length);
-
-% Aggregate original mrio_data to aggregated version, where all subsector
-% commodity exchanges are summed up under the respective climada main
-% sector...
-%
-% First, summarize the row-sectors and keep the column-sectors in original
-% resolution. In second summarizing step, also aggregate column sectors.
-% tic
-for col_i = 1:length(climada_mriot.sectors) % Full resolution length for column index
-        climada_sector_i = 0;
-        country_i = 1;
-    for row_i = 1:data_length % Aggregated length for row index
-        % Explanation of the following if-clause:
-        % Since we loop through the length of data_length in the parent
-        % loops, the climada_sector_i would add up to much
-        % more than the actual length of the array it represents an index of (i.e. the climada_sectors array). 
-        % So whenever it reaches that length (currently 6) we have to set
-        % it back to 1 and restart counting from there...
-        if climada_sector_i == no_of_climada_sectors
-            climada_sector_i = climada_sector_i/climada_sector_i;
-            % Further, whenever all six sectors have been gone through, we
-            % want to advance the index for the country by one, since for
-            % the next iteration of summing up to the climada sectors we
-            % are interested in the next country:
-            country_i = country_i + 1;
-        else
-            climada_sector_i = climada_sector_i+1;
-        end
-        % First get all positions (i.e. row-indices) over which we have to sum up the original mrio data:
-        sum_indices = ((climada_mriot.climada_sect_id == climada_sector_i) & climada_mriot.countries_iso == unique_iso(country_i))'; % Transpose to a (logical) column vector
-        aggregated_mriot.mrio_data(row_i,col_i) = sum(climada_mriot.mrio_data(sum_indices,col_i));
-    end %inner row loop
-end %outer column loop
-%toc % Approx. 1 minute.
-
-% Second step is to aggregate across columns too, so that we get a quadratic
-% matrix again. The procedure is similar to the one above:
-% tic
-for row_i = 1:data_length 
-        climada_sector_i = 0;
-        country_i = 1;
-    for col_i = 1:data_length  % Explanation for following if clause see above in first aggregation step.
-        if climada_sector_i == no_of_climada_sectors
-            climada_sector_i = climada_sector_i/climada_sector_i;
-            country_i = country_i + 1;
-        else
-            climada_sector_i = climada_sector_i+1;
-        end
-        % First get all positions (i.e. here column-indices) over which we have to sum up the original mrio data:
-        sum_indices = ((climada_mriot.climada_sect_id == climada_sector_i) & climada_mriot.countries_iso == unique_iso(country_i)); % Here no transposing since we want a row vector.
-        aggregated_mriot.mrio_data(row_i,col_i) = sum(aggregated_mriot.mrio_data(row_i,sum_indices));
-    end %inner column loop
-end %outer row loop
-% toc % Approx. 5 seconds.
-% Remove all now obsolete columns with indices > data_length:
-        aggregated_mriot.mrio_data(:,(data_length+1):end) = [];
+    full_aggregation;   % Call with no target and no argument.
         
-else % Corresponding to if isequal(full_aggregation_flag,1)
-    aggregated_mriot.mrio_data = 'No full aggregation on mrio data was computed to save memory and computing time. If such an aggregation is sought, please pass the respective flag argument to function mrio_aggregate_table.';
+else 
+    aggregated_mriot.mrio_data = 'No full aggregation on mrio data was computed to save memory and computing time. If such an aggregation is sought, please pass the respective flag argum ent to function mrio_aggregate_table.';
 end  % if isequal(full_aggregation_flag,1)
-%%%%%%%%%%%%
 
-% Now add remaining fields to the structure:
+
+%% Now add remaining fields to the structure. This is always done, i.e. it constitutes the "minimal" aggregation process;
+%  Here too, however, the process is not the same depending on whether full
+%  aggregation above was conducted or not. If it was, the order of the
+%  climada sectors in the aggregated table is not the same as it was in the
+%  full table (aggregation follows sector id, not its order of appearanc in
+%  original table).
+
 % First, the more complicated countries and countries_iso fields.
 % Note that there is an quivalent loop-construct in function
 % climada_read_mriot.
-   aggregated_mriot.countries = categorical(zeros(1,no_of_countries*no_of_climada_sectors));
-   aggregated_mriot.countries_iso = categorical(zeros(1,no_of_countries*no_of_climada_sectors));
+   aggregated_mriot.countries = categorical(zeros(1,data_length));
+   aggregated_mriot.countries_iso = categorical(zeros(1,data_length));
    j = 1;     % Needed to index into mriot.countries and mriot.countries_iso at correct positions for
               % insertion of temp_country and temp_iso arrays.
-   for country_i = 1:no_of_countries
+   for country_i = 1:no_of_countries    %#ok
        temp_countries = repmat(unique_countries(country_i),1,no_of_climada_sectors);
        temp_iso = repmat(unique_iso(country_i),1,no_of_climada_sectors);
        aggregated_mriot.countries(j:j+no_of_climada_sectors-1) = temp_countries;
        aggregated_mriot.countries_iso(j:j+no_of_climada_sectors-1) = temp_iso;
        j = j + no_of_climada_sectors; % See above
    end
+   % Sanity check:
    if ~isequal(length(aggregated_mriot.countries),length(aggregated_mriot.countries_iso),no_of_climada_sectors*no_of_countries)
        warning('Something went wrong'); %Specify better warnings later
    end
+   
+% Now the simpler sectors and equivalently the climada_sect_id:  
+    aggregated_mriot.sectors = repmat(unique_climada_sectors,1,no_of_countries);
+    aggregated_mriot.climada_sect_id = repmat(unique_climada_sect_ids,1,no_of_countries);
 
-
-% Now the simpler sectors:
-aggregated_mriot.sectors = repmat(unique_climada_sectors,1,no_of_countries);
-% And equivalently the climada_sect_id:
-aggregated_mriot.climada_sect_id = repmat(unique_climada_sect_ids,1,no_of_countries);
-
- 
 % Finally, the field with the aggregation info (itself a struct with k
 % fields, where k = no. of climada sectors (here 6)).
 for i = 1:no_of_climada_sectors
@@ -315,72 +286,136 @@ for i = 1:no_of_climada_sectors
     aggregated_mriot.aggregation_info.(field_name) = unique(sub_sectors,'stable');
 end
 
-%%% For use of exiobase with current (January, 2018) risk calculation
-%%% functions, we aggregate the separated ROW regions into just one. Having several
-%%% ROW regions causes difficulties with the entity countries that might be
-%%% remediated later. For now, implementing necessary changes here (at the
-%%% price of losing the higher level of detail), is more straight-forward.
-%%% To save resources, we only do this when asked for (ROW_flag). 
 
-no_of_ROW = nnz(count(string(unique_countries),'RoW'));
-if isequal(no_of_ROW,0), no_of_ROW = nnz(count(string(unique_countries),'ROW'));end
-if ROW_flag == 1 && ~(no_of_ROW>1),warning('User asked for aggregation of several ROW regions into one, but provided MRIOT only has one ROW region.');end
 
-if ROW_flag == 1 && no_of_ROW > 1   % Only aggregate if user wants to. Also, if provided mriot doesn't subdived ROW, aggregation isn't meaningful.
+%% Local functions (aggregation of RoW regions and full table aggregation)
+  
 
-ROW_data_length = no_of_climada_sectors*(no_of_countries-(no_of_ROW-1));
-ROW_mrio_data = aggregated_mriot.mrio_data;
+function one_RoW
 
-% First aggregate along the columns: 
-for row_i = 1:data_length  
-    for col_i = (no_of_climada_sectors*(no_of_countries - no_of_ROW)+1):ROW_data_length  
-        
-        sum_indices = zeros(1,no_of_ROW);
-        for ROW_i = 1:no_of_ROW
-            sum_indices(ROW_i) = col_i + no_of_climada_sectors*(ROW_i-1);
-        end
-        %jump_test(1).(['col_' num2str(col_i)]) = sum_indices;
-        ROW_mrio_data(row_i,col_i) = sum(ROW_mrio_data(row_i,sum_indices)); 
-    end
-end % row_i
-ROW_mrio_data(:,ROW_data_length+1:end) = [];
+    ROW_data_length = no_of_climada_sectors*(no_of_countries-(no_of_ROW-1));
+    ROW_mrio_data = aggregated_mriot.mrio_data;
 
-% Now aggregate along the rows. This is only relevant for the ROW-ROW
-% interactions in the lower part of the matrix.
+    % First aggregate along the columns: 
+    for row_i = 1:data_length  
+        for col_i = (no_of_climada_sectors*(no_of_countries - no_of_ROW)+1):ROW_data_length  
 
-for col_i = (no_of_climada_sectors*(no_of_countries - no_of_ROW)+1):ROW_data_length
-    for row_i = no_of_climada_sectors*(no_of_countries - no_of_ROW)+1:ROW_data_length
             sum_indices = zeros(1,no_of_ROW);
             for ROW_i = 1:no_of_ROW
-                sum_indices(ROW_i) = row_i + no_of_climada_sectors*(ROW_i-1);
+                sum_indices(ROW_i) = col_i + no_of_climada_sectors*(ROW_i-1);
             end
-            % jump_test(1).(['row_' num2str(row_i)]) = sum_indices;   %#ok
-            ROW_mrio_data(row_i,col_i) = sum(ROW_mrio_data(sum_indices,col_i)); 
-    end
-end % col_i
-ROW_mrio_data(ROW_data_length+1:end,:) = [];
+            %jump_test(1).(['col_' num2str(col_i)]) = sum_indices;
+            ROW_mrio_data(row_i,col_i) = sum(ROW_mrio_data(row_i,sum_indices)); 
+        end
+    end % row_i
+    ROW_mrio_data(:,ROW_data_length+1:end) = [];
 
-% test = ROW_mrio_data == aggregated_mriot.mrio_data(1:end-24,1:end-24); 
+    % Now aggregate along the rows. This is only relevant for the ROW-ROW
+    % interactions in the lower part of the matrix.
 
-%%% Now add fields to aggregated_mriot that correspond to the adapted ROW
-%%% structure, i.e. above ROW_mrio_data field as well as adapted countries arrays:
-ROW_countries = aggregated_mriot.countries(1:ROW_data_length);
-ROW_countries_iso = aggregated_mriot.countries_iso(1:ROW_data_length);
-ROW_sectors = aggregated_mriot.sectors(1:ROW_data_length);
-ROW_climada_sect_id = aggregated_mriot.climada_sect_id(1:ROW_data_length);
+    for col_i = (no_of_climada_sectors*(no_of_countries - no_of_ROW)+1):ROW_data_length
+        for row_i = no_of_climada_sectors*(no_of_countries - no_of_ROW)+1:ROW_data_length
+                sum_indices = zeros(1,no_of_ROW);
+                for ROW_i = 1:no_of_ROW
+                    sum_indices(ROW_i) = row_i + no_of_climada_sectors*(ROW_i-1);
+                end
+                % jump_test(1).(['row_' num2str(row_i)]) = sum_indices;   %#ok
+                ROW_mrio_data(row_i,col_i) = sum(ROW_mrio_data(sum_indices,col_i)); 
+        end
+    end % col_i
+    ROW_mrio_data(ROW_data_length+1:end,:) = [];
 
-ROW_countries(ROW_data_length-no_of_ROW:ROW_data_length) = categorical(repmat({'ROW'},1,no_of_climada_sectors));
-ROW_countries_iso(ROW_data_length-no_of_ROW:ROW_data_length) = categorical(repmat({'ROW'},1,no_of_climada_sectors)); 
-aggregated_mriot(1).ROW_countries = ROW_countries;
-aggregated_mriot(1).ROW_countries_iso = ROW_countries_iso;
-aggregated_mriot(1).ROW_sectors = ROW_sectors;
-aggregated_mriot(1).ROW_climada_sect_id = ROW_climada_sect_id;
-aggregated_mriot(1).ROW_mrio_data = ROW_mrio_data;
-aggregated_mriot(1).ROW_no_of_countries = no_of_countries-(no_of_ROW-1);
-aggregated_mriot(1).aggregated_ROW = true;
+    % test = ROW_mrio_data == aggregated_mriot.mrio_data(1:end-24,1:end-24); 
 
-end % if ROW_flag && no_of_ROW > 1
+    %%% Now add fields to aggregated_mriot that correspond to the adapted ROW
+    %%% structure, i.e. above ROW_mrio_data field as well as adapted countries arrays:
+    ROW_countries = aggregated_mriot.countries(1:ROW_data_length);
+    ROW_countries_iso = aggregated_mriot.countries_iso(1:ROW_data_length);
+    ROW_sectors = aggregated_mriot.sectors(1:ROW_data_length);
+    ROW_climada_sect_id = aggregated_mriot.climada_sect_id(1:ROW_data_length);
 
+    ROW_countries(ROW_data_length-no_of_ROW:ROW_data_length) = categorical(repmat({'ROW'},1,no_of_climada_sectors));
+    ROW_countries_iso(ROW_data_length-no_of_ROW:ROW_data_length) = categorical(repmat({'ROW'},1,no_of_climada_sectors)); 
+    aggregated_mriot(1).countries = ROW_countries;
+    aggregated_mriot(1).countries_iso = ROW_countries_iso;
+    aggregated_mriot(1).sectors = ROW_sectors;
+    aggregated_mriot(1).climada_sect_id = ROW_climada_sect_id;
+    aggregated_mriot(1).mrio_data = ROW_mrio_data;
+    aggregated_mriot(1).no_of_countries = no_of_countries-(no_of_ROW-1);
+    aggregated_mriot(1).aggregated_ROW = true;
+
+end % End local function one_RoW
+
+function three_RoW 
+    % To be implemented   
+end % End local function three_RoW
+
+function full_aggregation
+        
+    % Pre-allocate new (aggregated) mrio_data field. 
+    aggregated_mriot.mrio_data = zeros(data_length,data_length);
+
+    % Aggregate original mrio_data to aggregated version, where all subsector
+    % commodity exchanges are summed up under the respective climada main
+    % sector...
+    %
+    % First, summarize the row-sectors and keep the column-sectors in original
+    % resolution. In second summarizing step, also aggregate column sectors.
+    % tic
+    for col_i = 1:length(climada_mriot.sectors) % Full resolution length for column index
+            climada_sector_i = 0;
+            country_i = 1;
+        for row_i = 1:data_length % Aggregated length for row index
+            % Explanation of the following if-clause:
+            % Since we loop through the length of data_length in the parent
+            % loops, the climada_sector_i would add up to much
+            % more than the actual length of the array it represents an index of (i.e. the climada_sectors array). 
+            % So whenever it reaches that length (currently 6) we have to set
+            % it back to 1 and restart counting from there...
+            if climada_sector_i == no_of_climada_sectors
+                climada_sector_i = climada_sector_i/climada_sector_i;
+                % Further, whenever all six sectors have been gone through, we
+                % want to advance the index for the country by one, since for
+                % the next iteration of summing up to the climada sectors we
+                % are interested in the next country:
+                country_i = country_i + 1;
+            else
+                climada_sector_i = climada_sector_i+1;
+            end
+            % First get all positions (i.e. row-indices) over which we have to sum up the original mrio data:
+            sum_indices = ((climada_mriot.climada_sect_id == climada_sector_i) & climada_mriot.countries_iso == unique_iso(country_i))'; % Transpose to a (logical) column vector
+            aggregated_mriot.mrio_data(row_i,col_i) = sum(climada_mriot.mrio_data(sum_indices,col_i));
+        end %inner row loop
+    end %outer column loop
+    %toc % Approx. 1 minute.
+
+    % Second step is to aggregate across columns too, so that we get a quadratic
+    % matrix again. The procedure is similar to the one above:
+    % tic
+    for row_i = 1:data_length 
+            climada_sector_i = 0;
+            country_i = 1;
+        for col_i = 1:data_length  % Explanation for following if clause see above in first aggregation step.
+            if climada_sector_i == no_of_climada_sectors
+                climada_sector_i = climada_sector_i/climada_sector_i;
+                country_i = country_i + 1;
+            else
+                climada_sector_i = climada_sector_i+1;
+            end
+            % First get all positions (i.e. here column-indices) over which we have to sum up the original mrio data:
+            sum_indices = ((climada_mriot.climada_sect_id == climada_sector_i) & climada_mriot.countries_iso == unique_iso(country_i)); % Here no transposing since we want a row vector.
+            aggregated_mriot.mrio_data(row_i,col_i) = sum(aggregated_mriot.mrio_data(row_i,sum_indices));
+        end %inner column loop
+    end %outer row loop
+    % toc % Approx. 5 seconds.
+    % Remove all now obsolete columns with indices > data_length:
+            aggregated_mriot.mrio_data(:,(data_length+1):end) = [];
+
+end % End local function full_aggregation
+        
+        
+
+end % End main function. Wraps local functions to enable shared workspace.
 
 
 
