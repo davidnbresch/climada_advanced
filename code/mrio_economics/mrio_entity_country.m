@@ -1,9 +1,9 @@
-function mrio_generate_country_entity(GLB_entity, climada_mriot)
-% mrio generate country entity
+function mrio_entity_country(GLB_entity, climada_mriot)
+% mrio entity country
 % MODULE:
 %   advanced
 % NAME:
-%	mrio_generate_country_entity
+%	mrio_entity_country
 % PURPOSE:
 %   Generates entity files based on a global entity struct for a predefined 
 %   set of countries. Furthermore, entities are prepared for mrio (multi 
@@ -15,9 +15,9 @@ function mrio_generate_country_entity(GLB_entity, climada_mriot)
 %   entity = climada_entity_load;
 %   climada_mriot = mrio_read_table;
 % CALLING SEQUENCE:
-%   mrio_generate_country_entity(entity, climada_mriot);
+%   mrio_entity_country(entity, climada_mriot);
 % EXAMPLE:
-%   mrio_generate_country_entity(entity, climada_mriot);
+%   mrio_entity_country(entity, climada_mriot);
 % INPUTS:
 %   entity: a (global) climada entity structure, see climada_entity_read for a full
 %       description of all fields
@@ -75,6 +75,10 @@ else
 end
 n_mrio_countries = length(mrio_countries_ISO3);
 
+fprintf('generate %i country entities and prepare for mrio ...\n',n_mrio_countries);
+
+climada_progress2stdout % init, see terminate below
+
 % create all entities for the mrio countries if not already done
 for mrio_country_i = 1:n_mrio_countries
     country_ISO3_i = char(mrio_countries_ISO3(mrio_country_i));
@@ -115,6 +119,10 @@ for mrio_country_i = 1:n_mrio_countries
         
     end
     
+    climada_progress2stdout(mrio_country_i,n_mrio_countries,5,'processed countries'); % update
+    
 end % mrio_country_i
 
-end % mrio_generate_country_entity
+climada_progress2stdout(0) % terminate
+
+end % mrio_entity_country
