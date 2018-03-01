@@ -19,11 +19,12 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 %   mrio_read_table; no arguments provided. Prompted for via GUI.
 %   mrio_read_table('WIOT2014_Nov16_ROW.xlsx',wiod); importing a WIOD table.
 %   mrio_read_table('mrIot_version2.2.2.txt',exio); importing an EXIOBASE table.
+%   mrio_read_table('Eora26_2013_bp_T.txt',eora); importing an EORA26 table.
 %
 % INPUTS:
 %
 % OPTIONAL INPUT PARAMETERS:
-%   mriot_file: path to a mriot file (currently either WIOD or EXIOBASE).
+%   mriot_file: path to a mriot file (currently either WIOD, EXIOBASE or EORA26).
 %       Promted for via GUI if not provided. 
 %   table_flag: flag to mark which table type. If not provided, prompted for
 %      via GUI. If still not provided, try to deduce from provided file's 
@@ -102,6 +103,8 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 % Kaspar Tobler, 20180117 corrected local function read_exiobase: climada_sector_id was saved as categorical whereas it should be double (otherwise aggregation doesn't work). Now ok.
 % Kaspar Tobler, 20180117 adapted Exiobase input to account of fact that there are five different ROW regions and for fact that certain used country names are not recognised by climada_country_name. 
 % Kaspar Tobler, 20180125 made import of exiobase more resilient regarding the treatment of the "types" file. Now also possible to have several versions of it in folder and choose one via user-dialog.
+% Kaspar Tobler, 20180215 finished extension to also provide capabilities to read an EORA26 database.
+% Kaspar Tobler, 20180219 small changes to how climada_sect_id is dealt with; now not requiring a user input anymore but using helper function mrio_mainsector_mapping to map existing mainsector names (in climada_sect_name) to the corresponding IDs...
 
 climada_mriot=[]; % init output
 
@@ -137,11 +140,14 @@ if isempty(mriot_file) %If empty, open file dialog.
     end
 end
 
+
 %Promt for table_flag (which table type?) if not passed:
 if isempty(table_flag) %If empty, provide GUI list.
-    [selection, ok] = listdlg('ListString',{'WIOD','EXIOBASE','OTHER'},...
+    selection_list = {'WIOD','EXIOBASE','EORA26','OTHER'};
+    [selection, ok] = listdlg('ListString',selection_list,...
            'SelectionMode','single','Name','Choose MRIO type','ListSize',[300 100]);
-    if isequal(selection,3) || isequal(ok,0)  %If 'OTHER' chosen or canceled. 
+     other_index = length(selection_list);
+    if isequal(selection,other_index) || isequal(ok,0)  %If 'OTHER' chosen or canceled. 
         error('Currently, this function only works with either WIOD, EXIOBASE OR EORA26 tables.')
     else  
     %Set table_flag based on selection dialog:
@@ -150,6 +156,8 @@ if isempty(table_flag) %If empty, provide GUI list.
             table_flag = 'wiod';
         case 2
             table_flag = 'exiobase';
+        case 3
+            table_flag = 'eora';
     end
     end
 end % if table_flag is empty
@@ -164,8 +172,25 @@ if isempty(fP)
         fP=[fP filesep 'wiod'];
     elseif strcmpi(table_flag(1:4),'exio')
         fP=[fP filesep 'exiobase']; 
+    elseif strcmpi(table_flag(1:4),'eora')
+        fP=[fP filesep 'eora26']; 
     end
     mriot_file=[fP filesep fN fE];
+end
+
+% For eora26, there are various files for the table available, depending
+% on which info one is interested in; sector-sector relations, final demand,
+% satellite accounts, value added, etc. Our analysis only works with the first, which in
+% eora26 terminology is termed the "T" matrix. We check whether user chose
+% such a T matrix as input. We herebey rely on fixed file name conventions.
+% This has to be stated in the user manual.
+
+if strcmpi(table_flag(1:3),'eor')
+    [~,fN] = fileparts(mriot_file);
+    if ~strcmpi(fN(end-1:end),'_T')
+        error(['Please provide a file representing the T matrix. You provided a ',...
+            fN(end-1:end),' matrix. Check user manual for more details.']);
+    end
 end
 
 % Setting up mriot structure:
@@ -183,7 +208,7 @@ climada_mriot(1).unit = '';
 
 %%% If input is a WIOD table:
 
-if strcmpi(table_flag(1:2),'wi') %In case user provided flag containing typo only compare first two letters.
+if strcmpi(table_flag(1:3),'wio') %In case user provided flag containing typo only compare first three letters.
     
     climada_mriot = read_wiod(mriot_file,climada_mriot);
     
@@ -191,8 +216,7 @@ end % Read WIOD type mriot
 
 %%% If input is an EXIOBASE table:
 
-% First attempt for exiobase table:
-if strcmpi(table_flag(1:2),'ex') %In case user provided flag containing typo only compare first two letters.
+if strcmpi(table_flag(1:3),'exi') %In case user provided flag containing typo only compare first three letters.
     
     climada_mriot = read_exiobase(mriot_file,climada_mriot,module_data_dir); %% For exiobase we need the path info in the local function since we also have to find and load the exiobase "types" file, ideally automatically.
     % The long categorical arrays climada_mriot.countries etc.
@@ -203,6 +227,14 @@ if strcmpi(table_flag(1:2),'ex') %In case user provided flag containing typo onl
     
 end % read exiobase type mriot
 
+%%% If input is an EORA26 table:
+
+if strcmpi(table_flag(1:3),'eor') %In case user provided flag containing typo only compare first three letters.
+    
+    climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir); %% For eora26 we need the path info in the local function since we also have to find and load the eora26 "labels" file, ideally automatically.
+    
+end % read eora26 type mriot
+
 %% LOCAL FUNCTIONS:
 
 %%%%%%%%%%%%%%  READ WIOD TABLES; LOCAL FUNCTION
@@ -210,8 +242,7 @@ end % read exiobase type mriot
 function climada_mriot = read_wiod(mriot_file,climada_mriot)
 
 
-% For platform independence, has to be a .xlsx file, not the WIOD default 
-    % .xlsb, with which matlab can only deal on windows if excel installed:
+% For platform independence, has to be a .xlsx file, not the WIOD default .xlsb, with which matlab can only deal on windows if excel installed:
     [~,~,mriot_ext] = fileparts(mriot_file);
     if strcmpi(mriot_ext,'.xlsb') % We can't deal with binary excel files
         error('You provided a binary excel file (.xlsb). Please check user requirements in manual and first change filetype to a non-binary excel file and try again.')
@@ -282,11 +313,16 @@ climada_sect_name_temp = repmat(sectors(2:end,2),no_countries,1); %Stack up 2nd 
 climada_mriot.climada_sect_name = categorical(climada_sect_name_temp)';
 clear climada_sect_name_temp
 
+% Climada_sect_id using helper function to map given names to corresponding
+% id. For info on how sector names are mapped to an id, see manual.
+climada_mriot.climada_sect_id = mrio_mainsector_mapping(climada_mriot.climada_sect_name);
+
+
 % Check whether user requirements for mapping table are met regarding the
 % naming of the climada sectors (have to follow syntax of valid matlab
 % identifiers). Since this is of later importance, we try to remedy the most
 % common possible mistakes here. Currently doesn't fully work. Check back
-% later. Once ok, also implement for exiobase subfunction.
+% later. Once ok, also implement for exiobase/eora26 subfunction.
 %     unique_climada_sectors = unique(climada_mriot.climada_sect_name,'stable');
 %         for sector_i = 1:length(unique_climada_sectors)
 %             if ~isvarname(char(unique_climada_sectors(sector_i)))
@@ -302,9 +338,6 @@ clear climada_sect_name_temp
 %         end
 % Finished test/remedy block.
 
-climada_sect_id_temp = repmat(sectors(2:end,3),no_countries,1); %Stack up 3rd col (corresponding cliamda sector id (1,2,3,4,5 or 6). 
-climada_mriot.climada_sect_id = cell2mat(climada_sect_id_temp)';
-clear climada_sect_id_temp
 
 % Use climada_country_name to also obtain full country NAMES corresponding to the ISO-3 codes
 % provided in the WIOD table. Process: we work with a categorical array
@@ -350,7 +383,8 @@ climada_mriot.no_of_sectors = no_sectors;
 % Unit:
 climada_mriot.unit = '1e6USD';
 
-% Final some sanity checks: equal no. of elements in each field and equal length of
+
+% Finally some sanity checks: equal no. of elements in each field and equal length of
 % both data matrix dimensions? Otherwise return error, since further calculations
 % will be erroneous.
 if ~isequal(length(climada_mriot.sectors),length(climada_mriot.countries_iso),...
@@ -360,8 +394,170 @@ if ~isequal(length(climada_mriot.sectors),length(climada_mriot.countries_iso),..
     error('Fatal error importing mrio table: sector, country and mapping dimensions do not agree. Cannot proceed.')
 end
 
-%end % read_wiod local function
+ %End local function read_wiod
 
+
+function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
+
+   % For EORA26, main table is in a txt file (user input) and label info is 
+   % stored in a separate excel file called 'labels_T.txt'
+   % We first get this filename. It is by default located in same dir as main table:
+   eora_labels_file = dir([fileparts(mriot_file) filesep '*labels_T*']);
+   %%% In case there are several copies of "labels" files found, 
+   %%% let user choose with which one to go forward:
+   if length(eora_labels_file) > 1
+    [selection, ok] = listdlg('ListString',{eora_labels_file.name},...
+           'SelectionMode','single','Name','Choose "types" file...','PromptString','We found several eora26 "labels_T" files. Please choose one to work with.','ListSize',[400 100]);
+    if isequal(ok,0)  %If 'OTHER' chosen or canceled. 
+        error('Without choosing an eora26 "labels_T" file the function cannot proceed.')
+    else  
+    %Set eora_labels_file based on selection dialog:
+    eora_labels_file = eora_labels_file(selection);
+    end
+   end
+      % If cannot find fitting file at all, open file dialog; else save
+         % final file name as string with full path included.
+       if isempty(eora_labels_file)
+            [filename, pathname] = uigetfile([module_data_dir filesep '*.txt*'], 'Open the EORA26 labels file:');
+            if isequal(filename,0) || isequal(pathname,0)
+                error('Please choose the EORA26 labels file. Cannot proceed without.')
+                %return; % cancel pressed by user
+            else
+                eora_labels_file = fullfile(pathname,filename);
+            end
+       else
+           eora_labels_file = fullfile(eora_labels_file.folder,eora_labels_file.name);
+       end
+   
+   % Further, we need the "structure" file (.xls) as the sector mapping by the
+   % user is most easily done there. Process as above...
+      eora_structure_file = dir([fileparts(mriot_file) filesep '*tructure.xls*']);
+   %%% In case there are several copies of "structure" files found, 
+   %%% let user choose with which one to go forward:
+   if length(eora_structure_file) > 1
+    [selection, ok] = listdlg('ListString',{eora_structure_file.name},...
+           'SelectionMode','single','Name','Choose "types" file...','PromptString','We found several eora26 "structure" files. Please choose one to work with.','ListSize',[400 100]);
+    if isequal(ok,0)  %If 'OTHER' chosen or canceled. 
+        error('Without choosing an eora26 "structure" file the function cannot proceed.')
+    else  
+    %Set eora_structure_file based on selection dialog:
+    eora_structure_file = eora_structure_file(selection);
+    end
+   end
+         % If cannot find fitting file at all, open file dialog; else save
+         % final file name as string with full path included.
+       if isempty(eora_structure_file)
+            [filename, pathname] = uigetfile([module_data_dir filesep '*.xls*'], 'Open the EORA26 structure file:');
+            if isequal(filename,0) || isequal(pathname,0)
+                error('Please choose the EORA26 structure file. Cannot proceed without.')
+                %return; % cancel pressed by user
+            else
+                eora_structure_file = fullfile(pathname,filename);
+            end
+       else
+           eora_structure_file = fullfile(eora_structure_file.folder,eora_structure_file.name);
+       end
+       
+  % First, read labels from labels_T file:
+  labels = readtable(eora_labels_file,'ReadVariableNames',0);
+  % Since the labels_T file already contains the full list of countries and
+  % sectors as they appear in the data matrix (i.e. country list repeated m
+  % times and sector list n times, with m = no. of sectors and n = no. of
+  % countries), the process is straight-forward. Also, the file already contains ISO3 codes.
+  
+  % To make it one step more resilient agains future changes in the order
+  % of the columns in the label file, we don't hardcode which column
+  % contains which information but find out dynamically. Still, there is some 
+  % hardcoded stuff which rely on certain fixed properties of the user input
+  % which shall be mentioned in the user manual:
+  for col_i = 1:length(labels.Properties.VariableNames)
+      if iscell(labels{10,col_i}) % To avoid error that the contains function is applied to a double type. 
+          if any(contains(unique(labels{:,col_i}),'Afghanistan'))
+                  labels.Properties.VariableNames{col_i} = 'Countries';
+          elseif any(contains(unique(labels{:,col_i}),'AFG'))
+                  labels.Properties.VariableNames{col_i} = 'ISO3';
+          elseif any(contains(unique(labels{:,col_i}),'Agriculture'))
+                  labels.Properties.VariableNames{col_i} = 'Sectors';
+          end
+      end
+  end
+
+  
+  % Now convert the columns of the table into the different fields of
+  % the climada_mriot struct (we also transpose to row vector):
+  climada_mriot.countries = categorical(labels{:,'Countries'})';
+  climada_mriot.countries_iso = categorical(labels{:,'ISO3'})';
+  climada_mriot.sectors = categorical(labels{:,'Sectors'})';
+  
+  % The eora26 labels file contains a "Total" entry in the last position
+  % of the sector column. We remove it:
+  tot = climada_mriot.sectors(end);
+  if contains(char(tot),'total','IgnoreCase',1)
+      sel_rows = climada_mriot.sectors == tot;
+      climada_mriot.sectors(sel_rows) = [];
+  end
+  
+  % Further, the labels file contains a dummy country for balancing of statistical
+  % discrepancies. This has to be removed:
+  dummy = climada_mriot.countries(end);
+  if contains(char(dummy),'statist','IgnoreCase',1)  % In case is removed in further releases; make sure that we don't accidentally remove an actual country.
+    sel_rows = climada_mriot.countries == dummy;
+    climada_mriot.countries(sel_rows) = [];
+    climada_mriot.countries_iso(sel_rows) = [];
+  end
+  
+  % Sanity check:
+  if ~isequal(length(climada_mriot.countries),length(climada_mriot.countries_iso),length(climada_mriot.sectors))
+      error('Something went wrong. Country, country iso and sector dimensions do not agree.')
+  end
+  
+  % Set no_of_countries and no_of_sectors field:
+  climada_mriot.no_of_countries = length(unique(climada_mriot.countries));
+  climada_mriot.no_of_sectors = length(unique(climada_mriot.sectors));
+  
+  % Now import the climada_sector mapping from the structure file:
+            % Suppress Matlab warning that variable names where changed upon import: 
+                warning('off','MATLAB:table:ModifiedVarnames')
+  mapping_ds = datastore(eora_structure_file,'Sheets','climada_mapping');
+  mapping_ds.SelectedVariableNames = {'climada_sect_name'};
+  climada_sectors = read(mapping_ds);
+  climada_sectors = categorical(climada_sectors{:,1})';
+  
+  % Use repmat to repeat n number of times (n = no. of countries) to match
+  % full sector array:
+  climada_mriot.climada_sect_name = repmat(climada_sectors,1,climada_mriot.no_of_countries);
+  
+  % Climada_sect_id using helper function to map given names to corresponding
+  % id. For info on how sector names are mapped to an id, see manual.
+  climada_mriot.climada_sect_id = mrio_mainsector_mapping(climada_mriot.climada_sect_name);
+
+          
+  % Now read actual mrio data:
+  mrio_data = dlmread(mriot_file,'\t');
+  
+  % If there was a statistical correction term (see above), we have to
+  % remove the corresponding values in the matrix (we re-use sel_rows from above):
+  sel_cols = sel_rows; % For terminological clarity
+  if exist('sel_rows','var') % Only exists if we found any correction terms above
+      mrio_data(:,sel_cols) = [];
+      mrio_data(sel_rows,:) = [];
+  end
+  
+  % Sanity check:
+  if ~isequal(size(mrio_data,1),size(mrio_data,2),length(climada_mriot.countries))
+            error('Something went wrong. Data and label dimensions do not agree.')
+  end
+  
+  climada_mriot.mrio_data = mrio_data;
+
+  % The unit is nowhere in the above mentioned files explicitly mentioned. The project's
+  % website states it's all in 10^3USD (20180215). We have to assume this
+  % remains the same in future versions.
+  climada_mriot.unit = '1e3 USD';
+  
+  
+  % End local function eora26 import.
+    
 
 %%%%%%%%%%%%%%   READ EXIO TABLES; LOCAL FUNCTION
 function climada_mriot = read_exiobase(mriot_file,climada_mriot,module_data_dir)
@@ -373,7 +569,7 @@ global climada_global
    % We first get this filename. It is by default located in same dir as main table:
    exio_types_file = dir([fileparts(mriot_file) filesep '*types*.xls*']);
    %%% In case there are several copies of "types" files found (e.g.
-   %%% different versions, let user choose with which one to go forward:
+   %%% different versions), let user choose with which one to go forward:
    if length(exio_types_file) > 1
     [selection, ok] = listdlg('ListString',{exio_types_file.name},...
            'SelectionMode','single','Name','Choose "types" file...','PromptString','We found several exiobase "types" files. Please choose one to work with.','ListSize',[400 100]);
@@ -385,11 +581,12 @@ global climada_global
     end
    end
        
-   % If cannot find fitting file at all, open file dialog:
+   % If cannot find fitting file at all, open file dialog; else save
+         % final file name as string with full path included.
        if isempty(exio_types_file)
             [filename, pathname] = uigetfile([module_data_dir filesep '*.xls*'], 'Open the EXIOBASE types file:');
             if isequal(filename,0) || isequal(pathname,0)
-                error('Please choose the EXIOBASE types files. Cannot proceed without.')
+                error('Please choose the EXIOBASE types file. Cannot proceed without.')
                 %return; % cancel pressed by user
             else
                 exio_types_file = fullfile(pathname,filename);
@@ -480,8 +677,10 @@ global climada_global
         climada_mriot.sectors = repmat(sector_name,no_countries,1)'; % Use row-vector
    climada_sect_name = categorical(exio_sectors{:,'climada_sect_name'});
         climada_mriot.climada_sect_name = repmat(climada_sect_name,no_countries,1)'; % Use row-vector
-   climada_sect_id = exio_sectors{:,'climada_sect_id'};
-        climada_mriot.climada_sect_id = repmat(climada_sect_id,no_countries,1)'; % Use row-vector
+        
+   % Climada_sect_id using helper function to map given names to corresponding
+   % id. For info on how sector names are mapped to an id, see manual.
+   climada_mriot.climada_sect_id = mrio_mainsector_mapping(climada_mriot.climada_sect_name);
 
    % Now import actual mrio table data from main EXIOBASE table file (txt);
    % ignore labels and only import commodity exchange value matrix. Note,
@@ -526,9 +725,7 @@ climada_mriot.unit = units{1};
     error('Fatal error importing mrio table: sector, country and mapping dimensions do not agree. Cannot proceed.')
  end
  
-%end % Local function read_exio
-
-        
+% End local function read_exio    
 
 %end % Main function read_mriot (wraps local functions to have shared
 %variable workspace --> Currently not necessary.
