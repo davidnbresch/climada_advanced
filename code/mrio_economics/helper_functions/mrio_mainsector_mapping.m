@@ -31,6 +31,8 @@ function mainsector_ids = mrio_mainsector_mapping(mainsector_names)
 %
 % MODIFICATION HISTORY:
 % Kaspar Tobler, 20180216 initializing function
+% Kaspar Tobler, 20180301 changed principle of ID mapping from alphabetical
+%   to following the order of appearance of the mainsectors in the full mrio table.
 
 mainsector_ids=[]; % init output
 
@@ -46,17 +48,17 @@ end
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
 % account for different directory structures
-if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
-    module_data_dir=[climada_global.modules_dir filesep 'advanced' filesep 'data'];
-else
-    module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
-end
+% if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
+%     module_data_dir=[climada_global.modules_dir filesep 'advanced' filesep 'data'];
+% else
+%     module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+% end
 
 % PARAMETERS
-% First create mapping table based on alphabetically ordered unique names
-% which is then used in the second part to map an ID to the full provided
+% First create mapping table (based on order of appearance in full mrio
+% table), which is then used in the second part to map an ID to the full provided
 % array...
-unique_names = unique(mainsector_names)'; % Not 'stable', hence automatically alphabetically sorted.
+unique_names = unique(mainsector_names,'stable')'; 
 mapping_table = table(unique_names,[1:6]','VariableNames',{'name','ID'});    %#ok 
 
 % Perform actual mapping:
