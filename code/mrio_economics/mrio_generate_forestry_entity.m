@@ -211,19 +211,16 @@ for subset_i = 1:n_subsets
     for forest_i = 1:length(forest)
         lc_subset(lc_subset == forest(forest_i)) = weight(forest_i);
     end
-
-    % 1st aggregation (per subset)
-    position_shift = [1 0; 0 1; -1 0; 0 -1; -1 -1; -1 1; 1 1;1 -1];
-    lc_subset_agg = lc_subset;
-    for shift_i = 1:8
-        permutation_i = circshift(lc_subset,[position_shift(shift_i,1), position_shift(shift_i,2)]);
-        lc_subset_agg = lc_subset_agg + permutation_i;
-    end % shift_i
     
-    % condense to aggregate values
-    lc_agg = [lc_agg lc_subset_agg((floor(3/2)+1):3:size(lc_subset_agg,1),(floor(3/2)+1):3:size(lc_subset_agg,2))];
-    lon_agg = [lon_agg lon_subset((floor(3/2)+1):3:size(lc_subset_agg,1),(floor(3/2)+1):3:size(lc_subset_agg,2))];
-    lat_agg = [lat_agg lat_subset((floor(3/2)+1):3:size(lc_subset_agg,1),(floor(3/2)+1):3:size(lc_subset_agg,2))];
+    % 1st aggregation (per subset)
+    lc_subset_agg = table_circshift_agg(lc_subset, 1, 1);
+    lon_subset_agg = table_circshift_agg(lon_subset, 0, 1);
+    lat_subset_agg = table_circshift_agg(lat_subset, 0, 1);
+
+    % put together aggregated subset values to one table
+    lc_agg = [lc_agg lc_subset_agg];
+    lon_agg = [lon_agg lon_subset_agg];
+    lat_agg = [lat_agg lat_subset_agg];
     
     climada_progress2stdout(subset_i,n_subsets,1,'processed subsets'); % update
     
@@ -233,49 +230,18 @@ climada_progress2stdout(0) % terminate
 
 clear lc_subset lc_subset_agg lon_subset_agg lat_subset_agg permutation_i
 
-% 2nd aggregation (full table - now small enough)
-lc_agg_agg = lc_agg;
-for shift_i = 1:8
-    permutation_i = circshift(lc_agg,[position_shift(shift_i,1), position_shift(shift_i,2)]);
-    lc_agg_agg = lc_agg_agg + permutation_i;
-end % shift_i
-
-% condense to aggregate values
-lc_agg_agg = lc_agg_agg((floor(3/2)+1):3:size(lc_agg_agg,1),(floor(3/2)+1):3:size(lc_agg_agg,2));
-lon_agg_agg = lon_agg((floor(3/2)+1):3:size(lc_agg,1),(floor(3/2)+1):3:size(lc_agg,2));
-lat_agg_agg = lat_agg((floor(3/2)+1):3:size(lc_agg,1),(floor(3/2)+1):3:size(lc_agg,2));
-
-% 3rd aggregation (full table - now small enough)
-lc_agg_agg_agg = lc_agg_agg;
-for shift_i = 1:8
-    permutation_i = circshift(lc_agg_agg,[position_shift(shift_i,1), position_shift(shift_i,2)]);
-    lc_agg_agg_agg = lc_agg_agg_agg + permutation_i;
-end % shift_i
-
-% condense to aggregate values
-lc_agg_agg_agg = lc_agg_agg_agg((floor(3/2)+1):3:size(lc_agg_agg_agg,1),(floor(3/2)+1):3:size(lc_agg_agg_agg,2));
-lon_agg_agg_agg = lon_agg_agg((floor(3/2)+1):3:size(lc_agg_agg,1),(floor(3/2)+1):3:size(lc_agg_agg,2));
-lat_agg_agg_agg = lat_agg_agg((floor(3/2)+1):3:size(lc_agg_agg,1),(floor(3/2)+1):3:size(lc_agg_agg,2));
-
-% 4th aggregation (full table - now small enough)
-lc_agg_agg_agg_agg = lc_agg_agg_agg;
-for shift_i = 1:8
-    permutation_i = circshift(lc_agg_agg_agg,[position_shift(shift_i,1), position_shift(shift_i,2)]);
-    lc_agg_agg_agg_agg = lc_agg_agg_agg_agg + permutation_i;
-end % shift_i
-
-% condense to aggregate values
-forestry_intensity = lc_agg_agg_agg_agg((floor(3/2)+1):3:size(lc_agg_agg_agg,1),(floor(3/2)+1):3:size(lc_agg_agg_agg,2));
-forestry_lon = lon_agg_agg_agg((floor(3/2)+1):3:size(lc_agg_agg_agg,1),(floor(3/2)+1):3:size(lc_agg_agg_agg,2));
-forestry_lat = lat_agg_agg_agg((floor(3/2)+1):3:size(lc_agg_agg_agg,1),(floor(3/2)+1):3:size(lc_agg_agg_agg,2));
+% aggregate values via subfunction table_circshift_agg
+lc_agg = table_circshift_agg(lc_agg, 1, 3);
+lon_agg = table_circshift_agg(lon_agg, 0, 3);
+lat_agg = table_circshift_agg(lat_agg, 0, 3);
 
 % reshape to Nx1 vector
-forestry_intensity = reshape(forestry_intensity, [1,size(forestry_intensity,1)*size(forestry_intensity,2)]);
-forestry_lon = reshape(forestry_lon, [1,size(forestry_lon,1)*size(forestry_lon,2)]);
-forestry_lat = reshape(forestry_lat, [1,size(forestry_lat,1)*size(forestry_lat,2)]);
+forestry_intensity = reshape(lc_agg, [1,size(lc_agg,1)*size(lc_agg,2)]);
+forestry_lon = reshape(lon_agg, [1,size(lon_agg,1)*size(lon_agg,2)]);
+forestry_lat = reshape(lat_agg, [1,size(lat_agg,1)*size(lat_agg,2)]);
 
 % save aggregated non-zero values as assets
-entity.assets.Value = double(forestry_intensity(forestry_intensity>0));
+entity.assets.Value = forestry_intensity(forestry_intensity>0);
 entity.assets.lon = double(forestry_lon(forestry_intensity>0));
 entity.assets.lat = double(forestry_lat(forestry_intensity>0));
 
@@ -316,34 +282,42 @@ entity_save_file = [climada_global.entities_dir filesep 'GLB_forestry_XXX.mat'];
 entity.assets.filename = entity_save_file;
 
 % make sure we have all fields and they are 'correct'
-entity.assets = climada_assets_complete(entity.assets); 
+entity.assets = climada_assets_complete(entity.assets);
 
 % save entity as .mat file for fast access
 fprintf('saving entity as %s\n', entity_save_file);
 climada_entity_save(entity, entity_save_file);
 
 %% Table circshift aggregation subfunction
-% function [table_agg, lon_agg, lat_agg] = table_circshift_agg(table, lon, lat, iterations)
-%     
-%     while iterations >= 1
-% 
-%         position_shift = [1 0; 0 1; -1 0; 0 -1; -1 -1; -1 1; 1 1;1 -1];
-%         agg_table = table;
-%         for shift_i = 1:8
-%             permutation_i = circshift(table,[position_shift(shift_i,1), position_shift(shift_i,2)]);
-%             agg_table = agg_table + permutation_i;
-%         end % shift_i
-%         
-%         table = agg_table((floor(3/2)+1):3:size(agg_table,1),(floor(3/2)+1):3:size(agg_table,2));
-%         
-%         iterations = iterations - 1;
-%         
-%     end % iterations
-%     
-%     table_agg = table;
-%     lon_agg = lon(ceil((3^iterations)/2):(3^iterations):size(lon,1),ceil((3^iterations)/2):(3^iterations):size(lon,2));
-%     lat_agg = lat(ceil((3^iterations)/2):(3^iterations):size(lat,1),ceil((3^iterations)/2):(3^iterations):size(lat,2));
-% 
-% end % table_circshift_agg
+function table = table_circshift_agg(table, aggregation_rule, iterations)
+    
+    while iterations >= 1
+
+        position_shift = [1 0; 0 1; -1 0; 0 -1; -1 -1; -1 1; 1 1;1 -1];
+        agg_table = table;
+        
+        if aggregation_rule ~= 0
+            for shift_i = 1:8
+                permutation_i = circshift(table,[position_shift(shift_i,1), position_shift(shift_i,2)]);
+                agg_table = agg_table + permutation_i;
+            end % shift_i
+        end
+        
+        switch aggregation_rule
+            case 0 % do not aggregate, only return condensed table
+                table = table((floor(3/2)+1):3:size(agg_table,1),(floor(3/2)+1):3:size(agg_table,2));
+            case 1 % aggregate values
+                table = agg_table((floor(3/2)+1):3:size(agg_table,1),(floor(3/2)+1):3:size(agg_table,2));
+            case 2 % calculate average value
+                table = agg_table((floor(3/2)+1):3:size(agg_table,1),(floor(3/2)+1):3:size(agg_table,2))/9;
+            otherwise % default
+                table = agg_table((floor(3/2)+1):3:size(agg_table,1),(floor(3/2)+1):3:size(agg_table,2));
+        end % switch aggregation_rule
+        
+        iterations = iterations - 1;
+        
+    end % iterations
+    
+end % table_circshift_agg
 
 end % mrio_generate_forestry_entity
