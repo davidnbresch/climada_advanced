@@ -1,4 +1,4 @@
-function [entity, entity_save_file] = mrio_generate_forestry_entity()
+function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregations)
 % mrio generate forestry entity
 % MODULE:
 %   advanced
@@ -17,6 +17,8 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity()
 %   mrio_generate_forestry_entity
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
+%   n_aggregations: number of aggregation runs of the land cover data, default is ='4' 
+%       whereas minimum number of runs is 1 as the dataset is too large to be handled otherwise
 % OUTPUTS:
 %  entity: a structure, with (please run the first example above and then
 %       inspect entity for the latest content)
@@ -112,7 +114,8 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity()
 %   entity_save_file: the name the encoded entity got saved to
 % RESTRICTIONS:
 % MODIFICATION HISTORY:
-% Ediz Herms, ediz.herms@outlook.com, 20180115, initial
+% Ediz Herms, ediz.herms@outlook.com, 20180228, initial
+% Ediz Herms, ediz.herms@outlook.com, 20180306, aggregate values - resolution can be managed via input
 
 entity = []; % init output
 entity_save_file = []; % init output
@@ -121,6 +124,7 @@ global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 % poor man's version to check arguments
+if ~exist('n_aggregations', 'var'), n_aggregations = []; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -132,6 +136,11 @@ end
 
 % PARAMETERS
 %
+if isempty(n_aggregations) 
+    n_aggregations = 4; 
+elseif n_aggregations <= 1
+    n_aggregations = 1;
+end
 %% 
 % land cover map (300m observation) in .nc format
 full_img_file = [module_data_dir filesep 'mrio' filesep 'ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7.nc'];
@@ -231,9 +240,9 @@ climada_progress2stdout(0) % terminate
 clear lc_subset lc_subset_agg lon_subset_agg lat_subset_agg permutation_i
 
 % aggregate values via subfunction table_circshift_agg
-lc_agg = table_circshift_agg(lc_agg, 1, 3);
-lon_agg = table_circshift_agg(lon_agg, 0, 3);
-lat_agg = table_circshift_agg(lat_agg, 0, 3);
+lc_agg = table_circshift_agg(lc_agg, 1, n_aggregations-1);
+lon_agg = table_circshift_agg(lon_agg, 0, n_aggregations-1);
+lat_agg = table_circshift_agg(lat_agg, 0, n_aggregations-1);
 
 % reshape to Nx1 vector
 forestry_intensity = reshape(lc_agg, [1,size(lc_agg,1)*size(lc_agg,2)]);
