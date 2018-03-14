@@ -1,4 +1,4 @@
-function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(direct_mainsector_risk,climada_mriot,aggregated_mriot, countries)
+function [direct_subsector_risk,direct_country_risk, total_subsector_production]=mrio_disaggregate_risk(direct_mainsector_risk,climada_mriot,aggregated_mriot, countries)
 % mrio disaggregate risk
 % MODULE:
 %   climada_advanced
@@ -32,7 +32,7 @@ function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(dire
 %   ALSO SEE COMMENTS BELOW ("GENERAL NOTES").   
 %
 % OPTIONAL INPUT PARAMETERS:
-%   countries: a country or a list of countries as a cell array containing
+%   countries: NOT IMPLEMENTED. A country or a list of countries as a cell array containing
 %       country names or iso3 codes specifying which subset of countries one is 
 %       interested in. If not provided, calculations are done for all
 %       countries (as represented in the originally used mriot).
@@ -41,35 +41,20 @@ function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(dire
 %       sort. Likely not in this function but earlier in the entire process
 %       though...
 % OUTPUTS:
-%   direct_subsector_risk: a table containing as one variable the direct risk for each
+%   direct_subsector_risk: an array containing the direct risk for each
 %       subsector/country combination covered in the original mriot. The
 %       order of entries follows the same as in the entire process, i.e.
 %       entry mapping is still possible via the climada_mriot.setors and
-%       climada_mriot.countries arrays. The table further contins three
-%       more variables with the country names, country ISO codes and sector names
-%       corresponging to the direct risk values.
-%  direct_country_risk: a table containing as one variable the direct risk per country (aggregated across all subsectors) 
-%       based on the risk measure chosen. Further a variable with correpsonding country
-%       names and country ISO codes, respectively.
+%       climada_mriot.countries arrays. 
+%  direct_country_risk: an array containing direct risk per country (aggregated across all subsectors) 
+%       based on the risk measure chosen. 
+%  total_subsector_production: an array contain for each subsector/country combination its total production. 
 %
 % GENERAL NOTES:
 %
 % NO IN-DEPTH TESTING OF RESULTS CONDUCTED YET!
 %
 % POSSIBLE EXTENSIONS TO BE IMPLEMENTED:
-% Could implement similar user-dialogue process as in
-% mrio_aggregate_table in case mandatory arguments are not passed. For
-% now function returns error if inputs are missing.
-% 
-% In terms of inputs, we actually only need total sector production for
-% each country for both the main sectors and the subsectors... so it's
-% not necessary to pass the entire mriot and aggregated mriot structures to
-% the function as long as we have the data on total sector production. It
-% might be more feasible to do these calculations outside the current
-% function and only pass an array with the total productions. For now, such 
-% an array is constructed herein. Parameters such as no. of countries could
-% be extracted from this too... Probably, this would best be implemented in
-% a dedicated helper function mrio_get_total_production or so...
 %
 % In case we don't use an aggregated table at all (see thoughts below), 
 % we could think about defining the six climada sectors as a global variable 
@@ -91,7 +76,7 @@ function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(dire
 % Kaspar Tobler, 20180112 core functionality for no choice of specific countries finished and working.
 % Kaspar Tobler, 20180115-16 further smaller changes as well as begin drafting of plotting functions. 
 % Ediz Herms, 20180118 adding direct country risk calculation.
-% Kaspar Tobler, 20180119 implement returned results as tables to improve readability (countries and sectors corresponding to the values are visible on first sight).
+
 
 % ONLY FOR DEVELOPMENT PERIOD: CREATE AN EXAMPLE INPUT ARRAY:
 % Assume that the order of values (representing direct risk for each
@@ -100,7 +85,7 @@ function [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(dire
 %%%%%%%%%%
 
 direct_subsector_risk=[]; % init output
-direct_country_risk=[]; % init output
+direct_country_risk=[]; % init outp ut
 
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
@@ -127,19 +112,21 @@ no_of_countries = climada_mriot.no_of_countries;
 no_of_mainsectors = aggregated_mriot.no_of_sectors;
 no_of_subsectors = climada_mriot.no_of_sectors;
 
-total_mainsector_production = sum(aggregated_mriot.mrio_data,2)';
+if ~ischar(aggregated_mriot.mrio_data)
+    total_mainsector_production = sum(aggregated_mriot.mrio_data,2)';
+end
         % Column vector (transposed to row); each entry representing total production of each
         % main sector within one country.
 total_subsector_production = sum(climada_mriot.mrio_data,2)';
         % As above but for all subsectors.
 
-% Assumption: the input values are still normalized, such that we don't need
+% The input values are still normalized, such that we don't need
 % a weighting factor here but can obtain the absolute risk per subsector and
 % country by simple multiplication with each sector's total production in 
 % these countries... 
 
         % Temporary array for testing phase:
-        % test_sel_pos_all = {};     
+            % test_sel_pos_all = {};     
 direct_subsector_risk = zeros(1,no_of_subsectors*no_of_countries);     
 for mainsector_i = 1:no_of_mainsectors  %#ok
     main_fields = fields(aggregated_mriot.aggregation_info);
@@ -150,10 +137,10 @@ for mainsector_i = 1:no_of_mainsectors  %#ok
 
             sel_subsector_pos = climada_mriot.sectors == current_subsector;
 
-            % Create testing cell array whith with we can check that we never 
-            % overwrite previous entries:
-            %    test_sel_pos_all{end+1} = find(sel_subsector_pos);    %#ok
-
+                % Create testing cell array with which we can check that we never 
+                % overwrite previous entries:
+                %    test_sel_pos_all{end+1} = find(sel_subsector_pos);    %#ok
+            mainsectors = unique(climada_mriot.climada_sect_name, 'stable');
             direct_subsector_risk(sel_subsector_pos) = direct_mainsector_risk(aggregated_mriot.sectors == current_mainsector) .* total_subsector_production(sel_subsector_pos);
 
         end
@@ -180,14 +167,14 @@ end % mrio_country_i
 %%% For better readability, we return final results as tables so that
 %%% countries and sectors corresponding to the values are visible on
 %%% first sight. Further, a table allows reordering of values:
+%%% DONE FURTHER DOWNSTREAM OF PROCESS.
+% direct_subsector_risk = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.sectors',direct_subsector_risk', ...
+%                                 'VariableNames',{'Country','CountryISO','Subsector','DirectSubsectorRisk'});
+% direct_country_risk = table(unique(climada_mriot.countries','stable'),unique(climada_mriot.countries_iso','stable'),direct_country_risk',...
+%                                 'VariableNames',{'Country','CountryISO','DirectCountryRisk'});
 
-direct_subsector_risk = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.sectors',direct_subsector_risk', ...
-                                'VariableNames',{'Country','CountryISO','Subsector','DirectSubsectorRisk'});
-direct_country_risk = table(unique(climada_mriot.countries','stable'),unique(climada_mriot.countries_iso','stable'),direct_country_risk',...
-                                'VariableNames',{'Country','CountryISO','DirectCountryRisk'});
-
-% Calculate absolute main sector risk (simple element-wise multiplication).
-% Only possible if aggregated_mriot has fully aggregated mrio data fiel:
+% Calculate absolute direct main sector risk (simple element-wise multiplication).
+% Only possible if aggregated_mriot has fully aggregated mrio data field:
 if ~ischar(aggregated_mriot.mrio_data)
     direct_mainsector_risk_abs = direct_mainsector_risk.*total_mainsector_production;
 end
