@@ -1,4 +1,4 @@
-function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregations)
+function [entity, entity_save_file] = mrio_generate_forestry_entity(params, n_aggregations)
 % mrio generate forestry entity
 % MODULE:
 %   advanced
@@ -16,6 +16,8 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregatio
 % EXAMPLE:
 %   mrio_generate_forestry_entity
 % INPUTS:
+%   params: a struct containing several fields, some of which are struct
+%       themselves that contain default values used in the entity generation
 % OPTIONAL INPUT PARAMETERS:
 %   n_aggregations: number of aggregation runs of the land cover data, default is ='4' 
 %       whereas minimum number of runs is 1 as the dataset is too large to be handled otherwise
@@ -124,6 +126,7 @@ global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 % poor man's version to check arguments
+if ~exist('params', 'var'), params = []; end
 if ~exist('n_aggregations', 'var'), n_aggregations = []; end
 
 % locate the module's data folder (here  one folder
@@ -136,6 +139,7 @@ end
 
 % PARAMETERS
 %
+if isempty(params), params = mrio_get_params; end
 if isempty(n_aggregations) 
     n_aggregations = 4; 
 elseif n_aggregations <= 1
@@ -155,21 +159,15 @@ full_img_file = [module_data_dir filesep 'mrio' filesep 'ESACCI-LC-L4-LCCS-Map-3
 % source can be found in the README file _readme.txt in the module's data dir.
 %%
 %
-% isimip centroids file, see isimip_gdp_entity to generate the global centroids and entity
-centroids_file = [climada_global.centroids_dir filesep 'GLB_NatID_grid_0360as_adv_1.mat'];
-%
-% isimip hazard file
-hazard_file = [climada_global.hazards_dir filesep 'GLB_0360as_TC_hist.mat'];
-%
 % template entity file, such that we do not need to construct the entity from scratch
 entity_file = [climada_global.entities_dir filesep 'entity_template' climada_global.spreadsheet_ext];
 %
 
-% load global (isimip) centroids
-centroids = climada_centroids_load(centroids_file);
+% load global centroids
+centroids = climada_centroids_load(params.centroids_file);
 
-% load (isimip) hazard
-hazard = climada_hazard_load(hazard_file);
+% load hazard
+hazard = climada_hazard_load(params.hazard_file);
 
 % check for full global land cover image being locally available
 if ~exist(full_img_file,'file')

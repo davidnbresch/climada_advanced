@@ -1,4 +1,4 @@
-function [entity, entity_save_file] = mrio_generate_utilities_entity
+function [entity, entity_save_file] = mrio_generate_utilities_entity(params)
 % 
 % MODULE:
 %   advanced
@@ -16,6 +16,8 @@ function [entity, entity_save_file] = mrio_generate_utilities_entity
 % EXAMPLE:
 %   mrio_generate_utilities_entity;   No function arguments required.
 % INPUTS:
+%   params: a struct containing several fields, some of which are struct
+%       themselves that contain default values used in the entity generation
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
 %  entity: a structure, with following fields:
@@ -120,6 +122,7 @@ global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 % poor man's version to check arguments
+if ~exist('params', 'var'), params = []; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -130,7 +133,8 @@ else
 end
 
 % PARAMETERS
-
+%
+if isempty(params), params = mrio_get_params; end
 % Get file with all power plants globally. For source and user
 % requirements, check user manual or readme file.
 utilities_file = [module_data_dir filesep 'entities' filesep 'utilities_source.csv'];
@@ -138,22 +142,15 @@ utilities_file = [module_data_dir filesep 'entities' filesep 'utilities_source.c
 % Source: http://enipedia.tudelft.nl/wiki/Using_SPARQL_with_Enipedia
 %   Section Advanced > Download all power plant data.
 
-
-% isimip centroids file, see isimip_gdp_entity to generate the global centroids and entity
-centroids_file = [climada_global.centroids_dir filesep 'GLB_NatID_grid_0360as_adv_1.mat'];
-
-% isimip hazard file
-hazard_file = [climada_global.hazards_dir filesep 'GLB_0360as_TC_hist.mat'];
-
 % template entity file, such that we do not need to construct the entity from scratch
 entity_file = [climada_global.entities_dir filesep 'entity_template' climada_global.spreadsheet_ext];
 
+% load global centroids
+centroids = climada_centroids_load(params.centroids_file);
 
-% load global (isimip) centroids
-centroids = climada_centroids_load(centroids_file);
+% load hazard
+hazard = climada_hazard_load(params.hazard_file);
 
-% load (isimip) hazard
-hazard = climada_hazard_load(hazard_file);
 
 % check whether required source file exists and ask for user input if it doesn't:
 if ~exist(utilities_file,'file')
@@ -240,7 +237,3 @@ fprintf('saving entity as %s\n', entity_save_file);
 climada_entity_save(entity, entity_save_file);
 
 end % mrio_generate_utilities_entity
-
-
-
-
