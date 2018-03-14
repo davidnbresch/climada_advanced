@@ -48,6 +48,7 @@ function hazard=climada_hazard_merge(hazard,hazard2,merge_direction,hazard_file)
 % David N. Bresch, david.bresch@gmail.com, 20171229, orig_yearset treated, too
 % David N. Bresch, david.bresch@gmail.com, 20171230, frequency inferred
 % David N. Bresch, david.bresch@gmail.com, 20180203, hazard_file
+% David N. Bresch, david.bresch@gmail.com, 20180312, category, datenum and ID_no added in 'events'
 %-
 
 global climada_global
@@ -124,6 +125,18 @@ elseif strcmpi(merge_direction,'events')
     if isfield(hazard,'orig_yearset') && isfield(hazard2,'orig_yearset') 
         fprintf('combining hazard.orig_yearset by just appending\n');
         hazard.orig_yearset=[hazard.orig_yearset hazard2.orig_yearset];
+    end
+    
+    if isfield(hazard,'category') && isfield(hazard2,'category') 
+        hazard.category=[hazard.category hazard2.category];
+    end
+    
+    if isfield(hazard,'datenum') && isfield(hazard2,'datenum')
+        hazard.datenum=[hazard.datenum hazard2.datenum];
+    end
+    
+    if isfield(hazard,'ID_no') && isfield(hazard2,'ID_no')
+        hazard.ID_no=[hazard.ID_no hazard2.ID_no];
     end
     
     if isfield(hazard,'t_elapsed_footprints') && isfield(hazard2,'t_elapsed_footprints')

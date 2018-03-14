@@ -180,6 +180,7 @@ end % mainsector_j
 direct_subsector_risk = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot);
 
 % direct risk calculation on subsector level
+total_subsector_production = sum(climada_mriot.mrio_data,2)';
 for subsector_i = 1:length(subsector_information)
     sel_pos = subsector_information(subsector_i);
     
@@ -191,17 +192,13 @@ for subsector_i = 1:length(subsector_information)
     entity_file = [country_ISO3 '_' mainsector_name '_' subsector_name '.mat'];
     entity = climada_entity_load(entity_file);
     
-    % risk calculation (see subfunction)
-    direct_subsector_risk(sel_pos) = risk_calc(entity, hazard, risk_measure);
+    % risk calculation (see subfunction) + multiplication with each subsector's total production
+    direct_subsector_risk(sel_pos) = risk_calc(entity, hazard, risk_measure) * total_subsector_production(sel_pos);
     
     climada_progress2stdout(risk_i + subsector_i,n_mrio_countries*n_subsectors,5,'risk calculations'); % update
 end
 
 climada_progress2stdout(0) % terminate
-
-% multiplication with each subsector's total production
-total_subsector_production = sum(climada_mriot.mrio_data, 2)';
-direct_subsector_risk = direct_subsector_risk .* total_subsector_production;
 
 % aggregate direct risk across all sectors per country to obtain direct
 % country risk:
