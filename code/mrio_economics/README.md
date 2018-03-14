@@ -9,13 +9,15 @@ This method combines the core climada functionality with multi-regional input-ou
 
 The function ***mrio_read_table*** allows to import data from a given MRIO table and put it in a climada mriot structure. ***mrio_direct_risk_calc*** will run all damage calculations to obtain the direct risk per country and sector. Special attention should be given to the assumed exposure and vulnerability for the different sectors. Last but not least, ***mrio_leontief_calc*** estimates the indirect risk using environmentally extended MRIO analysis techniques. The core function is ***mrio_master***, which does it all in one go. Read the [mrio economics manual (link to come)]() for more details.
 
-The method will (NOT yet) allow advanced users to provide additional data on exposure of main sectors for single countries, please proceed as follows:
+The method allows advanced users to provide additional data on exposure of subsectors for single countries, please proceed as follows:
 
 1. Download the file
-2. Move it to  .../advanced/data/
-3. Use e.g. ***climada_shaperead*** to read in the data
-4. Convert the shapefile into an entity using ***mrio_shapes2entity***
-4. Rename it to <span style="color:red">ISO3</span>_<span style="color:red">MAINSECTOR</span>_2018
+2. Move it to  .../advanced/data/mrio/
+3. Use e.g. ***climada_shaperead*** or ***climada_csvread*** to read in the data
+4. Generate your asset-base (so-called entity). You can use the structure of ***mrio_generate_forestry_entity*** (tif) or ***mrio_generate_agriculture_entity*** (csv) as a guide. 
+4. Give it a reasonable name following the mrio naming system (ISO3_MAINSECTOR_SUBSECTOR) corresponding to the MRIO table you are going to use
+
+This is holds for data on exposure of mainsectors. In such a case, the name should correspond to the structure ISO3_MAINSECTOR_XXX.
 
 See [mrio economics manual (link to come)]() for more details.
 <br>
