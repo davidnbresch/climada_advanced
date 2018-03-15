@@ -51,14 +51,6 @@ params.centroids_file = 'GLB_NatID_grid_0360as_adv_1'; % the global centroids
 params.hazard_file = 'GLB_0360as_TC_hist'; % historic
 % params.hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
 
-params.entity_file.agriculture = 'GLB_agriculture_ismip_2018'; % the global Agriculture (agriculture) entity
-params.entity_file.forestry_fishing = 'GLB_0360as_ismip_2018_prep'; % the global Forestry and Fishing (forestry_fishing) entity
-params.entity_file.mining_quarrying = 'GLB_mining_quarrying_ismip_2018'; % the global Mining and Quarrying (mining_quarrying) entity
-params.entity_file.manufacturing = 'GLB_0360as_ismip_2018_prep'; % the global Manufacturing (manufacturing) entity
-params.entity_file.services = 'GLB_0360as_ismip_2018_prep'; % the global Services (services) entity
-params.entity_file.utilities = 'GLB_0360as_ismip_2018_prep'; % the global Electricity, Gas and Water supply (utilities) entity
-params.entity_file = struct2cell(params.entity_file);
-
 params.write_xls = 1; % If set to 1 (default) the final results are written to an excel file which can be found in module/data/results
 params.full_aggregation = 0; % If set to 0 (default), no full aggregation of mriot table is computed, as the mrio data itself is not required
                              % in the mrio standard procedure. Rather, a minimal version of aggregated_mriot is computed, only containing the labels 

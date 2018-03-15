@@ -115,7 +115,6 @@ hazard = climada_hazard_load(params.hazard_file);
 
 climada_progress2stdout % init, see terminate below
 risk_i = 0;
-
 % direct risk calculation per mainsector and per country
 direct_mainsector_risk = zeros(1,n_mainsectors*n_mrio_countries); 
 for mainsector_j = 1:n_mainsectors % at the moment we are not differentiating between all sectors (!!!)
@@ -138,7 +137,7 @@ for mainsector_j = 1:n_mainsectors % at the moment we are not differentiating be
             entity_file = mainsector_entity_file;
         end
         
-        if ~eq(entity_file, mainsector_entity_file)
+        if ~strcmp(entity_file, mainsector_entity_file)
             entity = climada_entity_load(entity_file);
         else
             entity = mainsector_entity;
@@ -164,12 +163,15 @@ for mainsector_j = 1:n_mainsectors % at the moment we are not differentiating be
 
         entity_sel = entity;
         entity_sel.assets.Value = entity.assets.Value .* sel_assets;  % set values = 0 for all assets outside country i.
-
-        % risk calculation (see subfunction)
-        direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = risk_calc(entity_sel, hazard, risk_measure);
-
-        risk_i = risk_i + length(aggregated_mriot.aggregation_info.(mainsector_name)) - length(subsector_information)/n_mainsectors/n_mrio_countries;
         
+        % risk calculation (see subfunction)
+        if length(entity_sel.assets.Value) > 0
+            direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = risk_calc(entity_sel, hazard, risk_measure);
+        else
+            direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = 0;
+        end
+    
+        risk_i = risk_i + length(aggregated_mriot.aggregation_info.(mainsector_name)) - length(subsector_information)/n_mainsectors/n_mrio_countries;
         climada_progress2stdout(risk_i,n_mrio_countries*n_subsectors,5,'risk calculations'); % update
 
     end % mrio_country_i
@@ -193,7 +195,11 @@ for subsector_i = 1:length(subsector_information)
     entity = climada_entity_load(entity_file);
     
     % risk calculation (see subfunction) + multiplication with each subsector's total production
-    direct_subsector_risk(sel_pos) = risk_calc(entity, hazard, risk_measure) * total_subsector_production(sel_pos);
+    if length(entity.assets.Value) > 0
+        direct_subsector_risk(sel_pos) = risk_calc(entity, hazard, risk_measure) * total_subsector_production(sel_pos);
+    else
+        direct_subsector_risk(sel_pos) = 0;
+    end
     
     climada_progress2stdout(risk_i + subsector_i,n_mrio_countries*n_subsectors,5,'risk calculations'); % update
 end
@@ -222,7 +228,7 @@ direct_country_risk = table(unique(climada_mriot.countries','stable'),unique(cli
 function risk = risk_calc(entity, hazard, risk_measure)
     
     % calculate event damage set
-    EDS = climada_EDS_calc(entity,hazard,'' ,'' ,2 ,'');
+    EDS = climada_EDS_calc(entity, hazard, '', '', 2, '');
 
     % Calculate Damage exceedence Frequency Curve (DFC)
     %DFC = climada_EDS2DFC(EDS);

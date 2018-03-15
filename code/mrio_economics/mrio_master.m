@@ -70,7 +70,7 @@ fprintf('Calculating direct risk for all countries and sectors as specified in m
 
 % finally, quantifying indirect risk using the Leontief I-O model
 fprintf('Quantifying indirect risk using the Leontief I-O model...\n');tic;
-[total_subsector_risk, total_country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);toc
+[total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);toc
 
 % calculating the ratios of direct to indirect risk for both the subsectors
 % and the country risk. The resulting values are incorporated into the
