@@ -16,9 +16,9 @@ function [entity, entity_save_file] = mrio_generate_mining_entity(params)
 % EXAMPLE:
 %   mrio_generate_mining_entity
 % INPUTS:
+% OPTIONAL INPUT PARAMETERS:
 %   params: a struct containing several fields, some of which are struct
 %       themselves that contain default values used in the entity generation
-% OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
 %  entity: a structure, with (please run the first example above and then
 %       inspect entity for the latest content)
@@ -123,7 +123,7 @@ global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 % poor man's version to check arguments
-if ~exist('params', 'var'), params = []; end
+if ~exist('params','var'), params = struct; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -135,7 +135,32 @@ end
 
 % PARAMETERS
 %
-if isempty(params), params = mrio_get_params; end
+if ~isfield(params,'centroids_file') || isempty(params.centroids_file)
+    if (exist(fullfile(climada_global.centroids_dir, 'GLB_NatID_grid_0360as_adv_1.mat'), 'file') == 2) 
+        params.hazard_file = 'GLB_NatID_grid_0360as_adv_1.mat';
+    else % prompt for centroids filename
+        params.centroids_file = [climada_global.centroids_file];
+        [filename, pathname] = uigetfile(params.centroids_file, 'Select centroids file:');
+        if isequal(filename,0) || isequal(pathname,0)
+            return; % cancel
+        else
+            params.centroids_file = fullfile(pathname, filename);
+        end
+    end
+end
+if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
+    if (exist(fullfile(climada_global.hazards_dir, 'GLB_0360as_TC_hist.mat'), 'file') == 2) 
+        params.hazard_file = 'GLB_0360as_TC_hist.mat';
+    else % prompt for hazard filename
+        params.hazard_file = [climada_global.hazards_dir];
+        [filename, pathname] = uigetfile(params.hazard_file, 'Select hazard file:');
+        if isequal(filename,0) || isequal(pathname,0)
+            return; % cancel
+        else
+            params.hazard_file = fullfile(pathname, filename);
+        end
+    end
+end
 %%
 % the file with the active mines and mineral plants in the US
 filename{1} = [module_data_dir filesep 'mrio' filesep 'mineplant.xls'];

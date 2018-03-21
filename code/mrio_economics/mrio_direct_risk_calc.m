@@ -1,4 +1,4 @@
-function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure) % uncomment to run as function
+function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure, params) % uncomment to run as function
 % mrio direct risk ralc
 % MODULE:
 %   advanced
@@ -15,14 +15,20 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(pa
 %   next call:  % just to illustrate
 %   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % CALLING SEQUENCE:
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure);
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure, params);
 % EXAMPLE:
-%   params = mrio_get_params;
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot);
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
 % INPUTS:
-%   params: a structure with the fields
+%   climada_mriot: a structure with ten fields. It represents a general climada
+%       mriot structure whose basic properties are the same regardless of the
+%       provided mriot it is based on, see mrio_read_table;
+%   aggregated_mriot: an aggregated climada mriot struct as
+%       produced by mrio_aggregate_table.
+% OPTIONAL INPUT PARAMETERS:
+%   risk_measure: risk measure to be applied (string), default is the Expected Annual Damage (EAD)
+ %   params: a structure with the fields
 %       mriot: a structure with the fields
 %           filename: the filename (and path, optional) of a previously
 %               saved mrio table structure. If no path provided, default path ../data is used
@@ -37,13 +43,6 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(pa
 %       hazard_file: the filename (and path, optional) of a hazard
 %           structure. If no path provided, default path ../data/hazard is used
 %           > promted for if empty
-%   climada_mriot: a structure with ten fields. It represents a general climada
-%       mriot structure whose basic properties are the same regardless of the
-%       provided mriot it is based on, see mrio_read_table;
-%   aggregated_mriot: an aggregated climada mriot struct as
-%       produced by mrio_aggregate_table.
-% OPTIONAL INPUT PARAMETERS:
-%   risk_measure: risk measure to be applied (string), default is the Expected Annual Damage (EAD)
 % OUTPUTS:
 %   direct_subsector_risk: a table containing as one variable the direct risk for each
 %       subsector/country combination covered in the original mriot. The
@@ -72,6 +71,7 @@ if ~climada_init_vars, return; end % init/import global variables
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end
 if ~exist('aggregated_mriot', 'var'), aggregated_mriot = []; end
 if ~exist('risk_measure', 'var'), risk_measure = []; end
+if ~exist('params','var'), params = struct; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -85,6 +85,19 @@ end
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(aggregated_mriot), aggregated_mriot = mrio_aggregate_table(climada_mriot); end
 if isempty(risk_measure), risk_measure = 'EAD'; end
+if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
+    if (exist(fullfile(climada_global.hazards_dir, 'GLB_0360as_TC_hist.mat'), 'file') == 2) 
+        params.hazard_file = 'GLB_0360as_TC_hist.mat';
+    else % prompt for hazard filename
+        params.hazard_file = [climada_global.hazards_dir];
+        [filename, pathname] = uigetfile(params.hazard_file, 'Select hazard file:');
+        if isequal(filename,0) || isequal(pathname,0)
+            return; % cancel
+        else
+            params.hazard_file = fullfile(pathname, filename);
+        end
+    end
+end
 
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 n_mrio_countries = length(mrio_countries_ISO3);
@@ -152,7 +165,7 @@ for mainsector_j = 1:n_mainsectors % at the moment we are not differentiating be
             % return % ask user to prepare entities first    
         end
 
-        if country_ISO3 ~= 'ROW' 
+        if ~strcmp(country_ISO3,'ROW')
             country_NatID = find(ismember(countries_ISO3, country_ISO3)); % extract NatID
             sel_assets = eq(ismember(entity.assets.NatID, country_NatID),~isnan(entity.assets.Value)); % select all non-NaN assets of this country
         else % 'Rest of World' (ROW) is viewed as a country 
