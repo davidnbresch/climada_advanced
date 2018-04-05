@@ -66,7 +66,7 @@ aggregated_mriot = mrio_aggregate_table(climada_mriot,params.full_aggregation);t
 
 % calculate direct risk for all countries and sectors as specified in mrio table
 fprintf('Calculating direct risk for all countries and sectors as specified in mrio table...\n');tic;
-[direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure);toc
+[direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure, params);toc
 
 % finally, quantifying indirect risk using the Leontief I-O model
 fprintf('Quantifying indirect risk using the Leontief I-O model...\n');tic;
