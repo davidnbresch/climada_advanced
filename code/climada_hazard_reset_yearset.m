@@ -3,11 +3,13 @@ function hazard = climada_hazard_reset_yearset(hazard,verbose_mode)
 % NAME:
 %   climada_hazard_reset_yearset
 % PURPOSE:
-%   reset hazard.orig_yearset and hazard.orig_years for a changed (i.e.
-%   cropped) hazard set. climada_hazard_reset_yearset is required to make
-%   the computation of YDS work.
+%   Reset hazard.orig_yearset and hazard.orig_years 
 %
-%   See climada_EDS2YDS or climada_tc_hazard_set.
+%   (a) for a changed (i.e. cropped) hazard set. climada_hazard_reset_yearset is required to make
+%       the computation of YDS work. (See climada_EDS2YDS or
+%       climada_tc_hazard_set.) and
+%   (b) to get rid of duplicates in the field orig_yearset,
+%       as these duplicates cause expected damage mismatches in climada_EDS2YDS
 %
 % CALLING SEQUENCE:
 %   hazard = climada_hazard_reset_yearset(hazard,verbose_mode)
@@ -78,6 +80,8 @@ function hazard = climada_hazard_reset_yearset(hazard,verbose_mode)
 if ~exist('hazard','var'),error('no hazard provided.');end
 if ~exist('verbose_mode','var'),verbose_mode=1;end
 
+%% (a) full reset
+% (a alone does not solve the duplicate issue, this requires b)
 hazard = rmfield(hazard,'orig_yearset');
 
 
@@ -118,6 +122,8 @@ for event_i=1:n_events
     if verbose_mode,climada_progress2stdout(event_i,n_events,100,'tracks');end % update
 
 end % track_i
+
+%%
 if verbose_mode,climada_progress2stdout(0);end % terminate
 
 % save last year
@@ -132,4 +138,19 @@ if verbose_mode,fprintf('%s\n',msgstr);end
 min_year   = hazard.yyyy(1);
 max_year   = hazard.yyyy(end); % start time of track, as we otherwise might count one year too much
 hazard.orig_years = max_year - min_year+1;
+
+%% (b) get rid of duplicates in orig_yearset
+yyyy_unique = sort(unique([hazard.orig_yearset.yyyy]));
+if length(yyyy_unique)~=length([hazard.orig_yearset.yyyy]) ||...
+        ~min(yyyy_unique==[hazard.orig_yearset.yyyy])
+    length(yyyy_unique)
+    for orig_year_i = 1:length(yyyy_unique)    
+        orig_yearset_new(orig_year_i).yyyy = yyyy_unique(orig_year_i);
+        orig_yearset_new(orig_year_i).event_count=sum([hazard.orig_yearset([hazard.orig_yearset.yyyy]==yyyy_unique(orig_year_i)).event_count]);
+        orig_yearset_new(orig_year_i).event_index=sort([hazard.orig_yearset([hazard.orig_yearset.yyyy]==yyyy_unique(orig_year_i)).event_index]);
+    end
+    hazard.orig_yearset = orig_yearset_new;
+    clear orig_yearset_new yyyy_unique orig_year_i
+end
+end
 
