@@ -45,8 +45,6 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 
 indirect_subsector_risk = []; % init output
 indirect_country_risk = []; % init output
-subsector_risk = []; % init output
-country_risk = []; % init output
 leontief_inverse = []; % init output
 climada_nan_mriot = []; % init output 
 
@@ -79,11 +77,13 @@ n_subsectors = climada_mriot.no_of_sectors;
 n_mrio_countries = climada_mriot.no_of_countries;
 
 % Direct subsector risk as array (not table) for internal use:
-for var_i = 1:length(direct_subsector_risk.Properties.VariableNames) % Keeping it flexible in case future vesions of table change order of variables or variable names.
-    if isnumeric(direct_subsector_risk{1,var_i})
-        direct_subsector_risk = direct_subsector_risk{:,var_i}';
-    end
-end % var_i
+if istable(direct_subsector_risk)
+    for var_i = 1:length(direct_subsector_risk.Properties.VariableNames) % Keeping it flexible in case future vesions of table change order of variables or variable names.
+        if isnumeric(direct_subsector_risk{1,var_i})
+            direct_subsector_risk = direct_subsector_risk{:,var_i}';
+        end
+    end % var_i
+end
 
 % technical coefficient matrix
 techn_coeffs = zeros(size(climada_mriot.mrio_data)); % init
