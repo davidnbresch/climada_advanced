@@ -137,7 +137,7 @@ end
 %
 if ~isfield(params,'centroids_file') || isempty(params.centroids_file)
     if (exist(fullfile(climada_global.centroids_dir, 'GLB_NatID_grid_0360as_adv_1.mat'), 'file') == 2) 
-        params.hazard_file = 'GLB_NatID_grid_0360as_adv_1.mat';
+        params.centroids_file = 'GLB_NatID_grid_0360as_adv_1.mat';
     else % prompt for centroids filename
         params.centroids_file = [climada_global.centroids_file];
         [filename, pathname] = uigetfile(params.centroids_file, 'Select centroids file:');
