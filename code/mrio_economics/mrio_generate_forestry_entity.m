@@ -118,6 +118,7 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregatio
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180228, initial
 % Ediz Herms, ediz.herms@outlook.com, 20180306, aggregate values - resolution can be managed via input
+%
 
 entity = []; % init output
 entity_save_file = []; % init output

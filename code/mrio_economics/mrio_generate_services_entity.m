@@ -115,6 +115,7 @@ function [entity, entity_save_file] = mrio_generate_services_entity(params)
 % RESTRICTIONS:
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180403, initial
+%
 
 entity = []; % init output
 entity_save_file = []; % init output
@@ -180,6 +181,13 @@ centroids = climada_centroids_load(params.centroids_file);
 
 % load hazard
 hazard = climada_hazard_load(params.hazard_file);
+
+if exist(entity_file,'file')
+    entity = climada_entity_read(entity_file,'SKIP'); % read the empty entity
+    if isfield(entity,'assets'), entity = rmfield(entity,'assets'); end
+else
+    fprintf('WARNING: base entity %s not found, entity just entity.assets\n', entity_file);
+end
 
 % get assets 
 entity.assets = climada_nightlight_global_entity;

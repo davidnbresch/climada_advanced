@@ -115,6 +115,7 @@ function [entity, entity_save_file] = mrio_generate_mining_entity(params)
 % RESTRICTIONS:
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180115, initial
+%
 
 entity = []; % init output
 entity_save_file = []; % init output
