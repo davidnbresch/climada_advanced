@@ -56,5 +56,5 @@ params.full_aggregation = 0; % If set to 0 (default), no full aggregation of mri
                              % in the mrio standard procedure. Rather, a minimal version of aggregated_mriot is computed, only containing the labels 
                              % and the aggregation info (i.e. which subsectors belong to which mainsector).
 params.switch_io_approach = 1; % If set to 1 (default) indirect risk is estimated using environmentally extended input-output analysis (EEIOA)
-params.max_encoding_distance_m = 30e3; % the maximum distance to encode an asset location to a centroid
+
 end % mrio_get_params

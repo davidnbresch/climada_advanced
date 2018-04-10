@@ -162,7 +162,6 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
         end
     end
 end
-if ~isfield(params,'max_encoding_distance_m'), params.max_encoding_distance_m = 30e3; end
 %%
 % the file with the active mines and mineral plants in the US
 filename{1} = [module_data_dir filesep 'mrio' filesep 'mineplant.xls'];
@@ -256,7 +255,7 @@ for file_i = 1:length(filename)
 end
 
 % encode entity
-entity = climada_assets_encode(entity, hazard, params.max_encoding_distance_m);
+entity = climada_assets_encode(entity, hazard);
 
 % pass over ISO3 codes and NatID to assets
 entity.assets.ISO3_list = centroids.ISO3_list;

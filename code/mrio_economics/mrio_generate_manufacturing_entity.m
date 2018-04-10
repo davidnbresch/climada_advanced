@@ -1,5 +1,5 @@
 function [entity, entity_save_file] = mrio_generate_manufacturing_entity(params)
-% mrio generate manufacturing entity
+% 
 % MODULE:
 %   advanced
 % NAME:
@@ -17,6 +17,7 @@ function [entity, entity_save_file] = mrio_generate_manufacturing_entity(params)
 %   mrio_generate_manufacturing_entity;
 %   mrio_generate_manufacturing_entity(params);
 % INPUTS:
+%   
 % OPTIONAL INPUT PARAMETERS:
 %       params: a struct containing several fields, some of which are struct
 %       themselves that contain default values used in the entity
@@ -132,34 +133,7 @@ if ~exist('params', 'var'), params = []; end
 
 % PARAMETERS
 %
-if ~isfield(params,'centroids_file') || isempty(params.centroids_file)
-    if (exist(fullfile(climada_global.centroids_dir, 'GLB_NatID_grid_0360as_adv_1.mat'), 'file') == 2) 
-        params.centroids_file = 'GLB_NatID_grid_0360as_adv_1.mat';
-    else % prompt for centroids filename
-        params.centroids_file = [climada_global.centroids_file];
-        [filename, pathname] = uigetfile(params.centroids_file, 'Select centroids file:');
-        if isequal(filename,0) || isequal(pathname,0)
-            return; % cancel
-        else
-            params.centroids_file = fullfile(pathname, filename);
-        end
-    end
-end
-if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
-    if (exist(fullfile(climada_global.hazards_dir, 'GLB_0360as_TC_hist.mat'), 'file') == 2) 
-        params.hazard_file = 'GLB_0360as_TC_hist.mat';
-    else % prompt for hazard filename
-        params.hazard_file = [climada_global.hazards_dir];
-        [filename, pathname] = uigetfile(params.hazard_file, 'Select hazard file:');
-        if isequal(filename,0) || isequal(pathname,0)
-            return; % cancel
-        else
-            params.hazard_file = fullfile(pathname, filename);
-        end
-    end
-end
-if ~isfield(params,'max_encoding_distance_m'), params.max_encoding_distance_m = 30e3; end
-%
+if isempty(params), params = mrio_get_params; end
 % Get file with gridded industry NOx emissions globally. For source and user
 % requirements, check user manual or readme file.
 manu_file = [module_data_dir filesep 'entities' filesep 'ECLIPSE_base_CLE_V5a_NOx.nc'];
@@ -242,7 +216,7 @@ entity.assets.Cover = entity.assets.Value;
 entity.assets.DamageFunID = entity.assets.Value*0+1;
     
 % encode entity
-entity = climada_assets_encode(entity, hazard, params.max_encoding_distance_m);
+entity = climada_assets_encode(entity, hazard, 30e3);
 
 % pass over ISO3 codes and NatID to assets
 entity.assets.ISO3_list = centroids.ISO3_list;
@@ -279,4 +253,4 @@ entity.assets = climada_assets_complete(entity.assets);
 fprintf('saving entity as %s\n', entity_save_file);
 climada_entity_save(entity, entity_save_file);
 
-end % mrio_generate_manufacturing_entity
+% mrio_generate_manufacturing_entity

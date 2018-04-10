@@ -162,7 +162,6 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
         end
     end
 end
-if ~isfield(params,'max_encoding_distance_m'), params.max_encoding_distance_m = 30e3; end
 %% 
 % Nightlight intensity 
 %
@@ -191,11 +190,10 @@ else
 end
 
 % get assets 
-entity_temp = climada_nightlight_global_entity;
-entity.assets = entity_temp.assets;
+entity.assets = climada_nightlight_global_entity;
 
 % encode entity
-entity = climada_assets_encode(entity, hazard, params.max_encoding_distance_m);
+entity = climada_assets_encode(entity, hazard);
 
 % pass over ISO3 codes and NatID to assets
 fprintf('get NatID for %i assets ...\n',length(entity.assets.Value));
