@@ -1,20 +1,20 @@
-function [entity, entity_save_file] = mrio_generate_mining_entity(params)
-% mrio generate mining entity
+function [entity, entity_save_file] = mrio_generate_services_entity(params)
+% mrio generate services entity
 % MODULE:
 %   advanced
 % NAME:
-%	mrio_generate_mining_entity
+%	mrio_generate_services_entity
 % PURPOSE:
-%   Construct a global entity file based on global data on active mines and mineral plants. 
+%   Construct a global entity file based on the Nightlight intensity
 %
 %   next call:
 %       mrio_entity_country to generate country entities and to prepare for mrio 
 %       (multi regional I/O table) project
 %
 % CALLING SEQUENCE:
-%   mrio_generate_mining_entity
+%   mrio_generate_services_entity
 % EXAMPLE:
-%   mrio_generate_mining_entity
+%   mrio_generate_services_entity
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
 %   params: a struct containing several fields, some of which are struct
@@ -114,7 +114,7 @@ function [entity, entity_save_file] = mrio_generate_mining_entity(params)
 %   entity_save_file: the name the encoded entity got saved to
 % RESTRICTIONS:
 % MODIFICATION HISTORY:
-% Ediz Herms, ediz.herms@outlook.com, 20180115, initial
+% Ediz Herms, ediz.herms@outlook.com, 20180403, initial
 %
 
 entity = []; % init output
@@ -162,26 +162,13 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
         end
     end
 end
-%%
-% the file with the active mines and mineral plants in the US
-filename{1} = [module_data_dir filesep 'mrio' filesep 'mineplant.xls'];
+%% 
+% Nightlight intensity 
 %
 % Source:
-% Originator: U.S. Geological Survey
-% Publication_Date = 2005
-% Title: Active Mines and Mineral Processing
-% Link: https://mrdata.usgs.gov/mineplant/
 %
-% and the file with the mineral operations outside the United States
-filename{2} = [module_data_dir filesep 'mrio' filesep 'minfac.xls'];
 %
-% Source:
-% Originator: U.S. Geological Survey
-% Publication_Date = 2010
-% Title: Mineral operations outside the United States
-% Link: https://mrdata.usgs.gov/mineral-operations/
-%
-% detailed instructions where to obtain the files and references to the original 
+% detailed instructions where to obtain the file and references to the original 
 % source can be found in the README file _readme.txt in the module's data dir.
 %%
 %
@@ -195,14 +182,6 @@ centroids = climada_centroids_load(params.centroids_file);
 % load hazard
 hazard = climada_hazard_load(params.hazard_file);
 
-% check for data files being locally available
-for file_i = 1:length(filename)
-    if ~exist(filename{file_i},'file')
-        fprintf(['Data file "' filename{file_i} '" does not exist.']);
-        return
-    end
-end
-
 if exist(entity_file,'file')
     entity = climada_entity_read(entity_file,'SKIP'); % read the empty entity
     if isfield(entity,'assets'), entity = rmfield(entity,'assets'); end
@@ -210,86 +189,42 @@ else
     fprintf('WARNING: base entity %s not found, entity just entity.assets\n', entity_file);
 end
 
-fprintf('load %i file(s) with data on active mines and mineral plants...\n',length(filename));
-
-% load global data on active mines and mineral plants
-for file_i = 1:length(filename)
-    
-    [~, ~, fE] = fileparts(filename{file_i});
-        
-    entity_i = entity;
-    
-    if eq(fE,'.csv') % not working yet
-        data = climada_csvread(filename{file_i},',');
-    elseif eq(fE,'.xls')
-        data = climada_xlsread('',filename{file_i},'',1);
-    else % TO DO
-        return
-    end
-   
-    if isfield(data,'LATITUDE')
-        entity_i.assets.lon = data.LONGITUDE(:)';
-        entity_i.assets.lat = data.LATITUDE(:)';
-        entity_i.assets.Value = zeros(1,length(entity_i.assets.lon))+1;
-    else
-        entity_i.assets.lon = data.longitude(:)';
-        entity_i.assets.lat = data.latitude(:)';
-        entity_i.assets.Value = zeros(1,length(entity_i.assets.lon))+1;
-    end
-    
-    % for consistency, update Deductible and Cover
-    entity_i.assets.Deductible = entity_i.assets.Value*0;
-    entity_i.assets.Cover = entity_i.assets.Value;
-    
-    % pass over (default) DamageFunID
-    entity_i.assets.DamageFunID = entity_i.assets.Value*0+1;
-    
-    if file_i == 1
-        entity = entity_i;
-        entity.assets.filename_index = entity.assets.Value*0+file_i; % keep track of origin for each data point
-    else
-        entity = climada_entity_combine(entity, entity_i);
-        entity.assets.source_index(end+1:end+length(entity_i.assets.Value)) = entity_i.assets.Value*0+file_i; % keep track of origin for each data point
-    end
-   
-end
+% get assets 
+entity.assets = climada_nightlight_global_entity;
 
 % encode entity
 entity = climada_assets_encode(entity, hazard);
 
 % pass over ISO3 codes and NatID to assets
+fprintf('get NatID for %i assets ...\n',length(entity.assets.Value));
 entity.assets.ISO3_list = centroids.ISO3_list;
-
-n_assets = length(entity.assets.Value);
-fprintf('get NatID for %i assets ...\n',n_assets);
 
 climada_progress2stdout % init, see terminate below
 
-for asset_i = 1:n_assets
+for asset_i = 1:length(entity.assets.Value)
     sel_centroid = entity.assets.centroid_index(asset_i);
     if sel_centroid > 0 && length(centroids.NatID) > sel_centroid
         entity.assets.NatID(asset_i) = centroids.NatID(sel_centroid);
     else
         entity.assets.NatID(asset_i) = 0;
     end
-    climada_progress2stdout(asset_i,n_assets,5,'processed assets'); % update
+    climada_progress2stdout(asset_i,length(entity.assets.Value),5,'processed assets'); % update
 end % asset_i
 
 climada_progress2stdout(0) % terminate
 
 % save filename and comment to ensure transparency
 entity.assets.reference_year = climada_global.present_reference_year;
-entity.assets.source_file = filename;
 entity.assets.comment = sprintf('generated by %s at %s', mfilename,datestr(now)); 
 
-entity_save_file = [climada_global.entities_dir filesep 'GLB_mining_quarrying_XXX.mat'];
+entity_save_file = [climada_global.entities_dir filesep 'GLB_services_XXX.mat'];
 entity.assets.filename = entity_save_file;
 
 % make sure we have all fields and they are 'correct'
-entity.assets = climada_assets_complete(entity.assets); 
+entity.assets = climada_assets_complete(entity.assets);
 
 % save entity as .mat file for fast access
 fprintf('saving entity as %s\n', entity_save_file);
 climada_entity_save(entity, entity_save_file);
 
-end % mrio_generate_mining_entity
+end % mrio_generate_services_entity
