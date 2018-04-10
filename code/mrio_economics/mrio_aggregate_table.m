@@ -461,7 +461,7 @@ function three_RoW
     climada_mriot.climada_sect_id = RoW_mainsector_id;
     climada_mriot.climada_sect_name = RoW_mainsector_name;
     climada_mriot.mrio_data = RoW_mrio_data;
-    climada_mriot.no_of_countries = no_of_countries-(no_of_RoW-1);
+    climada_mriot.no_of_countries = no_of_countries-(no_of_RoW-3);
     climada_mriot.RoW_aggregation = 'all into one except RoW-Asia/Pacific and RoW-America';
     
     % We now have new values for the fuction-wide variables
