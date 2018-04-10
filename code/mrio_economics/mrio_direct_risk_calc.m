@@ -165,10 +165,10 @@ for mainsector_j = 1:n_mainsectors % at the moment we are not differentiating be
             % return % ask user to prepare entities first    
         end
 
-        if ~strcmp(country_ISO3,'ROW')
+        if ~strcmp(country_ISO3,'RoW')
             country_NatID = find(ismember(countries_ISO3, country_ISO3)); % extract NatID
             sel_assets = eq(ismember(entity.assets.NatID, country_NatID),~isnan(entity.assets.Value)); % select all non-NaN assets of this country
-        else % 'Rest of World' (ROW) is viewed as a country 
+        else % 'Rest of World' (RoW) is viewed as a country 
             list_RoW_ISO3 = setdiff(countries_ISO3, mrio_countries_ISO3); % find all countries that are not individually listed in the MRIO table 
             list_RoW_NatID = find(ismember(countries_ISO3, list_RoW_ISO3)); % extract NatID
             sel_assets = eq(ismember(entity.assets.NatID, list_RoW_NatID),~isnan(entity.assets.Value)); % select all non-NaN RoW assets

@@ -115,7 +115,7 @@ for mrio_country_i = 1:n_mrio_countries
         
         entity = GLB_entity; 
         
-        if ~strcmp(country_ISO3_i,'ROW')
+        if ~strcmp(country_ISO3_i,'RoW')
             country_NatID = find(ismember(countries_ISO3, country_ISO3_i)); % extract NatID
             sel_pos = intersect(find(ismember(GLB_entity.assets.NatID, country_NatID)), find(~isnan(GLB_entity.assets.Value))); % select all non-NaN assets % select all non-NaN assets of this country
         else % 'Rest of World' (RoW) is viewed as a country 
