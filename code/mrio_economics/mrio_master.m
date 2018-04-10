@@ -43,6 +43,9 @@
 % import/setup global variables
 % global climada_global
 % if ~climada_init_vars,return;end
+
+% Set max encoding distance to 30km (well enough for our purpose):
+climada_global.max_encoding_distance_m = 30000;
          
 % poor man's version to check arguments
 if ~exist('risk_measure', 'var'), risk_measure = []; end
