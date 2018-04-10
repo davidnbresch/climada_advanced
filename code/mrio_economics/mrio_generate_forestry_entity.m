@@ -171,6 +171,7 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
         end
     end
 end
+if ~isfield(params,'max_encoding_distance_m'), params.max_encoding_distance_m = 30e3; end
 %% 
 % land cover map (300m observation) in .nc format
 full_img_file = [module_data_dir filesep 'mrio' filesep 'ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7.nc'];
@@ -286,7 +287,7 @@ entity.assets.Cover = entity.assets.Value;
 entity.assets.DamageFunID = entity.assets.Value*0+1;
 
 % encode entity
-entity = climada_assets_encode(entity, hazard);
+entity = climada_assets_encode(entity, hazard, params.max_encoding_distance_m);
 
 % pass over ISO3 codes and NatID to assets
 fprintf('get NatID for %i assets ...\n',length(entity.assets.Value));

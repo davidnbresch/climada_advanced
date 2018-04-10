@@ -160,6 +160,7 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
         end
     end
 end
+if ~isfield(params,'max_encoding_distance_m'), params.max_encoding_distance_m = 30e3; end
 % Get file with all power plants globally. For source and user
 % requirements, check user manual or readme file.
 utilities_file = [module_data_dir filesep 'entities' filesep 'utilities_source.csv'];
@@ -224,7 +225,7 @@ entity.assets.Cover = entity.assets.Value;
 entity.assets.DamageFunID = entity.assets.Value*0+1;
     
 % encode entity
-entity = climada_assets_encode(entity, hazard);
+entity = climada_assets_encode(entity, hazard, params.max_encoding_distance_m);
 
 % pass over ISO3 codes and NatID to assets
 entity.assets.ISO3_list = centroids.ISO3_list;
