@@ -55,6 +55,5 @@ params.write_xls = 1; % If set to 1 (default) the final results are written to a
 params.full_aggregation = 0; % If set to 0 (default), no full aggregation of mriot table is computed, as the mrio data itself is not required
                              % in the mrio standard procedure. Rather, a minimal version of aggregated_mriot is computed, only containing the labels 
                              % and the aggregation info (i.e. which subsectors belong to which mainsector).
-params.switch_io_approach = 1; % If set to 1 (default) indirect risk is estimated using environmentally extended input-output analysis (EEIOA)
 
 end % mrio_get_params

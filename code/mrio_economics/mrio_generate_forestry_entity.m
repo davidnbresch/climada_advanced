@@ -1,4 +1,4 @@
-function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregations, params)
+function [entity, entity_save_file] = mrio_generate_forestry_entity(params, n_aggregations)
 % mrio generate forestry entity
 % MODULE:
 %   advanced
@@ -16,11 +16,11 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregatio
 % EXAMPLE:
 %   mrio_generate_forestry_entity
 % INPUTS:
+%   params: a struct containing several fields, some of which are struct
+%       themselves that contain default values used in the entity generation
 % OPTIONAL INPUT PARAMETERS:
 %   n_aggregations: number of aggregation runs of the land cover data, default is ='4' 
 %       whereas minimum number of runs is 1 as the dataset is too large to be handled otherwise
-%   params: a struct containing several fields, some of which are struct
-%       themselves that contain default values used in the entity generation
 % OUTPUTS:
 %  entity: a structure, with (please run the first example above and then
 %       inspect entity for the latest content)
@@ -118,7 +118,6 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregatio
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180228, initial
 % Ediz Herms, ediz.herms@outlook.com, 20180306, aggregate values - resolution can be managed via input
-%
 
 entity = []; % init output
 entity_save_file = []; % init output
@@ -127,8 +126,8 @@ global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 % poor man's version to check arguments
+if ~exist('params', 'var'), params = []; end
 if ~exist('n_aggregations', 'var'), n_aggregations = []; end
-if ~exist('params','var'), params = struct; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -140,36 +139,11 @@ end
 
 % PARAMETERS
 %
+if isempty(params), params = mrio_get_params; end
 if isempty(n_aggregations) 
     n_aggregations = 4; 
 elseif n_aggregations <= 1
     n_aggregations = 1;
-end
-if ~isfield(params,'centroids_file') || isempty(params.centroids_file)
-    if (exist(fullfile(climada_global.centroids_dir, 'GLB_NatID_grid_0360as_adv_1.mat'), 'file') == 2) 
-        params.centroids_file = 'GLB_NatID_grid_0360as_adv_1.mat';
-    else % prompt for centroids filename
-        params.centroids_file = [climada_global.centroids_file];
-        [filename, pathname] = uigetfile(params.centroids_file, 'Select centroids file:');
-        if isequal(filename,0) || isequal(pathname,0)
-            return; % cancel
-        else
-            params.centroids_file = fullfile(pathname, filename);
-        end
-    end
-end
-if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
-    if (exist(fullfile(climada_global.hazards_dir, 'GLB_0360as_TC_hist.mat'), 'file') == 2) 
-        params.hazard_file = 'GLB_0360as_TC_hist.mat';
-    else % prompt for hazard filename
-        params.hazard_file = [climada_global.hazards_dir];
-        [filename, pathname] = uigetfile(params.hazard_file, 'Select hazard file:');
-        if isequal(filename,0) || isequal(pathname,0)
-            return; % cancel
-        else
-            params.hazard_file = fullfile(pathname, filename);
-        end
-    end
 end
 %% 
 % land cover map (300m observation) in .nc format

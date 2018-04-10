@@ -1,4 +1,4 @@
-function [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params) % uncomment to run as function
+function [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot) % uncomment to run as function
 % mrio leontief calc
 % MODULE:
 %   advanced
@@ -10,7 +10,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure);
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure);
 %   next call:  % just to illustrate
 %   
 % CALLING SEQUENCE:
@@ -18,7 +18,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
-%   direct_subsector_risk = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure);
+%   direct_subsector_risk = mrio_direct_risk_calc(params, climada_mriot, aggregated_mriot, risk_measure);
 %   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % INPUTS:
 %   direct_subsector_risk: table which contains the direct risk per country
@@ -28,8 +28,6 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %       mriot structure whose basic properties are the same regardless of the
 %       provided mriot it is based on, see mrio_read_table;
 % OPTIONAL INPUT PARAMETERS:
-%   params: a struct containing several fields, one of them specifying what
-%       I-O approach is applied in this procedure to estimate indirect risk
 % OUTPUTS:
 %   subsector_risk: table with indirect risk per subsector/country combination 
 %       based on the risk measure chosen in one variable and three "label" variables 
@@ -45,6 +43,8 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 
 indirect_subsector_risk = []; % init output
 indirect_country_risk = []; % init output
+subsector_risk = []; % init output
+country_risk = []; % init output
 leontief_inverse = []; % init output
 climada_nan_mriot = []; % init output 
 
@@ -55,7 +55,6 @@ if ~climada_init_vars,return;end % init/import global variables
 % and to set default value where  appropriate
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end 
 if ~exist('direct_subsector_risk', 'var'), direct_subsector_risk = []; end 
-if ~exist('params','var'), params = struct; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -68,7 +67,6 @@ end
 % PARAMETERS
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(direct_subsector_risk), direct_subsector_risk = mrio_direct_risk_calc('', '', climada_mriot, ''); end
-if ~isfield(params,'switch_io_approach'), params.switch_io_approach = 1; end
 
 climada_nan_mriot = isnan(climada_mriot.mrio_data); % save NaN values to trace affected relationships and values
 climada_mriot.mrio_data(isnan(climada_mriot.mrio_data)) = 0; % for calculation purposes we need to replace NaN values with zeroes
@@ -77,13 +75,11 @@ n_subsectors = climada_mriot.no_of_sectors;
 n_mrio_countries = climada_mriot.no_of_countries;
 
 % Direct subsector risk as array (not table) for internal use:
-if istable(direct_subsector_risk)
-    for var_i = 1:length(direct_subsector_risk.Properties.VariableNames) % Keeping it flexible in case future vesions of table change order of variables or variable names.
-        if isnumeric(direct_subsector_risk{1,var_i})
-            direct_subsector_risk = direct_subsector_risk{:,var_i}';
-        end
-    end % var_i
-end
+for var_i = 1:length(direct_subsector_risk.Properties.VariableNames) % Keeping it flexible in case future vesions of table change order of variables or variable names.
+    if isnumeric(direct_subsector_risk{1,var_i})
+        direct_subsector_risk = direct_subsector_risk{:,var_i}';
+    end
+end % var_i
 
 % technical coefficient matrix
 techn_coeffs = zeros(size(climada_mriot.mrio_data)); % init
@@ -108,42 +104,31 @@ for cell_i = 1:length(direct_subsector_risk)
 end % cell_i
 
 % risk calculation
-switch params.switch_io_approach
-    
-    case 1 % (Modified) Environmentally extended input-output analysis (EEIOA), cf.
 
-        % aggregate risk
-        % subsector_risk = (direct_intensity_vector * leontief_inverse) .* transpose(total_output);
-        % max risk
-        % subsector_risk = zeros(1, length(direct_subsector_risk));
-        % for column_i = 1:n_subsectors*n_mrio_countries
-        %     subsector_risk(column_i) = max(direct_intensity_vector .* leontief_inverse(:,column_i)') * total_output(column_i);
-        % end % column_i
+% aggregate risk
+% subsector_risk = (direct_intensity_vector * leontief_inverse) .* transpose(total_output);
+% max risk
+% subsector_risk = zeros(1, length(direct_subsector_risk));
+% for column_i = 1:n_subsectors*n_mrio_countries
+%     subsector_risk(column_i) = max(direct_intensity_vector .* leontief_inverse(:,column_i)') * total_output(column_i);
+% end % column_i
 
-        % weighted average 
-        % total_input = nansum(climada_mriot.mrio_data, 1);
-        % subsector_risk = zeros(1, length(direct_subsector_risk));
-        % for column_i = 1:n_subsectors*n_mrio_countries
-        %     weights = zeros(length(direct_subsector_risk),1);
-        %     if ~isnan(climada_mriot.mrio_data(:,column_i)./total_input(column_i))
-        %         weights = climada_mriot.mrio_data(:,column_i)./total_input(column_i); % normalize with total output
-        %     end
-        %     subsector_risk(column_i) = ((direct_intensity_vector .* leontief_inverse(:,column_i)') * weights) * total_output(column_i);
-        % end % column_i
+% weighted average 
+% total_input = nansum(climada_mriot.mrio_data, 1);
+% subsector_risk = zeros(1, length(direct_subsector_risk));
+% for column_i = 1:n_subsectors*n_mrio_countries
+%     weights = zeros(length(direct_subsector_risk),1);
+%     if ~isnan(climada_mriot.mrio_data(:,column_i)./total_input(column_i))
+%         weights = climada_mriot.mrio_data(:,column_i)./total_input(column_i); % normalize with total output
+%     end
+%     subsector_risk(column_i) = ((direct_intensity_vector .* leontief_inverse(:,column_i)') * weights) * total_output(column_i);
+% end % column_i
 
-        % mean
-        indirect_subsector_risk = zeros(1, length(direct_subsector_risk));
-        for column_i = 1:n_subsectors*n_mrio_countries
-            indirect_subsector_risk(column_i) = mean(direct_intensity_vector .* leontief_inverse(:,column_i)') * total_output(column_i); % + direct_subsector_risk(column_i);
-        end % column_i
-
-    case 2 % Inoperability Input-Output Model (IIM), cf. Anderson et al., 2007 [2]
-        
-        indirect_subsector_risk = solve( inv(diag(x))*(direct_intensity_vector.*x) + inv(diag(x))*leontief_inverse*(direct_intensity_vector.*x)+inv(diag(x))* total_output, x);
-        
-    otherwise
-        
-end % params.switch_io_approach
+% mean
+indirect_subsector_risk = zeros(1, length(direct_subsector_risk));
+for column_i = 1:n_subsectors*n_mrio_countries
+    indirect_subsector_risk(column_i) = mean(direct_intensity_vector .* leontief_inverse(:,column_i)') * total_output(column_i); % + direct_subsector_risk(column_i);
+end % column_i
 
 % aggregate indirect risk across all sectors of a country
 indirect_country_risk = zeros(1,n_mrio_countries); % init

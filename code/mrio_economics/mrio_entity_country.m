@@ -1,4 +1,4 @@
-function mrio_entity_country(GLB_entity, climada_mriot, check_figure, markersize, params)
+function mrio_entity_country(GLB_entity, climada_mriot, params, check_figure, markersize)
 % mrio entity country
 % MODULE:
 %   advanced
@@ -29,13 +29,13 @@ function mrio_entity_country(GLB_entity, climada_mriot, check_figure, markersize
 %       OR: a country ISO3 code, in which case the entity is restricted to
 %       the corresponding country.
 % OPTIONAL INPUT PARAMETERS:
+%   params: a struct containing several fields, some of which are struct
+%       themselves that contain default values used in the entity generation
 %   check_figure: set to 1 to visualize figures, default 1
 %   markersize: the size of the 'tiles', one might need to experiment a
 %       bit (that's why markersize is not part of params.), as the code
 %       tries (hard) to set a reasonabls default (based on resolution).
 %       If <0, plot ocean blue and land grey (looks nicer, but takes a bit longer)
-%   params: a struct containing several fields, some of which are struct
-%       themselves that contain default values used in the entity generation
 % OUTPUTS:
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180217, initial
@@ -46,9 +46,9 @@ if ~climada_init_vars,return;end % init/import global variables
 % poor man's version to check arguments
 if ~exist('GLB_entity', 'var'), GLB_entity = []; end
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end
+if ~exist('params', 'var'), params = []; end
 if ~exist('check_figure', 'var'), check_figure = []; end
 if ~exist('markersize', 'var'), markersize = []; end
-if ~exist('params','var'), params = struct; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -61,21 +61,9 @@ end
 % PARAMETERS
 if isempty(GLB_entity), GLB_entity = climada_entity_load; end
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
+if isempty(params), params = mrio_get_params; end
 if isempty(check_figure), check_figure = 1; end
 if isempty(markersize), markersize = 2; end
-if ~isfield(params,'centroids_file') || isempty(params.centroids_file)
-    if (exist(fullfile(climada_global.centroids_dir, 'GLB_NatID_grid_0360as_adv_1.mat'), 'file') == 2) 
-        params.centroids_file = 'GLB_NatID_grid_0360as_adv_1.mat';
-    else % prompt for centroids filename
-        params.centroids_file = [climada_global.centroids_file];
-        [filename, pathname] = uigetfile(params.centroids_file, 'Select centroids file:');
-        if isequal(filename,0) || isequal(pathname,0)
-            return; % cancel
-        else
-            params.centroids_file = fullfile(pathname, filename);
-        end
-    end
-end
 
 % load global centroids of which we use the NatID to cut out the entities on country level
 centroids = climada_centroids_load(params.centroids_file);
