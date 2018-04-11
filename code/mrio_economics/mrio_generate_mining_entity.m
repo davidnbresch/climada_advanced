@@ -6,6 +6,7 @@ function [entity, entity_save_file] = mrio_generate_mining_entity(params)
 %	mrio_generate_mining_entity
 % PURPOSE:
 %   Construct a global entity file based on global data on active mines and mineral plants. 
+%   These are for now taken as a proxy for the mining and quarrying mainsector.
 %
 %   next call:
 %       mrio_entity_country to generate country entities and to prepare for mrio 
@@ -15,10 +16,16 @@ function [entity, entity_save_file] = mrio_generate_mining_entity(params)
 %   mrio_generate_mining_entity
 % EXAMPLE:
 %   mrio_generate_mining_entity
+%   mrio_generate_manufacturing_entity(params)
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
-%   params: a struct containing several fields, some of which are struct
-%       themselves that contain default values used in the entity generation
+%   parameters: a structure to pass on parameters, with fields as
+%       (run params = mrio_get_params to obtain all default values)
+%       centroids_file: the filename of the centroids file containing 
+%           information on NatID for all centroid
+%       hazard_file: the filename of the corresponding hazard file that is
+%           is used to encode the constructed entity
+%       verbose: whether we printf progress to stdout (=1, default) or not (=0)
 % OUTPUTS:
 %  entity: a structure, with (please run the first example above and then
 %       inspect entity for the latest content)
@@ -115,6 +122,7 @@ function [entity, entity_save_file] = mrio_generate_mining_entity(params)
 % RESTRICTIONS:
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180115, initial
+% Ediz Herms, ediz.herms@outlook.com, 20180410, save using -v7.3 if troubles
 %
 
 entity = []; % init output
@@ -162,6 +170,7 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
         end
     end
 end
+if ~isfield(params,'verbose'), params.verbose = 1; end
 %%
 % the file with the active mines and mineral plants in the US
 filename{1} = [module_data_dir filesep 'mrio' filesep 'mineplant.xls'];
@@ -210,7 +219,7 @@ else
     fprintf('WARNING: base entity %s not found, entity just entity.assets\n', entity_file);
 end
 
-fprintf('load %i file(s) with data on active mines and mineral plants...\n',length(filename));
+if params.verbose, fprintf('load %i file(s) with data on active mines and mineral plants...\n',length(filename)); end
 
 % load global data on active mines and mineral plants
 for file_i = 1:length(filename)
@@ -261,9 +270,9 @@ entity = climada_assets_encode(entity, hazard);
 entity.assets.ISO3_list = centroids.ISO3_list;
 
 n_assets = length(entity.assets.Value);
-fprintf('get NatID for %i assets ...\n',n_assets);
+if params.verbose, fprintf('get NatID for %i assets ...\n',n_assets); end
 
-climada_progress2stdout % init, see terminate below
+if params.verbose, climada_progress2stdout; end % init, see terminate below
 
 for asset_i = 1:n_assets
     sel_centroid = entity.assets.centroid_index(asset_i);
@@ -272,10 +281,10 @@ for asset_i = 1:n_assets
     else
         entity.assets.NatID(asset_i) = 0;
     end
-    climada_progress2stdout(asset_i,n_assets,5,'processed assets'); % update
+    if params.verbose, climada_progress2stdout(asset_i,n_assets,5,'processed assets'); end % update
 end % asset_i
 
-climada_progress2stdout(0) % terminate
+if params.verbose, climada_progress2stdout(0); end % terminate
 
 % save filename and comment to ensure transparency
 entity.assets.reference_year = climada_global.present_reference_year;
@@ -289,7 +298,13 @@ entity.assets.filename = entity_save_file;
 entity.assets = climada_assets_complete(entity.assets); 
 
 % save entity as .mat file for fast access
-fprintf('saving entity as %s\n', entity_save_file);
-climada_entity_save(entity, entity_save_file);
+if params.verbose, fprintf('saving entity as %s\n', entity_save_file); end
+try
+    save(entity_save_file,'entity');
+catch
+    if params.verbose, fprintf('saving with -v7.3, might take quite some time ...'); end
+    save(entity_save_file,'entity','-v7.3');
+    if params.verbose, fprintf('done\n'); end
+end
 
 end % mrio_generate_mining_entity

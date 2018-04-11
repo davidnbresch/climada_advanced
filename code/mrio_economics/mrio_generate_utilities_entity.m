@@ -1,5 +1,5 @@
 function [entity, entity_save_file] = mrio_generate_utilities_entity(params)
-% 
+% mrio generate utilities entity
 % MODULE:
 %   advanced
 % NAME:
@@ -9,16 +9,23 @@ function [entity, entity_save_file] = mrio_generate_utilities_entity(params)
 %   These are for now taken as a proxy for the utilities mainsector.
 %
 %   next call:
-%       mrio_entity_country 
+%       mrio_entity_country to generate country entities and to prepare for mrio 
+%       (multi regional I/O table) project
 %
 % CALLING SEQUENCE:
-%   mrio_generate_utilitie_entity
+%   mrio_generate_utilities_entity
 % EXAMPLE:
-%   mrio_generate_utilities_entity;   No function arguments required.
+%   mrio_generate_utilities_entity
+%   mrio_generate_manufacturing_entity(params)
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
-%   params: a struct containing several fields, some of which are struct
-%       themselves that contain default values used in the entity generation
+%   parameters: a structure to pass on parameters, with fields as
+%       (run params = mrio_get_params to obtain all default values)
+%       centroids_file: the filename of the centroids file containing 
+%           information on NatID for all centroid
+%       hazard_file: the filename of the corresponding hazard file that is
+%           is used to encode the constructed entity
+%       verbose: whether we printf progress to stdout (=1, default) or not (=0)
 % OUTPUTS:
 %  entity: a structure, with following fields:
 %       assets: itself a structure, with
@@ -114,6 +121,8 @@ function [entity, entity_save_file] = mrio_generate_utilities_entity(params)
 % RESTRICTIONS:
 % MODIFICATION HISTORY:
 % Kaspar Tobler, 20180313, first working version
+% Ediz Herms, ediz.herms@outlook.com, 20180410, save using -v7.3 if troubles
+%
 
 entity = []; % init output
 entity_save_file = []; % init output
@@ -160,12 +169,15 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
         end
     end
 end
+if ~isfield(params,'verbose'), params.verbose = 1; end
+%%
 % Get file with all power plants globally. For source and user
 % requirements, check user manual or readme file.
 utilities_file = [module_data_dir filesep 'entities' filesep 'utilities_source.csv'];
 %
 % Source: http://enipedia.tudelft.nl/wiki/Using_SPARQL_with_Enipedia
-%   Section Advanced > Download all power plant data.
+%         Section Advanced > Download all power plant data.
+%%
 
 % template entity file, such that we do not need to construct the entity from scratch
 entity_file = [climada_global.entities_dir filesep 'entity_template' climada_global.spreadsheet_ext];
@@ -230,9 +242,9 @@ entity = climada_assets_encode(entity, hazard);
 entity.assets.ISO3_list = centroids.ISO3_list;
 
 n_assets = length(entity.assets.Value);
-fprintf('get NatID for %i assets ...\n',n_assets);
+if params.verbose, fprintf('get NatID for %i assets ...\n',n_assets); end
 
-climada_progress2stdout % init, see terminate below
+if params.verbose, climada_progress2stdout; end % init, see terminate below
 
 for asset_i = 1:n_assets
     sel_centroid = entity.assets.centroid_index(asset_i);
@@ -241,10 +253,10 @@ for asset_i = 1:n_assets
     else
         entity.assets.NatID(asset_i) = 0;
     end
-    climada_progress2stdout(asset_i,n_assets,5,'processed assets'); % update
+    if params.verbose, climada_progress2stdout(asset_i,n_assets,5,'processed assets'); end % update
 end % asset_i
 
-climada_progress2stdout(0) % terminate
+if params.verbose, climada_progress2stdout(0); end % terminate
 
 % save filename and comment to ensure transparency
 entity.assets.reference_year = climada_global.present_reference_year;
@@ -258,7 +270,13 @@ entity.assets.filename = entity_save_file;
 entity.assets = climada_assets_complete(entity.assets); 
 
 % save entity as .mat file for fast access
-fprintf('saving entity as %s\n', entity_save_file);
-climada_entity_save(entity, entity_save_file);
+if params.verbose, fprintf('saving entity as %s\n', entity_save_file); end
+try
+    save(entity_save_file,'entity');
+catch
+    if params.verbose, fprintf('saving with -v7.3, might take quite some time ...'); end
+    save(entity_save_file,'entity','-v7.3');
+    if params.verbose, fprintf('done\n'); end
+end
 
 end % mrio_generate_utilities_entity

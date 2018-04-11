@@ -1,5 +1,5 @@
 function [entity, entity_save_file] = mrio_generate_manufacturing_entity(params)
-% 
+% mrio generate manufacturing entity
 % MODULE:
 %   advanced
 % NAME:
@@ -9,19 +9,23 @@ function [entity, entity_save_file] = mrio_generate_manufacturing_entity(params)
 %   These are for now taken as a proxy for the manufacturing mainsector.
 %
 %   next call:
-%       mrio_entity_country 
+%       mrio_entity_country to generate country entities and to prepare for mrio 
+%       (multi regional I/O table) project
 %
 % CALLING SEQUENCE:
 %   mrio_generate_manufacturing_entity
 % EXAMPLE:
-%   mrio_generate_manufacturing_entity;
-%   mrio_generate_manufacturing_entity(params);
+%   mrio_generate_manufacturing_entity
+%   mrio_generate_manufacturing_entity(params)
 % INPUTS:
-%   
 % OPTIONAL INPUT PARAMETERS:
-%       params: a struct containing several fields, some of which are struct
-%       themselves that contain default values used in the entity
-%       generation. I loaded by function if not passed.
+%   parameters: a structure to pass on parameters, with fields as
+%       (run params = mrio_get_params to obtain all default values)
+%       centroids_file: the filename of the centroids file containing 
+%           information on NatID for all centroid
+%       hazard_file: the filename of the corresponding hazard file that is
+%           is used to encode the constructed entity
+%       verbose: whether we printf progress to stdout (=1, default) or not (=0)
 % OUTPUTS:
 %  entity: a structure, with following fields:
 %       assets: itself a structure, with
@@ -117,6 +121,8 @@ function [entity, entity_save_file] = mrio_generate_manufacturing_entity(params)
 % RESTRICTIONS:
 % MODIFICATION HISTORY:
 % Kaspar Tobler, 03302018, first working version
+% Ediz Herms, ediz.herms@outlook.com, 20180410, save using -v7.3 if troubles
+%
 
 entity = []; % init output
 entity_save_file = []; % init output
@@ -133,12 +139,41 @@ if ~exist('params', 'var'), params = []; end
 
 % PARAMETERS
 %
-if isempty(params), params = mrio_get_params; end
+if ~isfield(params,'centroids_file') || isempty(params.centroids_file)
+    if (exist(fullfile(climada_global.centroids_dir, 'GLB_NatID_grid_0360as_adv_1.mat'), 'file') == 2) 
+        params.centroids_file = 'GLB_NatID_grid_0360as_adv_1.mat';
+    else % prompt for centroids filename
+        params.centroids_file = [climada_global.centroids_file];
+        [filename, pathname] = uigetfile(params.centroids_file, 'Select centroids file:');
+        if isequal(filename,0) || isequal(pathname,0)
+            return; % cancel
+        else
+            params.centroids_file = fullfile(pathname, filename);
+        end
+    end
+end
+if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
+    if (exist(fullfile(climada_global.hazards_dir, 'GLB_0360as_TC_hist.mat'), 'file') == 2) 
+        params.hazard_file = 'GLB_0360as_TC_hist.mat';
+    else % prompt for hazard filename
+        params.hazard_file = [climada_global.hazards_dir];
+        [filename, pathname] = uigetfile(params.hazard_file, 'Select hazard file:');
+        if isequal(filename,0) || isequal(pathname,0)
+            return; % cancel
+        else
+            params.hazard_file = fullfile(pathname, filename);
+        end
+    end
+end
+if ~isfield(params,'verbose'), params.verbose = 1; end
+%%
 % Get file with gridded industry NOx emissions globally. For source and user
 % requirements, check user manual or readme file.
 manu_file = [module_data_dir filesep 'entities' filesep 'ECLIPSE_base_CLE_V5a_NOx.nc'];
 %
 % Source: http://www.iiasa.ac.at/web/home/research/researchPrograms/air/ECLIPSEv5a.html
+%
+%%
 
 % template entity file, such that we do not need to construct the entity from scratch
 entity_file = [climada_global.entities_dir filesep 'entity_template' climada_global.spreadsheet_ext];
@@ -222,9 +257,9 @@ entity = climada_assets_encode(entity, hazard, 30e3);
 entity.assets.ISO3_list = centroids.ISO3_list;
 
 n_assets = length(entity.assets.Value);
-fprintf('get NatID for %i assets ...\n',n_assets);
+if params.verbose, fprintf('get NatID for %i assets ...\n',n_assets); end
 
-climada_progress2stdout % init, see terminate below
+if params.verbose, climada_progress2stdout; end % init, see terminate below
 
 for asset_i = 1:n_assets
     sel_centroid = entity.assets.centroid_index(asset_i);
@@ -233,10 +268,10 @@ for asset_i = 1:n_assets
     else
         entity.assets.NatID(asset_i) = 0;
     end
-    climada_progress2stdout(asset_i,n_assets,5,'processed assets'); % update
+    if params.verbose, climada_progress2stdout(asset_i,n_assets,5,'processed assets'); end % update
 end % asset_i
 
-climada_progress2stdout(0) % terminate
+if params.verbose, climada_progress2stdout(0); end % terminate
 
 % save filename and comment to ensure transparency
 entity.assets.reference_year = climada_global.present_reference_year;
@@ -250,7 +285,13 @@ entity.assets.filename = entity_save_file;
 entity.assets = climada_assets_complete(entity.assets); 
 
 % save entity as .mat file for fast access
-fprintf('saving entity as %s\n', entity_save_file);
-climada_entity_save(entity, entity_save_file);
+if params.verbose, fprintf('saving entity as %s\n', entity_save_file); end
+try
+    save(entity_save_file,'entity');
+catch
+    if params.verbose, fprintf('saving with -v7.3, might take quite some time ...'); end
+    save(entity_save_file,'entity','-v7.3');
+    if params.verbose, fprintf('done\n'); end
+end
 
-% mrio_generate_manufacturing_entity
+end % mrio_generate_manufacturing_entity

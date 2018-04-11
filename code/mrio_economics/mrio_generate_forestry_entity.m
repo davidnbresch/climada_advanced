@@ -5,7 +5,8 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregatio
 % NAME:
 %	mrio_generate_forestry_entity
 % PURPOSE:
-%   Construct a global entity file based on Land Cover map from the Climate Change Initiative (CCI) 
+%   Construct a global entity file based on Land Cover 'Forestry' map from the Climate Change Initiative (CCI) 
+%   These are for now taken as a proxy for the forestry mainsector.
 %
 %   next call:
 %       mrio_entity_country to generate country entities and to prepare for mrio 
@@ -15,12 +16,18 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregatio
 %   mrio_generate_forestry_entity
 % EXAMPLE:
 %   mrio_generate_forestry_entity
+%   mrio_generate_manufacturing_entity(params)
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
 %   n_aggregations: number of aggregation runs of the land cover data, default is ='4' 
 %       whereas minimum number of runs is 1 as the dataset is too large to be handled otherwise
-%   params: a struct containing several fields, some of which are struct
-%       themselves that contain default values used in the entity generation
+%   parameters: a structure to pass on parameters, with fields as
+%       (run params = mrio_get_params to obtain all default values)
+%       centroids_file: the filename of the centroids file containing 
+%           information on NatID for all centroid
+%       hazard_file: the filename of the corresponding hazard file that is
+%           is used to encode the constructed entity
+%       verbose: whether we printf progress to stdout (=1, default) or not (=0)
 % OUTPUTS:
 %  entity: a structure, with (please run the first example above and then
 %       inspect entity for the latest content)
@@ -118,6 +125,7 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregatio
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180228, initial
 % Ediz Herms, ediz.herms@outlook.com, 20180306, aggregate values - resolution can be managed via input
+% Ediz Herms, ediz.herms@outlook.com, 20180410, save using -v7.3 if troubles
 %
 
 entity = []; % init output
@@ -171,6 +179,7 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
         end
     end
 end
+if ~isfield(params,'verbose'), params.verbose = 1; end
 %% 
 % land cover map (300m observation) in .nc format
 full_img_file = [module_data_dir filesep 'mrio' filesep 'ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7.nc'];
@@ -215,7 +224,7 @@ lon_cs = ncread([full_img_file],'lon'); n_lon = length(lon_cs);
 forest = [50 60 61 70 71 80 81 90]; % see chapter 3.1.1 Legend (page 26) of Land Cover CCI PRODUCT USER GUIDE VERSION 2.0
 weight = [1 1 1 1 1 1 1 1]; % possibility to assign different values to different types and densitites of forests 
 
-climada_progress2stdout % init, see terminate below
+if params.verbose, climada_progress2stdout; end % init, see terminate below
 
 n_subsets = 200; % ggT dimensions
 
@@ -255,11 +264,11 @@ for subset_i = 1:n_subsets
     lon_agg = [lon_agg lon_subset_agg];
     lat_agg = [lat_agg lat_subset_agg];
     
-    climada_progress2stdout(subset_i,n_subsets,1,'processed subsets'); % update
+    if params.verbose, climada_progress2stdout(subset_i,n_subsets,1,'processed subsets'); end % update
     
 end
 
-climada_progress2stdout(0) % terminate
+if params.verbose, climada_progress2stdout(0); end % terminate
 
 clear lc_subset lc_subset_agg lon_subset_agg lat_subset_agg permutation_i
 
@@ -289,10 +298,10 @@ entity.assets.DamageFunID = entity.assets.Value*0+1;
 entity = climada_assets_encode(entity, hazard);
 
 % pass over ISO3 codes and NatID to assets
-fprintf('get NatID for %i assets ...\n',length(entity.assets.Value));
+if params.verbose, fprintf('get NatID for %i assets ...\n',length(entity.assets.Value)); end
 entity.assets.ISO3_list = centroids.ISO3_list;
 
-climada_progress2stdout % init, see terminate below
+if params.verbose, climada_progress2stdout; end % init, see terminate below
 
 for asset_i = 1:length(entity.assets.Value)
     sel_centroid = entity.assets.centroid_index(asset_i);
@@ -301,10 +310,10 @@ for asset_i = 1:length(entity.assets.Value)
     else
         entity.assets.NatID(asset_i) = 0;
     end
-    climada_progress2stdout(asset_i,length(entity.assets.Value),5,'processed assets'); % update
+    if params.verbose, climada_progress2stdout(asset_i,length(entity.assets.Value),5,'processed assets'); end % update
 end % asset_i
 
-climada_progress2stdout(0) % terminate
+if params.verbose, climada_progress2stdout(0); end % terminate
 
 % save filename and comment to ensure transparency
 entity.assets.reference_year = climada_global.present_reference_year;
@@ -318,8 +327,14 @@ entity.assets.filename = entity_save_file;
 entity.assets = climada_assets_complete(entity.assets);
 
 % save entity as .mat file for fast access
-fprintf('saving entity as %s\n', entity_save_file);
-climada_entity_save(entity, entity_save_file);
+if params.verbose, fprintf('saving entity as %s\n', entity_save_file); end
+try
+    save(entity_save_file,'entity');
+catch
+    if params.verbose, fprintf('saving with -v7.3, might take quite some time ...'); end
+    save(entity_save_file,'entity','-v7.3');
+    if params.verbose, fprintf('done\n'); end
+end
 
 %% Table circshift aggregation subfunction
 function table = table_circshift_agg(table, aggregation_rule, iterations)

@@ -57,4 +57,6 @@ params.full_aggregation = 0; % If set to 0 (default), no full aggregation of mri
                              % and the aggregation info (i.e. which subsectors belong to which mainsector).
 params.switch_io_approach = 1; % If set to 1 (default) indirect risk is estimated using environmentally extended input-output analysis (EEIOA)
 
+params.verbose = 1; % whether we printf progress to stdout (=1, default) or not (=0)
+
 end % mrio_get_params
