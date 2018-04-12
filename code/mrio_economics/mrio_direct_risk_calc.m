@@ -5,7 +5,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 % NAME:
 %   mrio_direct_risk_calc
 % PURPOSE:
-%   Caculate direct risk per subsector and country given an encoded entity (assets and damage functions), 
+%   Caculate direct risk per subsector and country given an encoded entity per economic sector (assets and damage functions), 
 %   a hazard event set, a risk measure and a general climada MRIO table (as well as an aggregated climada mriot struct).
 %
 %   NOTE: see PARAMETERS in code
@@ -13,7 +13,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %   previous call: 
 %
 %   next call:  % just to illustrate
-%   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
+%   [total_subsector_risk, total_country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % CALLING SEQUENCE:
 %   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure, params);
 % EXAMPLE:
@@ -62,7 +62,6 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 
 direct_subsector_risk = []; % init output
 direct_country_risk = []; % init output
-direct_mainsector_risk = []; % init
 
 global climada_global
 if ~climada_init_vars, return; end % init/import global variables
@@ -178,7 +177,7 @@ for mainsector_j = 1:n_mainsectors % at the moment we are not differentiating be
         entity_sel.assets.Value = entity.assets.Value .* sel_assets;  % set values = 0 for all assets outside country i.
         
         % risk calculation (see subfunction)
-        if length(entity_sel.assets.Value) > 0
+        if ~isempty(entity_sel.assets.Value)
             direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = risk_calc(entity_sel, hazard, risk_measure);
         else
             direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = 0;
@@ -208,7 +207,7 @@ for subsector_i = 1:length(subsector_information)
     entity = climada_entity_load(entity_file);
     
     % risk calculation (see subfunction) + multiplication with each subsector's total production
-    if length(entity.assets.Value) > 0
+    if ~isempty(entity.assets.Value)
         direct_subsector_risk(sel_pos) = risk_calc(entity, hazard, risk_measure) * total_subsector_production(sel_pos);
     else
         direct_subsector_risk(sel_pos) = 0;
