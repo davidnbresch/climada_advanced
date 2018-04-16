@@ -37,12 +37,14 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %       centroids_file: the filename (and path, optional) of a previously saved centroids
 %           structure. If no path provided, default path ../data/centroids is used
 %           > promted for if empty
-%       entity_file: N-by-1 cell array with the filenames (and path, optional) of previously saved and prepared entity
-%           structures, see mrio_entity_prep. If no path provided, default path ../data/entities is used
-%           > promted for if empty
 %       hazard_file: the filename (and path, optional) of a hazard
 %           structure. If no path provided, default path ../data/hazard is used
 %           > promted for if empty
+%       impact_analysis_mode: If set to =1, direct risk is only calculated for a 
+%           subset of country x mainsector-combinations (prompted for). During the 
+%           further calculation (mrio_leontief_calc) indirect impact of that particular
+%           direct risk is estimated, default is =0 (all country x mainsector-combinations
+%           evaluated)                              
 % OUTPUTS:
 %   direct_subsector_risk: a table containing as one variable the direct risk for each
 %       subsector/country combination covered in the original mriot. The
@@ -58,6 +60,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 % Ediz Herms, ediz.herms@outlook.com, 20180115, initial
 % Ediz Herms, ediz.herms@outlook.com, 20180118, disaggregate direct risk to all subsectors for each country
 % Ediz Herms, ediz.herms@outlook.com, 20180212, possibility to provide entity on subsector level
+% Ediz Herms, ediz.herms@outlook.com, 20180416, impact_analysis_mode: option to only calculate direct risk for a subset of country x mainsector-combinations
 %-
 
 direct_subsector_risk = []; % init output
@@ -71,6 +74,8 @@ if ~exist('climada_mriot', 'var'), climada_mriot = []; end
 if ~exist('aggregated_mriot', 'var'), aggregated_mriot = []; end
 if ~exist('risk_measure', 'var'), risk_measure = []; end
 if ~exist('params','var'), params = struct; end
+if ~exist('country_name','var'), country_name = []; end
+if ~exist('mainsector_name','var'), mainsector_name = []; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -97,6 +102,7 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
         end
     end
 end
+if ~isfield(params,'impact_analysis_mode'), params.impact_analysis_mode = 0; end
 
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 n_mrio_countries = length(mrio_countries_ISO3);
@@ -105,16 +111,49 @@ mainsectors = unique(climada_mriot.climada_sect_name, 'stable');
 n_mainsectors = length(mainsectors);
 
 subsectors = unique(climada_mriot.sectors, 'stable');
-n_subsectors = climada_mriot.no_of_sectors;            
+n_subsectors = climada_mriot.no_of_sectors;   
+
+if params.impact_analysis_mode
+    % prompt country (one or many)
+    [countries_liststr, countries_sort_index] = sort(mrio_countries_ISO3);
+    if isempty(country_name)
+        % compile list of all mrio countries, then call recursively below
+        [selection_country] = listdlg('PromptString','Select countries (or one):',...
+            'ListString',countries_liststr);
+        selection_country = countries_sort_index(selection_country);
+    else 
+        selection_country = find(mrio_countries_ISO3 == country_name);
+    end
+    % prompt for subsector name (one or many)
+    [mainsectors_liststr, mainsectors_sort_index] = sort(mainsectors);
+    if isempty(mainsector_name)
+        % compile list of all mrio countries, then call recursively below
+        [selection_mainsector] = listdlg('PromptString','Select mainsectors (or one):',...
+            'ListString',mainsectors_liststr);
+        selection_mainsector = mainsectors_sort_index(selection_mainsector);
+    else
+        selection_mainsector = find(mainsectors == mainsector_name);
+    end
+    
+    selection_risk = zeros(length(selection_mainsector),length(selection_country));
+    for selection_country_i = 1:length(selection_country)
+        selection_risk(:,selection_country_i) = ones(1,length(selection_mainsector)).*(selection_country_i-1)*n_mainsectors+selection_mainsector; % TO DO: only one selection possible atm
+    end
+    selection_risk = reshape(selection_risk,[1,size(selection_risk,1)*size(selection_risk,2)]);
+    
+    else 
+    selection_risk = [];
+end
 
 % check whether user provided data on subsector level in entity directory
 subsector_information = zeros(1,n_subsectors*n_mrio_countries);
-for subsector_j = 1:length(climada_mriot.mrio_data)
+for subsector_j = 1:n_subsectors
     subsector_name = char(climada_mriot.sectors(subsector_j)); % extract subsector name
     mainsector_name = char(climada_mriot.climada_sect_name(subsector_j)); % extract mainsector name
+    mainsector_j = find(mainsector_name == mainsectors);
     for mrio_country_i = 1:n_mrio_countries
         country_ISO3 = char(mrio_countries_ISO3(mrio_country_i)); % extract ISO code
-        if (exist(fullfile(climada_global.entities_dir, [country_ISO3 '_' mainsector_name '_' subsector_name '.mat']), 'file') == 2) 
+        if ismember(mainsector_j+n_mainsectors*(mrio_country_i-1),selection_risk) & (exist(fullfile(climada_global.entities_dir, [country_ISO3 '_' mainsector_name '_' subsector_name '.mat']), 'file') == 2) 
             % if entity on subsector level exists (condition fullfilled) assign value = 1
             subsector_information(subsector_j+n_subsectors*(mrio_country_i-1)) = 1;
         end
@@ -126,12 +165,13 @@ subsector_information = find(subsector_information);
 hazard = climada_hazard_load(params.hazard_file);
 
 climada_progress2stdout % init, see terminate below
-risk_i = 0;
+
 % direct risk calculation per mainsector and per country
-direct_mainsector_risk = zeros(1,n_mainsectors*n_mrio_countries); 
-for mainsector_j = 1:n_mainsectors % at the moment we are not differentiating between all sectors (!!!)
+risk_i = 0;
+direct_mainsector_risk = zeros(1,n_mainsectors*n_mrio_countries);    
+for mainsector_j = 1:n_mainsectors % different exposure (asset) base as generated by mrio_generate_XXX_entity functions
     mainsector_name = char(mainsectors(mainsector_j));
-    
+
     % load (global) mainsector entity
     mainsector_entity_file = ['GLB_' mainsector_name '_XXX.mat'];
     mainsector_entity = climada_entity_load(mainsector_entity_file);
@@ -148,7 +188,7 @@ for mainsector_j = 1:n_mainsectors % at the moment we are not differentiating be
             % otherwise use global entity
             entity_file = mainsector_entity_file;
         end
-        
+
         if ~strcmp(entity_file, mainsector_entity_file)
             entity = climada_entity_load(entity_file);
         else
@@ -161,7 +201,7 @@ for mainsector_j = 1:n_mainsectors % at the moment we are not differentiating be
             countries_ISO3 = entity.assets.NatID_RegID.ISO3;
         else
             error('Please prepare entities first.')
-            % return % ask user to prepare entities first    
+            %uiwait(warndlg('Please prepare entities first.'));
         end
 
         if ~strcmp(country_ISO3,'RoW')
@@ -175,19 +215,19 @@ for mainsector_j = 1:n_mainsectors % at the moment we are not differentiating be
 
         entity_sel = entity;
         entity_sel.assets.Value = entity.assets.Value .* sel_assets;  % set values = 0 for all assets outside country i.
-        
+
         % risk calculation (see subfunction)
-        if ~isempty(entity_sel.assets.Value)
+        if ~isempty(entity_sel.assets.Value) & (isempty(selection_risk) | ismember(mainsector_j+n_mainsectors*(mrio_country_i-1),selection_risk))
             direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = risk_calc(entity_sel, hazard, risk_measure);
-        else
+        elseif isempty(entity_sel.assets.Value) | (~isempty(selection_risk) & ~ismember(mainsector_j+n_mainsectors*(mrio_country_i-1),selection_risk))
             direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = 0;
         end
-    
+
         risk_i = risk_i + length(aggregated_mriot.aggregation_info.(mainsector_name)) - length(subsector_information)/n_mainsectors/n_mrio_countries;
         climada_progress2stdout(risk_i,n_mrio_countries*n_subsectors,5,'risk calculations'); % update
 
     end % mrio_country_i
-    
+
 end % mainsector_j
 
 % Disaggregate direct mainsector risk to direct risk for all subsector/country combinations
@@ -273,6 +313,7 @@ function risk = risk_calc(entity, hazard, risk_measure)
             risk = DFC.damage(sel_pos);
         otherwise
             error('Please specify risk measure properly.')
+            return
     end % switch risk_measure
     
 end % risk_calc
