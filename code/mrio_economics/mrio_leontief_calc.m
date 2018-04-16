@@ -39,7 +39,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %       mriot structure whose basic properties are the same regardless of the
 %       provided mriot it is based on, see mrio_read_table;
 % OPTIONAL INPUT PARAMETERS:
-%   parameters: a structure to pass on parameters, with fields as
+%   params: a structure to pass on parameters, with fields as
 %       (run params = mrio_get_params to obtain all default values)
 %       switch_io_approach: specifying what I-O approach is applied in this procedure 
 %           to estimate indirect risk, IIM (=1, default) or EEIOA (2)
@@ -65,6 +65,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial
 % Kaspar Tobler, 20180119 implement returned results as tables to improve readability (countries and sectors corresponding to the values are visible on first sight).
 % Ediz Herms, ediz.herms@outlook.com, 20180411, option to choose between IIM and EEIOA methodology
+% Ediz Herms, ediz.herms@outlook.com, 20180411, set up industry-by-industry risk structure table to track source of indirect risk 
 %
 
 total_subsector_risk = []; % init output

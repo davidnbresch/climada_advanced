@@ -30,21 +30,23 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %   risk_measure: risk measure to be applied (string), default is the Expected Annual Damage (EAD)
  %   params: a structure with the fields
 %       mriot: a structure with the fields
-%           filename: the filename (and path, optional) of a previously
-%               saved mrio table structure. If no path provided, default path ../data is used
-%               > promted for if empty
-%           table_flag: flag to mark which table type. If not provided, prompted for via GUI.
+%           filename: the filename (and path, optional) of a previously saved 
+%               mrio table structure. If no path provided, default path ../data 
+%               is used
+%               > prompted for if empty
+%           table_flag: flag to mark which table type. If not provided, 
+%               > prompted for if empty
 %       centroids_file: the filename (and path, optional) of a previously saved centroids
 %           structure. If no path provided, default path ../data/centroids is used
-%           > promted for if empty
+%           > prompted for if empty
 %       hazard_file: the filename (and path, optional) of a hazard
 %           structure. If no path provided, default path ../data/hazard is used
-%           > promted for if empty
+%           > prompted for if empty
 %       impact_analysis_mode: If set to =1, direct risk is only calculated for a 
-%           subset of country x mainsector-combinations (prompted for). During the 
-%           further calculation (mrio_leontief_calc) indirect impact of that particular
-%           direct risk is estimated, default is =0 (all country x mainsector-combinations
-%           evaluated)                              
+%           subset of country x mainsector-combinations (prompted for), default 
+%           is =0 where all country x mainsector-combinations are evaluated. 
+%           During the further calculation (mrio_leontief_calc) indirect impact 
+%           of that particular direct risk is estimated.              
 % OUTPUTS:
 %   direct_subsector_risk: a table containing as one variable the direct risk for each
 %       subsector/country combination covered in the original mriot. The

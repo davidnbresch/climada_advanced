@@ -251,7 +251,7 @@ entity.assets.Cover = entity.assets.Value;
 entity.assets.DamageFunID = entity.assets.Value*0+1;
     
 % encode entity
-entity = climada_assets_encode(entity, hazard, 30e3);
+entity = climada_assets_encode(entity, hazard);
 
 % pass over ISO3 codes and NatID to assets
 entity.assets.ISO3_list = centroids.ISO3_list;
