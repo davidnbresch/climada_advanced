@@ -1,12 +1,12 @@
-function [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, risk_structure ,leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params) % uncomment to run as function
+function [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, risk_structure, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params) % uncomment to run as function
 % mrio leontief calc
 % MODULE:
 %   advanced
 % NAME:
 %   mrio_leontief_calc
 % PURPOSE:
-%   Derive total risk whereby we are using Leontief I/O models to estimate
-%   indirect risk. There are two I/O models to choose from, namely
+%   Derive indirect risk from direct risk table whereby we are using Leontief I/O 
+%   models to estimate indirect risk. There are two I/O models to choose from, namely
 %
 %   [1] Inoperability Input-Output Model (IIM), cf.
 %       Christopher W. Anderson , Joost R. Santos & Yacov Y. Haimes (2007) 
@@ -25,12 +25,12 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %   next call:  % just to illustrate
 %   
 % CALLING SEQUENCE:
-%   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot)
+%   [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, risk_structure, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params);
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
 %   direct_subsector_risk = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure);
-%   [subsector_risk, country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
+%   [total_subsector_risk, total_country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % INPUTS:
 %   direct_subsector_risk: table which contains the direct risk per country
 %       based on the risk measure chosen in one variable and three "label" variables 
@@ -152,7 +152,7 @@ switch params.switch_io_approach
         for row_i = 1:size(leontief_inverse,1)
            rel_risk_structure(row_i,:) = (leontief_inverse(row_i,:) .* direct_intensity_vector) .* total_output(row_i);
            risk_structure(row_i,:) = rel_risk_structure(row_i,:) .* total_output(row_i);
-        end
+        end % row_i
         degr_final_demand = nansum(rel_risk_structure,2);
         
         % denormalize 
@@ -167,7 +167,7 @@ switch params.switch_io_approach
         risk_structure = zeros(size(leontief_inverse));
         for row_i = 1:size(leontief_inverse,1)
             risk_structure(row_i,:) = (direct_intensity_vector .* leontief_inverse(:,row_i)) .* total_output;
-        end
+        end % row_i
         
         % multiplying the monetary input-output relation by the industry-specific factor requirements
         indirect_subsector_risk = ((direct_intensity_vector * leontief_inverse) .* total_output)';

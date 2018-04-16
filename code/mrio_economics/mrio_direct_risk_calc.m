@@ -5,7 +5,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 % NAME:
 %   mrio_direct_risk_calc
 % PURPOSE:
-%   Caculate direct risk per subsector and country given an encoded entity per economic sector (assets and damage functions), 
+%   Caculate direct risk per subsector x country-combination given encoded entities per economic sector (assets and damage functions), 
 %   a hazard event set, a risk measure and a general climada MRIO table (as well as an aggregated climada mriot struct).
 %
 %   NOTE: see PARAMETERS in code
@@ -28,7 +28,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %       produced by mrio_aggregate_table.
 % OPTIONAL INPUT PARAMETERS:
 %   risk_measure: risk measure to be applied (string), default is the Expected Annual Damage (EAD)
- %   params: a structure with the fields
+%   params: a structure with the fields
 %       mriot: a structure with the fields
 %           filename: the filename (and path, optional) of a previously saved 
 %               mrio table structure. If no path provided, default path ../data 
@@ -49,7 +49,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %           of that particular direct risk is estimated.              
 % OUTPUTS:
 %   direct_subsector_risk: a table containing as one variable the direct risk for each
-%       subsector/country combination covered in the original mriot. The
+%       subsector x country-combination covered in the original mriot. The
 %       order of entries follows the same as in the entire process, i.e.
 %       entry mapping is still possible via the climada_mriot.setors and
 %       climada_mriot.countries arrays. The table further contins three
@@ -140,7 +140,7 @@ if params.impact_analysis_mode
     selection_risk = zeros(length(selection_mainsector),length(selection_country));
     for selection_country_i = 1:length(selection_country)
         selection_risk(:,selection_country_i) = ones(1,length(selection_mainsector)).*(selection_country_i-1)*n_mainsectors+selection_mainsector; % TO DO: only one selection possible atm
-    end
+    end % selection_country_i
     selection_risk = reshape(selection_risk,[1,size(selection_risk,1)*size(selection_risk,2)]);
     
     else 
@@ -159,8 +159,8 @@ for subsector_j = 1:n_subsectors
             % if entity on subsector level exists (condition fullfilled) assign value = 1
             subsector_information(subsector_j+n_subsectors*(mrio_country_i-1)) = 1;
         end
-    end
-end
+    end % mrio_country_i
+end % subsector_j
 subsector_information = find(subsector_information);
 
 % load hazard
@@ -256,7 +256,7 @@ for subsector_i = 1:length(subsector_information)
     end
     
     climada_progress2stdout(risk_i + subsector_i,n_mrio_countries*n_subsectors,5,'risk calculations'); % update
-end
+end % subsector_i
 
 climada_progress2stdout(0) % terminate
 

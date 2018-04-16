@@ -19,7 +19,7 @@ function [entity, entity_save_file] = mrio_generate_manufacturing_entity(params)
 %   mrio_generate_manufacturing_entity(params)
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
-%   parameters: a structure to pass on parameters, with fields as
+%   params: a structure to pass on parameters, with fields as
 %       (run params = mrio_get_params to obtain all default values)
 %       centroids_file: the filename of the centroids file containing 
 %           information on NatID for all centroid
@@ -204,9 +204,7 @@ else
     fprintf('WARNING: base entity %s not found, entity just entity.assets\n', entity_file);
 end
 
-
 % Read from provided source  file (NetCDF):
-
 
 % ncdisp(manu_file);
 time = ncread(manu_file,'time');

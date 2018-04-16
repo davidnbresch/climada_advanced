@@ -16,12 +16,12 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregatio
 %   mrio_generate_forestry_entity
 % EXAMPLE:
 %   mrio_generate_forestry_entity
-%   mrio_generate_manufacturing_entity(params)
+%   mrio_generate_forestry_entity(params)
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
 %   n_aggregations: number of aggregation runs of the land cover data, default is ='4' 
 %       whereas minimum number of runs is 1 as the dataset is too large to be handled otherwise
-%   parameters: a structure to pass on parameters, with fields as
+%   params: a structure to pass on parameters, with fields as
 %       (run params = mrio_get_params to obtain all default values)
 %       centroids_file: the filename of the centroids file containing 
 %           information on NatID for all centroid
@@ -252,7 +252,7 @@ for subset_i = 1:n_subsets
     
     for forest_i = 1:length(forest)
         lc_subset(lc_subset == forest(forest_i)) = weight(forest_i);
-    end
+    end % forest_i
     
     % 1st aggregation (per subset)
     lc_subset_agg = table_circshift_agg(lc_subset, 1, 1);
@@ -266,7 +266,7 @@ for subset_i = 1:n_subsets
     
     if params.verbose, climada_progress2stdout(subset_i,n_subsets,1,'processed subsets'); end % update
     
-end
+end % subset_i
 
 if params.verbose, climada_progress2stdout(0); end % terminate
 

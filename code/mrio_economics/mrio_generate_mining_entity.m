@@ -16,10 +16,10 @@ function [entity, entity_save_file] = mrio_generate_mining_entity(params)
 %   mrio_generate_mining_entity
 % EXAMPLE:
 %   mrio_generate_mining_entity
-%   mrio_generate_manufacturing_entity(params)
+%   mrio_generate_mining_entity(params)
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
-%   parameters: a structure to pass on parameters, with fields as
+%   params: a structure to pass on parameters, with fields as
 %       (run params = mrio_get_params to obtain all default values)
 %       centroids_file: the filename of the centroids file containing 
 %           information on NatID for all centroid
@@ -210,7 +210,7 @@ for file_i = 1:length(filename)
         fprintf(['Data file "' filename{file_i} '" does not exist.']);
         return
     end
-end
+end % file_i
 
 if exist(entity_file,'file')
     entity = climada_entity_read(entity_file,'SKIP'); % read the empty entity
@@ -261,7 +261,7 @@ for file_i = 1:length(filename)
         entity.assets.source_index(end+1:end+length(entity_i.assets.Value)) = entity_i.assets.Value*0+file_i; % keep track of origin for each data point
     end
    
-end
+end % file_i
 
 % encode entity
 entity = climada_assets_encode(entity, hazard);

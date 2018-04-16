@@ -16,10 +16,10 @@ function [entity, entity_save_file] = mrio_generate_utilities_entity(params)
 %   mrio_generate_utilities_entity
 % EXAMPLE:
 %   mrio_generate_utilities_entity
-%   mrio_generate_manufacturing_entity(params)
+%   mrio_generate_utilities_entity(params)
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
-%   parameters: a structure to pass on parameters, with fields as
+%   params: a structure to pass on parameters, with fields as
 %       (run params = mrio_get_params to obtain all default values)
 %       centroids_file: the filename of the centroids file containing 
 %           information on NatID for all centroid

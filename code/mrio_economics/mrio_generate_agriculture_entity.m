@@ -16,10 +16,10 @@ function [entity, entity_save_file] = mrio_generate_agriculture_entity(params)
 %   mrio_generate_agriculture_entity
 % EXAMPLE:
 %   mrio_generate_agriculture_entity
-%   mrio_generate_manufacturing_entity(params)
+%   mrio_generate_agriculture_entity(params)
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
-%   parameters: a structure to pass on parameters, with fields as
+%   params: a structure to pass on parameters, with fields as
 %       (run params = mrio_get_params to obtain all default values)
 %       centroids_file: the filename of the centroids file containing 
 %           information on NatID for all centroid
@@ -250,7 +250,7 @@ for asset_i = 1:n_assets
         entity.assets.lat(asset_i) = 0;
     end
     if params.verbose, climada_progress2stdout(asset_i,n_assets,5,'processed assets'); end % update
-end
+end % asset_i
 
 if params.verbose, climada_progress2stdout(0); end% terminate
 
