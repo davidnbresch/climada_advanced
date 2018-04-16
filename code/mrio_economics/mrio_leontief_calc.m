@@ -1,4 +1,4 @@
-function [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params) % uncomment to run as function
+function [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, risk_structure ,leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params) % uncomment to run as function
 % mrio leontief calc
 % MODULE:
 %   advanced
@@ -56,6 +56,9 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %   indirect_country_risk: table with indirect risk per country based on the risk measure chosen
 %       in one variable and two "label" variables containing corresponding 
 %       country names and country ISO codes.
+%   risk_structure: industry-by-industry table of expected annual damages (in millions
+%       of US$) that, for each industry, contains indirect risk implicitly
+%       obtained from the different industry.
 %   leontief_inverse: the leontief inverse matrix which relates final demand to production
 %   climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
@@ -64,8 +67,11 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 % Ediz Herms, ediz.herms@outlook.com, 20180411, option to choose between IIM and EEIOA methodology
 %
 
+total_subsector_risk = []; % init output
+total_country_risk = []; % init output
 indirect_subsector_risk = []; % init output
 indirect_country_risk = []; % init output
+risk_structure = []; % init output
 leontief_inverse = []; % init output
 climada_nan_mriot = []; % init output 
 
@@ -140,7 +146,13 @@ switch params.switch_io_approach
         leontief_inverse = inv(eye(size(climada_mriot.mrio_data)) - inv_diag_total_output * techn_coeffs * diag(total_output));
         
         % normalized degraded final demand = (1-A^*)*q 
-        degr_final_demand = leontief_inverse * direct_intensity_vector';
+        rel_risk_structure = zeros(size(leontief_inverse));
+        risk_structure = zeros(size(leontief_inverse));
+        for row_i = 1:size(leontief_inverse,1)
+           rel_risk_structure(row_i,:) = (leontief_inverse(row_i,:) .* direct_intensity_vector) .* total_output(row_i);
+           risk_structure(row_i,:) = rel_risk_structure(row_i,:) .* total_output(row_i);
+        end
+        degr_final_demand = nansum(rel_risk_structure,2);
         
         % denormalize 
         indirect_subsector_risk = (degr_final_demand .* total_output)';
@@ -150,11 +162,18 @@ switch params.switch_io_approach
         % leontief inverse 
         leontief_inverse = inv(eye(size(climada_mriot.mrio_data)) - techn_coeffs);
         
+        % set up industry-by-industry risk structure table
+        risk_structure = zeros(size(leontief_inverse));
+        for row_i = 1:size(leontief_inverse,1)
+            risk_structure(row_i,:) = (direct_intensity_vector .* leontief_inverse(:,row_i)) .* total_output;
+        end
+        
         % multiplying the monetary input-output relation by the industry-specific factor requirements
         indirect_subsector_risk = ((direct_intensity_vector * leontief_inverse) .* total_output)';
     
-    otherwise % TO DO
-        
+    otherwise
+        fprintf('I/0 approach [%i] not implemented yet.\n', params.switch_io_approach)
+        return
 end % params.switch_io_approach
 
 % aggregate indirect risk across all sectors of a country
