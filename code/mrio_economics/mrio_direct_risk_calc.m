@@ -78,6 +78,7 @@ if ~exist('risk_measure', 'var'), risk_measure = []; end
 if ~exist('params','var'), params = struct; end
 if ~exist('country_name','var'), country_name = []; end
 if ~exist('mainsector_name','var'), mainsector_name = []; end
+if ~exist('subsector_name','var'), subsector_name = []; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -136,6 +137,21 @@ if params.impact_analysis_mode
     else
         selection_mainsector = find(mainsectors == mainsector_name);
     end
+    
+%     if length(selection_mainsector) < 2
+%         main_fields = fields(aggregated_mriot.aggregation_info);
+%         current_mainsector = char(main_fields(selection_mainsector));
+%         subset_subsectors = aggregated_mriot.aggregation_info.(current_mainsector);
+%         [subsectors_liststr, subsectors_sort_index] = sort(subset_subsectors);
+%         if isempty(subsector_name)
+%             % compile list of all mrio countries, then call recursively below
+%             [selection_subsector] = listdlg('PromptString','Select subsectors (or one):',...
+%                 'ListString',subsectors_liststr);
+%             selection_subsector = subsectors_sort_index(selection_subsector);
+%         else
+%             selection_subsector = find(subset_subsectors == subsector_name);
+%         end
+%     end
     
     selection_risk = zeros(length(selection_mainsector),length(selection_country));
     for selection_country_i = 1:length(selection_country)
