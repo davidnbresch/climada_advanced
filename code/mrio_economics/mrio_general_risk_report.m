@@ -1,20 +1,20 @@
-function mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, risk_structure, climada_mriot, aggregated_mriot, climada_nan_mriot, report_filename) 
+function mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot, report_filename, params) 
 % mrio general risk report
 % MODULE:
 %   advanced
 % NAME:
 %   mrio_general_risk_report
 % PURPOSE:
-%   produce a report (country, subsector, peril, damage) based on the results from
-%   mrio_direct_risk_calc and mrio_leontief_calc
+%   produce a general risk report (country, subsector, peril, direct and indirect damage) 
+%   based on the results from mrio_direct_risk_calc and mrio_leontief_calc
 %
 %   previous call: mrio_direct_risk_calc and mrio_leontief_calc
 %   see also: 
 %   
 % CALLING SEQUENCE:
-%   mrio_general_risk_report(direct_subsector_risk, total_subsector_risk_in, direct_country_risk, total_country_risk);
+%   mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot);
 % EXAMPLE:
-%   mrio_general_risk_report(direct_subsector_risk, total_subsector_risk_in, direct_country_risk, total_country_risk);
+%   mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot);
 % INPUTS:
 %   direct_subsector_risk: a table containing as one variable the direct risk for each
 %       subsector/country combination covered in the original mriot. The
@@ -32,22 +32,32 @@ function mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk
 %   country_risk: table with indirect risk per country based on the risk measure chosen
 %       in one variable and two "label" variables containing corresponding 
 %       country names and country ISO codes.
-%   risk_structure: industry-by-industry table of expected annual damages (in millions
-%       of US$) that, for each industry, contains indirect risk implicitly
-%       obtained from the different industry.
+%   leontief: a structure with 5 fields. It represents a general climada
+%       leontief structure whose basic properties are the same regardless of the
+%       provided mriot it is based on. The fields are:
+%           risk_structure: industry-by-industry table of expected annual damages (in millions
+%               of US$) that, for each industry, contains indirect risk implicitly
+%               obtained from the different industry.
+%           inverse: the leontief inverse matrix which relates final demand to production
+%           techn_coeffs: the technical coefficient matrix which gives the amount of input that a 
+%               given sector must receive from every other sector in order to create one dollar of output.
+%           climada_mriot: struct that contains information on the mrio table used
+%           climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
 %       provided mriot it is based on, see mrio_read_table;
 %   aggregated_mriot: an aggregated climada mriot struct as
 %       produced by mrio_aggregate_table.
-%   climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 % OPTIONAL INPUT PARAMETERS:
 %   report_filename: the filename of the Excel file the report is written
 %       to. Prompted for if not given (if Cancel pressed, write to stdout only)
+%   params: a structure to pass on parameters, with fields as
+%       (run params = mrio_get_params to obtain all default values)
+%       verbose: whether we printf progress to stdout (=1, default) or not (=0)
 % OUTPUTS:
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180412, initial (under construction)
-% Ediz Herms, ediz.herms@outlook.com, 20180416, first working version on windows as operating system
+% Ediz Herms, ediz.herms@outlook.com, 20180416, first working version: try writing Excel file, otherwise generate .csv report
 %
 
 global climada_global
@@ -58,11 +68,11 @@ if ~exist('direct_subsector_risk','var'), direct_subsector_risk = []; end
 if ~exist('indirect_subsector_risk','var'), indirect_subsector_risk = []; end
 if ~exist('direct_country_risk','var'), direct_country_risk = []; end
 if ~exist('indirect_country_risk','var'), indirect_country_risk = []; end
-if ~exist('risk_structure','var'), risk_structure = []; end
+if ~exist('leontief','var'), leontief = struct; end
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end
 if ~exist('aggregated_mriot', 'var'), aggregated_mriot = []; end
-if ~exist('climada_nan_mriot','var'), climada_nan_mriot = []; end
 if ~exist('report_filename','var'),report_filename = []; end
+if ~exist('params','var'), params = struct; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -73,7 +83,7 @@ else
 end
 
 % local folder to write the figures
-fig_dir = [climada_global.results_dir filesep 'mrio ' datestr(now,1) filesep 'general risk report'];
+fig_dir = [climada_global.results_dir filesep 'mrio ' datestr(now,1)];
 if ~isdir(fig_dir), [fP,fN] = fileparts(fig_dir); mkdir(fP,fN); end % create it
 fig_ext = 'png';
 
@@ -83,7 +93,7 @@ if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(aggregated_mriot), aggregated_mriot = mrio_aggregate_table(climada_mriot); end
 % prompt for report_filename if not given
 if isempty(report_filename) % local GUI
-    report_filename = [climada_global.results_dir filesep 'mrio ' datestr(now,1) filesep 'general risk report' filesep 'general_risk_report.xls'];
+    report_filename = [climada_global.results_dir filesep 'mrio ' datestr(now,1) filesep 'general_risk_report.xls'];
     [filename, pathname] = uiputfile(report_filename, 'Save report as:');
     if isequal(filename,0) || isequal(pathname,0)
         report_filename = ''; % cancel
@@ -91,18 +101,17 @@ if isempty(report_filename) % local GUI
         report_filename = fullfile(pathname,filename);
     end
 end
+if ~isfield(params,'verbose'), params.verbose = 1; end
 
 % template entity file, such that we do not need to construct the entity from scratch
 report_template_file = [climada_global.results_dir filesep 'mrio' filesep 'mrio_risk_report_template' climada_global.spreadsheet_ext];
 %
 
-if exist(report_template_file,'file') & ispc
-    copyfile(report_template_file,report_filename);
-elseif ~exist(report_template_file,'file') & ispc
-    fprintf('WARNING: report template %s not found, report without formatting\n', report_template_file);
-else
-    fprintf('WARNING: your operating system does not support using excel templates, report without formatting\n');
-end
+% prepare header and print format
+header_str = 'peril_ID;country_name;country_ISO3;mainsector_name;subsector_name;damage;value;damage/value';
+format_str = '%s;%s;%s;%s;%s;%d;%d;%f\n';
+%header_str = strrep(header_str,';',climada_global.csv_delimiter);
+%format_str = strrep(format_str,';',climada_global.csv_delimiter);
 
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 n_mrio_countries = length(mrio_countries_ISO3);
@@ -138,13 +147,52 @@ end
 
 total_output = nansum(climada_mriot.mrio_data, 2); % total output per sector per country (sum up row ignoring NaN-values)
 
-% direct_risk = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.climada_sect_name',climada_mriot.sectors',direct_subsector_risk',total_output,(direct_subsector_risk'./total_output), ...
-%                                 'VariableNames',{'country_name','country_ISO3','mainsector_name','subsector_name','EAD','value','loss of TIV'});
-%                 
-% indirect_risk = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.sectors',indirect_subsector_risk', ...
-%                                 'VariableNames',{'Country','CountryISO','Subsector','IndirectSubsectorRisk'});
+if exist(report_template_file,'file') & ispc
+    copyfile(report_template_file,report_filename);
+elseif ~exist(report_template_file,'file') & ispc
+    fprintf('WARNING: report template %s not found, report without formatting\n', report_template_file);
+else
+    fprintf('WARNING: your operating system does not support writing excel files, proceed writing .csv\n');
+end
 
-if ispc % Code to run on Windows platform
+% try writing Excel file
+if climada_global.octave_mode
+    STATUS = xlswrite(report_filename,...
+        {'peril_ID','country_name','country_ISO3','mainsector_name','subsector_name','damage','value','damage/value'});
+    MESSAGE = 'Octave';
+else
+    [STATUS, MESSAGE] = xlswrite(report_filename,...
+        {'peril_ID','country_name','country_ISO3','mainsector_name','subsector_name','damage','value','damage/value'});
+end
+
+if ~STATUS || strcmp(MESSAGE.identifier,'MATLAB:xlswrite:NoCOMServer') % xlswrite failed, write .csv instead
+    
+    [fP,fN] = fileparts(report_filename);
+    report_filename = [fP filesep fN '.csv'];
+    delete(report_filename);
+    
+    direct_risk_table = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.climada_sect_name',climada_mriot.sectors',direct_subsector_risk',total_output,(direct_subsector_risk'./total_output), ...
+                                'VariableNames',{'country_name','country_ISO3','mainsector_name','subsector_name','damage','value','damage_ratio'});
+
+    indirect_risk_table = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.climada_sect_name',climada_mriot.sectors',indirect_subsector_risk',total_output,(indirect_subsector_risk'./total_output), ...
+                                'VariableNames',{'country_name','country_ISO3','mainsector_name','subsector_name','damage','value','damage_ratio'});
+
+    risk_structure_table = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.climada_sect_name',climada_mriot.sectors',leontief.risk_structure, ...
+                                'VariableNames',{'country_name','country_ISO3','mainsector_name','subsector_name','damage'});                     
+
+    [fP,fN,fE] = fileparts(report_filename);   
+    try
+        writetable(risk_structure_table,[fP filesep fN '_risk_structure.csv'])
+    catch
+       
+    end
+    writetable(direct_risk_table,[fP filesep fN '_direct_risk.csv'])
+    writetable(indirect_risk_table,[fP filesep fN '_indirect_risk.csv'])
+    
+    if params.verbose, fprintf('report(s) written to %s\n',[fP filesep fN '_XXX.csv']); end
+
+else
+    %[STATUS,MESSAGE] = xlswrite(report_filename,excel_data, 1,'A2'); %A2 not to overwrite header
     xlswrite(report_filename,cellstr(climada_mriot.countries'),'direct risk','B2') 
     xlswrite(report_filename,cellstr(climada_mriot.countries_iso'),'direct risk','C2') 
     xlswrite(report_filename,cellstr(climada_mriot.climada_sect_name'),'direct risk','D2') 
@@ -165,24 +213,15 @@ if ispc % Code to run on Windows platform
     xlswrite(report_filename,cellstr(climada_mriot.sectors'),'risk structure','B7') 
     xlswrite(report_filename,cellstr(climada_mriot.countries_iso),'risk structure','E5') 
     xlswrite(report_filename,cellstr(climada_mriot.countries_iso'),'risk structure','C7') 
-    xlswrite(report_filename,cellstr(risk_structure),'risk structure','E7') 
-elseif isunix | ismac % Code to run on Linux or Mac platform   
-%     [fP,fN,fE] = fileparts(report_filename);   
-%     writetable(leontief_inverse,report_filename,'Sheet','risk structure', 'Range', 'A1')
-%     writetable(total_subsector_risk,report_filename,'Sheet','subsector risk', 'Range', 'A1')
-%     writetable(total_country_risk,report_filename,'Sheet','country risk', 'Range', 'A1')
-else
-    fprintf('WARNING: Your operating system is not supported with regards to the functionality of creating excel risk reports.\n')
+    xlswrite(report_filename,cellstr(leontief.risk_structure),'risk structure','E7') 
+    if params.verbose, fprintf('report written to %s\n',report_filename); end
 end
 
-try
-    winopen(report_filename);
-catch
-    system(['open ' report_filename]);
-end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Figure 1: Stacked bar graph of largest indirect risk carriers (countries)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % aggregate components of subsector risk - now per country
-%risk_structure = zeros(1,n_mainsectors*n_mrio_countries);
 risk_structure_country = zeros(n_mainsectors,n_mrio_countries);
 for country_i = 1:n_mrio_countries
     country_ISO3_i = char(mrio_countries_ISO3(country_i));
@@ -192,11 +231,11 @@ for country_i = 1:n_mrio_countries
         sel_mainsector_pos = find(climada_mriot.climada_sect_name == mainsector_name_i);
         sel_pos = intersect(sel_mainsector_pos,sel_country_pos);
     
-        risk_structure_country(mainsector_i,country_i) = sum(sum(risk_structure(sel_mainsector_pos,sel_country_pos)));
+        risk_structure_country(mainsector_i,country_i) = sum(sum(leontief.risk_structure(sel_pos,:)));
     end
 end
 
-[indirect_country_risk_sorted, sort_index] = sort(indirect_country_risk, 'descend');
+[indirect_country_risk_sorted, sort_index] = sort(nansum(risk_structure_country,1), 'descend');
 risk_structure_country_temp = [risk_structure_country(:,sort_index(1:5)) nansum(risk_structure_country(:,sort_index(6:end)),2)]';
 
 index_sub = categorical({[char(mrio_countries_ISO3(sort_index(1)))]...
@@ -213,7 +252,7 @@ legend_sub = {[char(mainsectors(1))]...
             [char(mainsectors(5))]...
             [char(mainsectors(6))]};
 
-bar(index_sub, risk_structure_country_temp, 0.5, 'stack')
+risk_structure = bar(index_sub, risk_structure_country_temp, 0.5, 'stack');
 legend(legend_sub)
 
 % Add title and axis labels
@@ -221,7 +260,11 @@ title('Countries with the largest indirect risk')
 xlabel('Country ISO3')
 ylabel('Indirect risk')
 
+saveas(risk_structure,[fig_dir filesep 'risk_structure'],'jpg')
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Figure 2: Scatter plot of indirect vs. direct risk ratio
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 
 % % components of subsector risk: per country
@@ -250,23 +293,5 @@ p = polyfit(direct_subsector_risk,indirect_subsector_risk,2);
 polyval(p,direct_subsector_risk);
 plot(sort(direct_subsector_risk),sort(polyval(p,direct_subsector_risk)))
 grid on
-
-col_row_names = cell(1,n_subsectors*n_mrio_countries);
-for subsector_i = 1:n_subsectors*n_mrio_countries
-    col_row_name_temp = cellstr([char(climada_mriot.countries_iso(subsector_i)) ' | ' char(climada_mriot.sectors(subsector_i))]);
-    if length(col_row_name_temp) > 62
-        col_row_names(subsector_i) = matlab.lang.makeValidName(cellstr([char(col_row_name_temp{1}(1:61)) '_']));
-    else
-        col_row_names(subsector_i) = matlab.lang.makeValidName(col_row_name_temp);
-    end
-end
-
-% sample = climada_mriot.mrio_data;
-% sTable = array2table(sample,climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.climada_sect_name','RowNames,{col_row_names,'Country','CountryISO','Mainsectors'},'VariableNames',{col_row_names,'Country','CountryISO','Mainsectors'});
-% 
-% test = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.climada_sect_name',climada_mriot.sectors',climada_mriot.mrio_data,...
-%                                 'VariableNames',{'Country','CountryISO','Mainsectors','Subsectors','IndirectRisk'});
-%                             
-% writetable(test) 
 
 end % mrio_general_risk_report

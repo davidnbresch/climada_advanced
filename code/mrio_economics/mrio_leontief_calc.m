@@ -25,7 +25,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %   next call:  % just to illustrate
 %   
 % CALLING SEQUENCE:
-%   [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, risk_structure, leontief_inverse, climada_nan_mriot] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params);
+%   [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params);
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
@@ -56,7 +56,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %   indirect_country_risk: table with indirect risk per country based on the risk measure chosen
 %       in one variable and two "label" variables containing corresponding 
 %       country names and country ISO codes.
-%   leontief: a structure with 4 fields. It represents a general climada
+%   leontief: a structure with 5 fields. It represents a general climada
 %       leontief structure whose basic properties are the same regardless of the
 %       provided mriot it is based on. The fields are:
 %           risk_structure: industry-by-industry table of expected annual damages (in millions
@@ -66,12 +66,13 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %           techn_coeffs: the technical coefficient matrix which gives the amount of input that a 
 %               given sector must receive from every other sector in order to create one dollar of output.
 %           climada_mriot: struct that contains information on the mrio table used
-%   climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
+%           climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial
 % Kaspar Tobler, 20180119 implement returned results as tables to improve readability (countries and sectors corresponding to the values are visible on first sight).
 % Ediz Herms, ediz.herms@outlook.com, 20180411, option to choose between IIM and EEIOA methodology
 % Ediz Herms, ediz.herms@outlook.com, 20180411, set up industry-by-industry risk structure table to track source of indirect risk 
+% Ediz Herms, ediz.herms@outlook.com, 20180417, set up general leontief struct that contains rel. info (leontief inverse, risk structure, technical coefficient matrix) 
 %
 
 total_subsector_risk = []; % init output
@@ -102,7 +103,7 @@ if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(direct_subsector_risk), direct_subsector_risk = mrio_direct_risk_calc('', '', climada_mriot, ''); end
 if ~isfield(params,'switch_io_approach'), params.switch_io_approach = 1; end
 
-climada_nan_mriot = isnan(climada_mriot.mrio_data); % save NaN values to trace affected relationships and values
+leontief.climada_nan_mriot = isnan(climada_mriot.mrio_data); % save NaN values to trace affected relationships and values
 climada_mriot.mrio_data(isnan(climada_mriot.mrio_data)) = 0; % for calculation purposes we need to replace NaN values with zeroes
 
 n_subsectors = climada_mriot.no_of_sectors;
