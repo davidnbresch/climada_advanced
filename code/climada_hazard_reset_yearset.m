@@ -10,6 +10,10 @@ function hazard = climada_hazard_reset_yearset(hazard,join_duplicate_years_only,
 %       climada_tc_hazard_set.) and
 %   (b) to get rid of duplicates in the field orig_yearset,
 %       as these duplicates cause expected damage mismatches in climada_EDS2YDS
+%   
+%   Please note: The duplicates in orig_yearset come from a problem in the hazard generation
+%   which is not fixed as of today (20180417). Until it is fixed, 
+%   please use this function to reset the orig_yearset before computing damage.
 %
 % CALLING SEQUENCE:
 %   hazard = climada_hazard_reset_yearset(hazard,join_duplicate_years_only,verbose_mode)
@@ -79,6 +83,7 @@ function hazard = climada_hazard_reset_yearset(hazard,join_duplicate_years_only,
 % MODIFICATION HISTORY:
 % Samuel Eberenz, eberenz@posteo.eu, 20180329, initial
 % Samuel Eberenz, eberenz@posteo.eu, 20180406, add functionality b 
+% Samuel Eberenz, 20180417, added extra notes in description
 
 if ~exist('hazard','var'),error('no hazard provided.');end
 if ~exist('join_duplicate_years_only','var'),join_duplicate_years_only=0;end
