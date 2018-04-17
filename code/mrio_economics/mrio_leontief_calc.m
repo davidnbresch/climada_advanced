@@ -65,6 +65,8 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %           inverse: the leontief inverse matrix which relates final demand to production
 %           techn_coeffs: the technical coefficient matrix which gives the amount of input that a 
 %               given sector must receive from every other sector in order to create one dollar of output.
+%           layers: the first 5 layers and a remainder term that gives the
+%               user information on which stage/tier the risk incurs
 %           climada_mriot: struct that contains information on the mrio table used
 %           climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
@@ -185,6 +187,15 @@ switch params.switch_io_approach
         fprintf('I/0 approach [%i] not implemented yet.\n', params.switch_io_approach)
         return
 end % params.switch_io_approach
+
+% calculate the first 5 layers / tiers and a remainder
+n_layers = 5;
+leontief.layers = zeros(n_subsectors*n_mrio_countries,5+1);
+leontief.layers(:,1) = leontief.techn_coeffs * total_output;
+for layer_i = 2:n_layers
+    leontief.layers(:,layer_i) = leontief.techn_coeffs * leontief.layers(:,layer_i-1);
+end % layer_i
+leontief.layers(:,n_layers+1) = indirect_subsector_risk' - sum(leontief.layers(:,1:n_layers-1),2);
 
 % aggregate indirect risk across all sectors of a country
 indirect_country_risk = zeros(1,n_mrio_countries); % init
