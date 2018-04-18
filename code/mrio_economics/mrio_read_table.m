@@ -69,6 +69,10 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 %       no_of_sectors: as above but for number of sectors.
 %       
 %       unit: unit used in the original mriot.
+%       RoW_aggregation: a char vector informing about whether several
+%           RoW-regions have been aggregated into one. At this step always
+%           set to 'None', might be changed by function
+%           mrio_aggregate_table.
 %
 % GENERAL NOTES:
 % The function is not as flexible as it could be due to difficulties with
@@ -80,10 +84,9 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 % certainly with lots of potential for improvement (especially regarding 
 % parameter definitions). Basic functionality is provided.
 %
-% Currently, importing a WIOD table takes approx. 130 seconds, a (larger) EXIOBASE 
+% Currently, importing a WIOD table takes approx. 130 seconds, an EXIOBASE 
 %   table approx. 80 seconds.
 %
-% NO IN-DEPTH TESTING OF RESULTS CONDUCTED YET!
 %
 % POSSIBLE EXTENSIONS TO BE IMPLEMENTED:
 % Maybe add an optional input argument "aggregate_flag" or so where, if 1,
@@ -181,7 +184,7 @@ end
 % For eora26, there are various files for the table available, depending
 % on which info one is interested in; sector-sector relations, final demand,
 % satellite accounts, value added, etc. Our analysis only works with the first, which in
-% eora26 terminology is termed the "T" matrix. We check whether user chose
+% eora26 terminology is termed the "T" matrix (check manual for meaning). We check whether user chose
 % such a T matrix as input. We herebey rely on fixed file name conventions.
 % This has to be stated in the user manual.
 
@@ -189,7 +192,7 @@ if strcmpi(table_flag(1:3),'eor')
     [~,fN] = fileparts(mriot_file);
     if ~strcmpi(fN(end-1:end),'_T')
         error(['Please provide a file representing the T matrix. You provided a ',...
-            fN(end-1:end),' matrix. Check user manual for more details.']);
+            fN(end-2:end),' matrix. Check user manual for more details.']);
     end
 end
 
@@ -205,6 +208,8 @@ climada_mriot(1).filename = mriot_file;
 climada_mriot(1).no_of_countries = 0;
 climada_mriot(1).no_of_sectors = 0;
 climada_mriot(1).unit = '';
+climada_mriot(1).RoW_aggregation = 'None';
+
 
 %%% If input is a WIOD table:
 
@@ -231,7 +236,7 @@ end % read exiobase type mriot
 
 if strcmpi(table_flag(1:3),'eor') %In case user provided flag containing typo only compare first three letters.
     
-    climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir); %% For eora26 we need the path info in the local function since we also have to find and load the eora26 "labels" file, ideally automatically.
+    climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir); %% For eora26 we need the path info in the local function since we also have to find and load the eora26 "labels" and "FD" files, ideally automatically.
     
 end % read eora26 type mriot
 
@@ -400,20 +405,23 @@ end
 function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
 
    % For EORA26, main table is in a txt file (user input) and label info is 
-   % stored in a separate excel file called 'labels_T.txt'
-   % We first get this filename. It is by default located in same dir as main table:
+   % stored in a separate excel file called 'labels_T.txt'. Further we need
+   % data on final demand, which are found in the 'Eora26_2013_bp_FD.txt'
+   % file.
+   % We first get these addtional filenames. They are by default located in same dir as main table:
    eora_labels_file = dir([fileparts(mriot_file) filesep '*labels_T*']);
-   %%% In case there are several copies of "labels" files found, 
+   eora_fd_file = dir([fileparts(mriot_file) filesep '*_FD*']);
+   %%% In case there are several copies of "labels" or "FD" files found (e.g. from several different years), 
    %%% let user choose with which one to go forward:
    if length(eora_labels_file) > 1
     [selection, ok] = listdlg('ListString',{eora_labels_file.name},...
            'SelectionMode','single','Name','Choose "types" file...','PromptString','We found several eora26 "labels_T" files. Please choose one to work with.','ListSize',[400 100]);
-    if isequal(ok,0)  %If 'OTHER' chosen or canceled. 
-        error('Without choosing an eora26 "labels_T" file the function cannot proceed.')
-    else  
+        if isequal(ok,0)  %If 'OTHER' chosen or canceled. 
+            error('Without choosing an eora26 "labels_T" file the function cannot proceed.')
+        else
     %Set eora_labels_file based on selection dialog:
-    eora_labels_file = eora_labels_file(selection);
-    end
+            eora_labels_file = eora_labels_file(selection);
+        end
    end
       % If cannot find fitting file at all, open file dialog; else save
          % final file name as string with full path included.
