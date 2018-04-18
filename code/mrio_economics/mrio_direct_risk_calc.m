@@ -222,7 +222,7 @@ for mainsector_j = 1:n_mainsectors % different exposure (asset) base as generate
             %uiwait(warndlg('Please prepare entities first.'));
         end
 
-        if ~strcmp(country_ISO3,'RoW')
+        if ~strcmp(country_ISO3,'ROW') && ~strcmp(country_ISO3,'RoW')
             country_NatID = find(ismember(countries_ISO3, country_ISO3)); % extract NatID
             sel_assets = eq(ismember(entity.assets.NatID, country_NatID),~isnan(entity.assets.Value)); % select all non-NaN assets of this country
         else % 'Rest of World' (RoW) is viewed as a country 

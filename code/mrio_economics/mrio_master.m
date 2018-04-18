@@ -65,7 +65,7 @@ climada_mriot = mrio_read_table(params.mriot.file_name,params.mriot.table_flag);
 
 % aggregated MRIO table:
 fprintf('Aggregating MRIO table...\n');tic;
-[aggregated_mriot, climada_mriot] = mrio_aggregate_table(climada_mriot,params.full_aggregation);toc
+[aggregated_mriot, climada_mriot] = mrio_aggregate_table(climada_mriot,params.full_aggregation,0);toc
 
 % calculate direct risk for all countries and sectors as specified in mrio table
 fprintf('Calculating direct risk for all countries and sectors as specified in mrio table...\n');tic;
