@@ -75,7 +75,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 % Ediz Herms, ediz.herms@outlook.com, 20180411, option to choose between IIM and EEIOA methodology
 % Ediz Herms, ediz.herms@outlook.com, 20180411, set up industry-by-industry risk structure table to track source of indirect risk 
 % Ediz Herms, ediz.herms@outlook.com, 20180417, set up general leontief struct that contains rel. info (leontief inverse, risk structure, technical coefficient matrix) 
-%
+% Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
 
 total_subsector_risk = []; % init output
 total_country_risk = []; % init output
@@ -125,7 +125,7 @@ leontief.climada_mriot.table_type = climada_mriot.table_type;
 leontief.climada_mriot.filename = climada_mriot.filename;
 
 % technical coefficient matrix
-total_output = nansum(climada_mriot.mrio_data,2); % total output per sector per country (sum up row ignoring NaN-values)
+total_output = climada_mriot.total_production;  % total output per sector per country
 leontief.techn_coeffs = zeros(size(climada_mriot.mrio_data)); % init
 for column_i = 1:n_subsectors*n_mrio_countries
     if ~isnan(climada_mriot.mrio_data(:,column_i)./total_output(column_i))
