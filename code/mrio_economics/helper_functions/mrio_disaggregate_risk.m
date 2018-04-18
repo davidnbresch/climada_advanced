@@ -76,7 +76,7 @@ function [direct_subsector_risk,direct_country_risk, total_subsector_production]
 % Kaspar Tobler, 20180112 core functionality for no choice of specific countries finished and working.
 % Kaspar Tobler, 20180115-16 further smaller changes as well as begin drafting of plotting functions. 
 % Ediz Herms, 20180118 adding direct country risk calculation.
-
+% Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
 
 % ONLY FOR DEVELOPMENT PERIOD: CREATE AN EXAMPLE INPUT ARRAY:
 % Assume that the order of values (representing direct risk for each
@@ -98,7 +98,7 @@ if ~exist('direct_mainsector_risk','var') || ... % Required inputs
     errordlg('Please provide the required input arguments.','User input error. Cannot proceed.');
     error('Please provide the required input arguments.')
 elseif ~exist('countries','var')    % Optional input
-    countries=[];       
+    countries=[];  %#ok      
 end
 
 % locate the module's data folder (here  one folder
@@ -113,12 +113,12 @@ no_of_mainsectors = aggregated_mriot.no_of_sectors;
 no_of_subsectors = climada_mriot.no_of_sectors;
 
 if ~ischar(aggregated_mriot.mrio_data)
-    total_mainsector_production = sum(aggregated_mriot.mrio_data,2)';
+    total_mainsector_production = aggregated_mriot.total_production';
 end
-        % Column vector (transposed to row); each entry representing total production of each
-        % main sector within one country.
-total_subsector_production = sum(climada_mriot.mrio_data,2)';
-        % As above but for all subsectors.
+  % Column vector (transposed to row); each entry representing total production of each
+  % main sector within one country.
+    total_subsector_production = climada_mriot.total_production';
+  % As above but for all subsectors.
 
 % The input values are still normalized, such that we don't need
 % a weighting factor here but can obtain the absolute risk per subsector and
@@ -128,7 +128,7 @@ total_subsector_production = sum(climada_mriot.mrio_data,2)';
         % Temporary array for testing phase:
             % test_sel_pos_all = {};     
 direct_subsector_risk = zeros(1,no_of_subsectors*no_of_countries);     
-for mainsector_i = 1:no_of_mainsectors  %#ok
+for mainsector_i = 1:no_of_mainsectors  
     main_fields = fields(aggregated_mriot.aggregation_info);
     current_mainsector = char(main_fields(mainsector_i));
         for subsector_i = 1:numel(aggregated_mriot.aggregation_info.(current_mainsector)) % How many subsectors belong to current mainsector.
@@ -176,7 +176,7 @@ end % mrio_country_i
 % Calculate absolute direct main sector risk (simple element-wise multiplication).
 % Only possible if aggregated_mriot has fully aggregated mrio data field:
 if ~ischar(aggregated_mriot.mrio_data)
-    direct_mainsector_risk_abs = direct_mainsector_risk.*total_mainsector_production;
+    direct_mainsector_risk_abs = direct_mainsector_risk.*total_mainsector_production; %#ok
 end
 
 %%% plot_absolute_risk;
@@ -187,71 +187,72 @@ end
 
 % TOTAL MAIN SECTOR PRODUCTION OF EACH MAIN SECTOR for each country:
 % One map per main sector:
-function plot_production   %#ok
-                all_col1 = zeros(no_of_countries,1);
-                all_col2 = zeros(no_of_countries,1);
-                all_col3 = zeros(no_of_countries,1);
-        for mainsector_i = 1:no_of_mainsectors %#ok
-            sectors = unique(aggregated_mriot.sectors);
-            current_sector = char(sectors(mainsector_i));
-            figure('Name',current_sector);
-         for country_i = 1:no_of_countries  
-            countries = unique(climada_mriot.countries_iso);
-            current_country = char(countries(country_i));
-            sel_pos = (aggregated_mriot.sectors == current_sector) & (aggregated_mriot.countries_iso == current_country); 
-            sel_pos2 = aggregated_mriot.sectors == current_sector;
-            % To adapt colors to each country's risk for the current sector, we
-            % normalize the risk values:
-            col_1 = (total_mainsector_production(sel_pos)-min(total_mainsector_production(sel_pos2)))/...
-                        (max(total_mainsector_production(sel_pos2))-min(total_mainsector_production(sel_pos2)));
-            col_2 = max(col_1-col_1/3,0);
-            col_3 = min(col_1+col_1/3,1);
 
-                all_col1(country_i,1) = col_1;
-                all_col2(country_i,1) = col_2;
-                all_col3(country_i,1) = col_3;
-
-            climada_plot_world_borders(1,current_country,'','',[col_1 col_2 col_3])
-         end
-         title(current_sector,'Interpreter','none');
-        end
-        all_col = table(all_col1,all_col2,all_col3,'VariableNames',{'R','G','B'}); %#ok
-end
-
-
-% DIRECT ABSOLUTE RISK OF EACH MAIN SECTOR for each country. 
-% One map per main sector:
-function plot_absolute_risk    %#ok
-                all_col1 = zeros(no_of_countries,1);
-                all_col2 = zeros(no_of_countries,1);
-                all_col3 = zeros(no_of_countries,1);
-
-                
-        for mainsector_i = 1:no_of_mainsectors  %#ok
-            sectors = unique(aggregated_mriot.sectors);
-            current_sector = char(sectors(mainsector_i));
-            figure('Name',current_sector);
-         for country_i = 1:no_of_countries
-            countries = unique(climada_mriot.countries_iso);
-            current_country = char(countries(country_i));
-            sel_pos = (aggregated_mriot.sectors == current_sector) & (aggregated_mriot.countries_iso == current_country); 
-            sel_pos2 = aggregated_mriot.sectors == current_sector;
-            % To adapt colors to each country's risk for the current sector, we
-            % normalize the risk values:
-            col_1 = (direct_mainsector_risk_abs(sel_pos)-min(direct_mainsector_risk_abs(sel_pos2)))/...
-                        (max(direct_mainsector_risk_abs(sel_pos2))-min(direct_mainsector_risk_abs(sel_pos2)));
-            col_2 = max(col_1-col_1/3,0);
-            col_3 = min(col_1+col_1/3,1);
-
-                all_col1(country_i,1) = col_1;
-                all_col2(country_i,1) = col_2;
-                all_col3(country_i,1) = col_3;
-
-            climada_plot_world_borders(1,current_country,'','',[col_1 col_2 col_3])
-         end
-         title(current_sector,'Interpreter','none');
-        end
-        all_col = table(all_col1,all_col2,all_col3,'VariableNames',{'R','G','B'}); %#ok
-end
+% function plot_production   %#ok
+%                 all_col1 = zeros(no_of_countries,1);
+%                 all_col2 = zeros(no_of_countries,1);
+%                 all_col3 = zeros(no_of_countries,1);
+%         for mainsector_i = 1:no_of_mainsectors %#ok
+%             sectors = unique(aggregated_mriot.sectors);
+%             current_sector = char(sectors(mainsector_i));
+%             figure('Name',current_sector);
+%          for country_i = 1:no_of_countries  
+%             countries = unique(climada_mriot.countries_iso);
+%             current_country = char(countries(country_i));
+%             sel_pos = (aggregated_mriot.sectors == current_sector) & (aggregated_mriot.countries_iso == current_country); 
+%             sel_pos2 = aggregated_mriot.sectors == current_sector;
+%             % To adapt colors to each country's risk for the current sector, we
+%             % normalize the risk values:
+%             col_1 = (total_mainsector_production(sel_pos)-min(total_mainsector_production(sel_pos2)))/...
+%                         (max(total_mainsector_production(sel_pos2))-min(total_mainsector_production(sel_pos2)));
+%             col_2 = max(col_1-col_1/3,0);
+%             col_3 = min(col_1+col_1/3,1);
+% 
+%                 all_col1(country_i,1) = col_1;
+%                 all_col2(country_i,1) = col_2;
+%                 all_col3(country_i,1) = col_3;
+% 
+%             climada_plot_world_borders(1,current_country,'','',[col_1 col_2 col_3])
+%          end
+%          title(current_sector,'Interpreter','none');
+%         end
+%         all_col = table(all_col1,all_col2,all_col3,'VariableNames',{'R','G','B'}); %#ok
+% end
+% 
+% 
+% % DIRECT ABSOLUTE RISK OF EACH MAIN SECTOR for each country. 
+% % One map per main sector:
+% function plot_absolute_risk    %#ok
+%                 all_col1 = zeros(no_of_countries,1);
+%                 all_col2 = zeros(no_of_countries,1);
+%                 all_col3 = zeros(no_of_countries,1);
+% 
+%                 
+%         for mainsector_i = 1:no_of_mainsectors  %#ok
+%             sectors = unique(aggregated_mriot.sectors);
+%             current_sector = char(sectors(mainsector_i));
+%             figure('Name',current_sector);
+%          for country_i = 1:no_of_countries
+%             countries = unique(climada_mriot.countries_iso);
+%             current_country = char(countries(country_i));
+%             sel_pos = (aggregated_mriot.sectors == current_sector) & (aggregated_mriot.countries_iso == current_country); 
+%             sel_pos2 = aggregated_mriot.sectors == current_sector;
+%             % To adapt colors to each country's risk for the current sector, we
+%             % normalize the risk values:
+%             col_1 = (direct_mainsector_risk_abs(sel_pos)-min(direct_mainsector_risk_abs(sel_pos2)))/...
+%                         (max(direct_mainsector_risk_abs(sel_pos2))-min(direct_mainsector_risk_abs(sel_pos2)));
+%             col_2 = max(col_1-col_1/3,0);
+%             col_3 = min(col_1+col_1/3,1);
+% 
+%                 all_col1(country_i,1) = col_1;
+%                 all_col2(country_i,1) = col_2;
+%                 all_col3(country_i,1) = col_3;
+% 
+%             climada_plot_world_borders(1,current_country,'','',[col_1 col_2 col_3])
+%          end
+%          title(current_sector,'Interpreter','none');
+%         end
+%         all_col = table(all_col1,all_col2,all_col3,'VariableNames',{'R','G','B'}); %#ok
+% end % plotting subfunction
 
 end %Wrap local functions to have shared variable workspace.

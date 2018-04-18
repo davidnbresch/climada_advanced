@@ -63,7 +63,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 % Ediz Herms, ediz.herms@outlook.com, 20180118, disaggregate direct risk to all subsectors for each country
 % Ediz Herms, ediz.herms@outlook.com, 20180212, possibility to provide entity on subsector level
 % Ediz Herms, ediz.herms@outlook.com, 20180416, impact_analysis_mode: option to only calculate direct risk for a subset of country x mainsector-combinations
-%-
+% Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
 
 direct_subsector_risk = []; % init output
 direct_country_risk = []; % init output
@@ -252,7 +252,7 @@ end % mainsector_j
 direct_subsector_risk = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot);
 
 % direct risk calculation on subsector level
-total_subsector_production = sum(climada_mriot.mrio_data,2)';
+total_subsector_production = climada_mriot.total_production';
 for subsector_i = 1:length(subsector_information)
     sel_pos = subsector_information(subsector_i);
     
