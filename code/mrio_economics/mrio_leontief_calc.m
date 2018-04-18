@@ -153,7 +153,7 @@ switch params.switch_io_approach
         
         % inverse of diagonalized production vector = \hat(x)^{-1}
         inv_diag_total_output = diag(inv_total_output);
-        
+
         % leontief inverse = (I-A^*)^{-1}
         leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - inv_diag_total_output * leontief.techn_coeffs * diag(total_output));
         
@@ -161,7 +161,7 @@ switch params.switch_io_approach
         rel_risk_structure = zeros(size(leontief.inverse));
         leontief.risk_structure = zeros(size(leontief.inverse));
         for row_i = 1:size(leontief.inverse,1)
-           rel_risk_structure(row_i,:) = (leontief.inverse(row_i,:) .* direct_intensity_vector) .* total_output(row_i);
+           rel_risk_structure(row_i,:) = (leontief.inverse(row_i,:) .* direct_intensity_vector);
            leontief.risk_structure(row_i,:) = rel_risk_structure(row_i,:) .* total_output(row_i);
         end % row_i
         degr_final_demand = nansum(rel_risk_structure,2);
