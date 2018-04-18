@@ -76,7 +76,7 @@ function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot, f
 %  
 % OUTPUTS:
 %   aggregated_mriot: 
-%       a structure with eleven fields. It represents an 
+%       a structure with 13 fields. It represents an 
 %       aggregated version of the general climada mriot structure. Aggregated
 %       here means that all subsectors as represented in the full mriot are
 %       taken together so that only the six climada sectors are represented in
@@ -125,7 +125,10 @@ function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot, f
 %       RoW_aggregation: char vector specifying whether RoW aggregation
 %           took place and if so, which type.
 %       unit: unit used in the original mriot. Same as in full climada_mriot.
-%       
+%       total_production: a numeric column array containing for all country-sector
+%           combinations the total production. Total production includes
+%           production flowing into final consumption, i.e. not into other
+%           sector for further processing.
 %       
 %   climada_mriot: if not provided as argument by user newly created. If
 %       provided and if asked for RoW-aggregation, the returned
@@ -151,6 +154,7 @@ function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot, f
 % Kaspar Tobler, 20180129 added functionality that no full aggregation of the mrio data itself is computed if requested (via input argument). 
 %       This is due to fact that for "standard" procedure as laid out in mrio_master this is not needed. In a "minimal" aggregation, only the country and sector labels etc. are adjusted to an aggregated table. 
 % Kaspar Tobler, 20180410 resolved all major issues surrounding RoW-subregion aggregation.
+% Kaspar Tobler, 20180418 added calculations dealing with the (newly implemented) total production vector for each subfunction.
 
 aggregated_mriot=[]; % init output
 
@@ -236,6 +240,7 @@ aggregated_mriot(1).filename = climada_mriot.filename;
 aggregated_mriot(1).no_of_countries = climada_mriot.no_of_countries;
 aggregated_mriot(1).no_of_sectors = no_of_mainsectors;
 aggregated_mriot(1).RoW_aggregation = 'None';
+aggregated_mriot(1).total_production = [];
 aggregated_mriot(1).unit = climada_mriot.unit;   
 % The set-up for the field aggregation_info (itself a struct):
 for i = 1:no_of_mainsectors
@@ -328,6 +333,7 @@ function one_RoW
 
     RoW_data_length = no_of_sectors*(no_of_countries-(no_of_RoW-1));
     RoW_mrio_data = climada_mriot.mrio_data;
+    RoW_total_production  = climada_mriot.total_production;
     RoW_locations = find(ismember(climada_mriot.countries,categorical(RoW_names)));
 
      % First aggregate along the columns: 
@@ -345,7 +351,7 @@ function one_RoW
     end % row_i
     RoW_mrio_data(:,RoW_locations(no_of_sectors+1:end)) = []; 
     
-    % Now along the rows: 
+    % Now along the rows. This includes aggregation of the total production array: 
     for col_i = 1:RoW_data_length 
         location_i = 1;
         for row_i = RoW_locations(location_i):RoW_locations(no_of_sectors)   % All entries beyond we "reach" via the sum_indices below.
@@ -355,10 +361,12 @@ function one_RoW
                 end
                 %jump_test(1).(['col_' num2str(col_i)]) = sum_indices;
                 RoW_mrio_data(row_i,col_i) = sum(RoW_mrio_data(sum_indices,col_i)); 
+                RoW_total_production(row_i,1) = sum(RoW_total_production(sum_indices,1)); % For now not efficient since newly calculated every time. But conditional will be inefficient too. Time-loss seems negligible. 
            location_i = location_i + 1;
         end
     end % row_i
-    RoW_mrio_data(RoW_locations(no_of_sectors+1:end),:) = [];   
+    RoW_mrio_data(RoW_locations(no_of_sectors+1:end),:) = []; 
+    RoW_total_production(RoW_locations(no_of_sectors+1:end),:) = []; 
     
     % We now have new RoW_locations (only one RoW left) which can then be used to adjust the labels:
     new_RoW_locations = RoW_locations(1:no_of_sectors);
@@ -387,6 +395,7 @@ function one_RoW
     climada_mriot.mrio_data = RoW_mrio_data;
     climada_mriot.no_of_countries = no_of_countries-(no_of_RoW-1);
     climada_mriot.RoW_aggregation = 'all into one';
+    climada_mriot.total_production = RoW_total_production;
     
     % We now have new values for the fuction-wide variables
     % no_of_countries, unique_iso, unique_countries and data length:
@@ -404,6 +413,7 @@ function three_RoW
     RoW_names(contains(RoW_names,{'asia','america'},'IgnoreCase',true)) = []; % Here we leave RoW Asia/Pacific and RoW America as they are.    
     RoW_mrio_data = climada_mriot.mrio_data;
     RoW_locations = find(ismember(climada_mriot.countries,categorical(RoW_names)));
+    RoW_total_production = climada_mriot.total_production;
     
     % First, aggregate along the columns:
     
@@ -420,7 +430,7 @@ function three_RoW
     end % row_i  
     RoW_mrio_data(:,RoW_locations(no_of_sectors+1:end)) = [];   
     
-    % Now aggregate along the rows:
+    % Now aggregate along the rows. This includes the total production array:
     
     for col_i = 1:RoW_data_length
         location_i = 1;
@@ -430,10 +440,12 @@ function three_RoW
                 location_i = location_i + 1;
                 %jump_test(1).(['col_' num2str(col_i)]) = sum_indices;
                 RoW_mrio_data(row_i,col_i) = sum(RoW_mrio_data(sum_indices,col_i));
+                RoW_total_production(row_i,1) = sum(RoW_total_production(sum_indices,1));
         end % col_i 
     end % row_i  
     RoW_mrio_data(RoW_locations(no_of_sectors+1:end),:) = [];   
-
+    RoW_total_production(RoW_locations(no_of_sectors+1:end),:) = [];
+    
     % We now have new RoW_locations which can then be
     % used to adjust the labels. Note that the RoW-regions we did not
     % smum up are treated as normal countries and hene needn't be addressed specifically.
@@ -463,6 +475,7 @@ function three_RoW
     climada_mriot.mrio_data = RoW_mrio_data;
     climada_mriot.no_of_countries = no_of_countries-(no_of_RoW-3);
     climada_mriot.RoW_aggregation = 'all into one except RoW-Asia/Pacific and RoW-America';
+    climada_mriot.total_production = RoW_total_production;
     
     % We now have new values for the fuction-wide variables
     % no_of_countries, unique_iso, unique_countries and data length:
@@ -487,7 +500,8 @@ function full_aggregation
     % commodity exchanges are summed up under the respective climada main
     % sector...
     %
-    % First, aggregate along rows: 
+    % First, aggregate along rows.  This also aggregates the total_production array: 
+    
     for col_i = 1:length(climada_mriot.sectors) % Full resolution length for column index
             mainsector_i = 0;
             country_i = 1;
@@ -511,12 +525,13 @@ function full_aggregation
             % First get all positions (i.e. row-indices) over which we have to sum up the original mrio data:
             sum_indices = ((climada_mriot.climada_sect_id == mainsector_i) & climada_mriot.countries_iso == unique_iso(country_i))'; % Transpose to a (logical) column vector
             aggregated_mriot.mrio_data(row_i,col_i) = sum(climada_mriot.mrio_data(sum_indices,col_i));
+            aggregated_mriot.total_production(row_i,1) = sum(climada_mriot.total_production(sum_indices,1));
         end %inner row loop
     end %outer column loop
     %toc % Approx. 1 minute.
 
     % Second step is to aggregate along columns too, so that we get a quadratic
-    % matrix again. The procedure is similar to the one above:
+    % matrix again. The procedure is similar to the one above.
     % tic
     for row_i = 1:aggregated_data_length 
             mainsector_i = 0;
