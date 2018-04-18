@@ -422,6 +422,15 @@ if ~isequal(length(climada_mriot.sectors),length(climada_mriot.countries_iso),..
     error('Fatal error importing mrio table: sector, country and mapping dimensions do not agree. Cannot proceed.')
 end
 
+%%% TEMPORARY WORK-AROUND TO REMEDY PROBLEMS WITH SECTORS WITH NEGATIVE
+%%% VALUE-ADDED:
+
+intermediate_consumption = sum(climada_mriot.mrio_data);
+probl_i = find(climada_mriot.total_production' < intermediate_consumption);
+climada_mriot.total_production(probl_i) = climada_mriot.total_production(probl_i)+(intermediate_consumption(probl_i)' - climada_mriot.total_production(probl_i))+1;
+
+
+
  %End local function read_wiod
 
 
