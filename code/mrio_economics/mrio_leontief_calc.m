@@ -76,6 +76,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 % Ediz Herms, ediz.herms@outlook.com, 20180411, set up industry-by-industry risk structure table to track source of indirect risk 
 % Ediz Herms, ediz.herms@outlook.com, 20180417, set up general leontief struct that contains rel. info (leontief inverse, risk structure, technical coefficient matrix) 
 % Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
+%
 
 total_subsector_risk = []; % init output
 total_country_risk = []; % init output
@@ -160,14 +161,14 @@ switch params.switch_io_approach
         % normalized degraded final demand = (1-A^*)*q 
         rel_risk_structure = zeros(size(leontief.inverse));
         leontief.risk_structure = zeros(size(leontief.inverse));
-        for row_i = 1:size(leontief.inverse,1)
-           rel_risk_structure(row_i,:) = (leontief.inverse(row_i,:) .* direct_intensity_vector);
-           leontief.risk_structure(row_i,:) = rel_risk_structure(row_i,:) .* total_output(row_i);
-        end % row_i
-        degr_final_demand = nansum(rel_risk_structure,2);
+        for column_i = 1:size(leontief.inverse,1)
+           rel_risk_structure(:,column_i) = (leontief.inverse(column_i,:) .* direct_intensity_vector)';
+           leontief.risk_structure(:,column_i) = rel_risk_structure(:,column_i) .* total_output(column_i);
+        end % column_i
+        degr_final_demand = nansum(rel_risk_structure,1);
         
         % denormalize 
-        indirect_subsector_risk = (degr_final_demand .* total_output)';
+        indirect_subsector_risk = (degr_final_demand .* total_output');
         
     case 2 % Environmentally Extended Input-Output Analysis (EEIOA), cf. Kitzes (2013) [2]
         
@@ -176,12 +177,14 @@ switch params.switch_io_approach
         
         % set up industry-by-industry risk structure table
         leontief.risk_structure = zeros(size(leontief.inverse));
-        for row_i = 1:size(leontief.inverse,1)
-            leontief.risk_structure(row_i,:) = (direct_intensity_vector .* leontief.inverse(:,row_i)') .* total_output';
-        end % row_i
+        for column_i = 1:size(leontief.inverse,1)
+            % multiplying the monetary input-output relation by the industry-specific factor requirements q*(1-A)^{-1}*x
+            leontief.risk_structure(:,column_i) = (direct_intensity_vector .* leontief.inverse(:,column_i)') .* total_output(column_i);
+        end % column_i
         
-        % multiplying the monetary input-output relation by the industry-specific factor requirements
-        indirect_subsector_risk = ((direct_intensity_vector * leontief.inverse) .* total_output)';
+        % sum up the risk contributions to obtain the indirect subsector risk
+        indirect_subsector_risk = nansum(leontief.risk_structure,1);
+        %indirect_subsector_risk = ((direct_intensity_vector * leontief.inverse) .* total_output');
     
     otherwise
         fprintf('I/0 approach [%i] not implemented yet.\n', params.switch_io_approach)
@@ -190,7 +193,7 @@ end % params.switch_io_approach
 
 % calculate the first 5 layers / tiers and a remainder
 n_layers = 5;
-leontief.layers = zeros(n_subsectors*n_mrio_countries,5+1);
+leontief.layers = zeros(n_subsectors*n_mrio_countries,n_layers+1);
 leontief.layers(:,1) = leontief.techn_coeffs * total_output;
 for layer_i = 2:n_layers
     leontief.layers(:,layer_i) = leontief.techn_coeffs * leontief.layers(:,layer_i-1);
