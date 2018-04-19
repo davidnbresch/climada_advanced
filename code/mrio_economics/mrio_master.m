@@ -82,9 +82,17 @@ fprintf('Calculating direct to indirect risk ratios...\n');tic;
 [total_subsector_risk, total_country_risk] = mrio_risk_ratios_calc(direct_subsector_risk,total_subsector_risk,direct_country_risk,total_country_risk);toc
 
 % if specified in params struct, write final results to an excel file for better readability:
+fprintf('Write final results to a simple excel file...\n');tic;
 if params.write_xls == 1 
     fprintf('Writing final results to an excel file located in module/data/results ...\n');tic;
     mrio_write_results_xls(direct_subsector_risk,direct_country_risk,total_subsector_risk,total_country_risk);
-end
+end 
+toc
+
+% Get very simple comparison with global total AED computed from emdat
+% database for same period of time as looked at in historical storm set of
+% mrio module:
+fprintf('Obtain simple comparison values from emdat database...\n');tic;
+[glb_direct_risk, glb_indirect_risk, glb_emdat_aed] = mrio_emdat_compare(direct_risk_vector,indirect_risk_vector,climada_mriot,params);toc
 
 % end % mrio_master
