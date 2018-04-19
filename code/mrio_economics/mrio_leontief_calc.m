@@ -198,7 +198,7 @@ leontief.layers(:,1) = leontief.techn_coeffs * total_output;
 for layer_i = 2:n_layers
     leontief.layers(:,layer_i) = leontief.techn_coeffs * leontief.layers(:,layer_i-1);
 end % layer_i
-leontief.layers(:,n_layers+1) = indirect_subsector_risk' - sum(leontief.layers(:,1:n_layers-1),2);
+leontief.layers(:,n_layers+1) = indirect_subsector_risk' - sum(leontief.layers(:,1:n_layers),2);
 
 % aggregate indirect risk across all sectors of a country
 indirect_country_risk = zeros(1,n_mrio_countries); % init
