@@ -64,6 +64,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 % Ediz Herms, ediz.herms@outlook.com, 20180212, possibility to provide entity on subsector level
 % Ediz Herms, ediz.herms@outlook.com, 20180416, impact_analysis_mode: option to only calculate direct risk for a subset of country x mainsector-combinations
 % Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
+%
 
 direct_subsector_risk = []; % init output
 direct_country_risk = []; % init output
@@ -154,9 +155,9 @@ if params.impact_analysis_mode
 %     end
     
     selection_risk = zeros(length(selection_mainsector),length(selection_country));
-    for selection_country_i = 1:length(selection_country)
-        selection_risk(:,selection_country_i) = ones(1,length(selection_mainsector)).*(selection_country_i-1)*n_mainsectors+selection_mainsector; % TO DO: only one selection possible atm
-    end % selection_country_i
+    for country_i = 1:length(selection_country)
+        selection_risk(:,country_i) = ones(1,length(selection_mainsector)).*(selection_country(country_i)-1)*n_mainsectors+selection_mainsector; % TO DO: only one selection possible atm
+    end % country_i
     selection_risk = reshape(selection_risk,[1,size(selection_risk,1)*size(selection_risk,2)]);
     
     else 
