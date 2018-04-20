@@ -113,7 +113,7 @@ n_mainsectors = length(mainsectors);
 subsectors = unique(climada_mriot.sectors, 'stable');
 n_subsectors = climada_mriot.no_of_sectors;    
 %
-% prompt country (one or many)
+% prompt country (one or many) - TO DO 
 [countries_liststr, countries_sort_index] = sort(mrio_countries_ISO3);
 if isempty(country_name)
     % compile list of all mrio countries, then call recursively below
@@ -125,7 +125,7 @@ else
 end
 country_name = char(mrio_countries_ISO3(selection_country));
 %
-% prompt for subsector name (one or many)
+% prompt for subsector name (one or many) - TO DO 
 [subsectors_liststr, subsectors_sort_index] = sort(subsectors);
 if isempty(subsector_name)
     % compile list of all mrio countries, then call recursively below
@@ -139,7 +139,7 @@ subsector_name = char(subsectors(selection_subsector));
 %
 % prompt for report_filename if not given
 if isempty(report_filename) % local GUI
-    report_filename = [climada_global.data_dir filesep 'results' filesep 'subesctor_risk_report.xls'];
+    report_filename = [climada_global.data_dir filesep 'results' filesep 'mrio' filesep datestr(now,1) filesep 'subesctor_risk_report.xls'];
     [filename, pathname] = uiputfile(report_filename, 'Save report as:');
     if isequal(filename,0) || isequal(pathname,0)
         report_filename = ''; % cancel
@@ -149,36 +149,44 @@ if isempty(report_filename) % local GUI
 end
 
 % local folder to write the figures
-fig_dir = [climada_global.results_dir filesep 'mrio ' datestr(now,1) filesep country_name '_' subsector_name];
+fig_dir = [climada_global.results_dir filesep 'mrio' filesep datestr(now,1) filesep country_name '_' subsector_name];
 if ~isdir(fig_dir), [fP,fN] = fileparts(fig_dir); mkdir(fP,fN); end % create it
 fig_ext = 'png';
 
 % All risks as arrays (not tables) for internal use.
 % Keeping it flexible in case future vesions of the tables change order of variables or variable names.
-for var_i = 1:length(direct_subsector_risk.Properties.VariableNames)
-    if isnumeric(direct_subsector_risk{1,var_i})
-        direct_subsector_risk = direct_subsector_risk{:,var_i}';
-    end
+if istable(direct_subsector_risk)
+    for var_i = 1:length(direct_subsector_risk.Properties.VariableNames)
+            if isnumeric(direct_subsector_risk{1,var_i})
+                direct_subsector_risk = direct_subsector_risk{:,var_i}';
+            end
+    end % var_i
 end
-for var_i = 1:length(indirect_subsector_risk.Properties.VariableNames)
-    if isnumeric(indirect_subsector_risk{1,var_i})
-        indirect_subsector_risk = indirect_subsector_risk{:,var_i}';
-    end
+if istable(indirect_subsector_risk)
+    for var_i = 1:length(indirect_subsector_risk.Properties.VariableNames)
+        if isnumeric(indirect_subsector_risk{1,var_i})
+            indirect_subsector_risk = indirect_subsector_risk{:,var_i}';
+        end
+    end % var_i
 end
-for var_i = 1:length(direct_country_risk.Properties.VariableNames)
-    if isnumeric(direct_country_risk{1,var_i})
-        direct_country_risk = direct_country_risk{:,var_i}';
-    end
+if istable(direct_country_risk)
+    for var_i = 1:length(direct_country_risk.Properties.VariableNames)
+        if isnumeric(direct_country_risk{1,var_i})
+            direct_country_risk = direct_country_risk{:,var_i}';
+        end
+    end % var_i
 end
-for var_i = 1:length(indirect_country_risk.Properties.VariableNames)
-    if isnumeric(indirect_country_risk{1,var_i})
-        indirect_country_risk = indirect_country_risk{:,var_i}';
-    end
+if istable(indirect_country_risk)
+    for var_i = 1:length(indirect_country_risk.Properties.VariableNames)
+        if isnumeric(indirect_country_risk{1,var_i})
+            indirect_country_risk = indirect_country_risk{:,var_i}';
+        end
+    end % var_i
 end
 
 risk_index = (selection_country-1) * n_subsectors + selection_subsector;
 
-total_output = nansum(climada_mriot.mrio_data, 2); % total output per sector per country (sum up row ignoring NaN-values)
+total_output = climada_mriot.total_production; % total output per sector per country
 
 % direct intensity vector
 direct_intensity_vector = zeros(1,n_subsectors*n_mrio_countries); % init
@@ -188,18 +196,12 @@ for cell_i = 1:length(direct_subsector_risk)
     end
 end % cell_i
 
-% technical coefficient matrix
-techn_coeffs = zeros(size(climada_mriot.mrio_data)); % init
-for column_i = 1:n_subsectors*n_mrio_countries
-    if ~isnan(climada_mriot.mrio_data(:,column_i)./total_output(column_i))
-        techn_coeffs(:,column_i) = climada_mriot.mrio_data(:,column_i)./total_output(column_i); % normalize with total output
-    else 
-        techn_coeffs(:,column_i) = 0;
-    end
-end % column_i
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Figure 1: pier chart of contributions (subsector level) to our subsector risk
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % components of subsector risk - per subsector
-risk_structure_sub = (direct_intensity_vector .* leontief_inverse(:,risk_index)')/sum(direct_intensity_vector .* leontief_inverse(:,risk_index)');
+risk_structure_sub = (direct_intensity_vector .* leontief.inverse(:,risk_index)')/sum(direct_intensity_vector .* leontief.inverse(:,risk_index)');
 
 [risk_structure_sorted, sort_index] = sort(risk_structure_sub, 'descend');
 risk_structure_temp = [risk_structure_sorted(1:5) nansum(risk_structure_sorted(6:end))];
@@ -226,6 +228,10 @@ legend(index_sub,'Location','eastoutside','Orientation','vertical')
 title(text_title)
 
 saveas(risk_structure_main,[fig_dir filesep 'risk_structure'],'jpg')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Figure 2: pier chart of contributions (mainsector level) to our subsector risk
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % aggregate components of subsector risk - now per mainsector
 %risk_structure = zeros(1,n_mainsectors*n_mrio_countries);
@@ -267,6 +273,10 @@ title(text_title)
 
 saveas(risk_structure_main,[fig_dir filesep 'risk_structure_main'],'jpg')
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Figure 3: pier chart of contributions (country level) to our subsector risk
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % aggregate components of subsector risk - now per country
 %risk_structure = zeros(1,n_mainsectors*n_mrio_countries);
 risk_structure_country = zeros(1,n_mrio_countries);
@@ -303,5 +313,93 @@ legend(index_sub,'Location','eastoutside','Orientation','vertical')
 title(text_title)
 
 saveas(risk_structure_country,[fig_dir filesep 'risk_structure_country'],'jpg')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Figure 3: Sankey diagram of contributions (mainsector level) to our subsector risk
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% input_sub = leontief.risk_structure(:,risk_index);
+% output_sub = leontief.risk_structure(risk_index,:);
+% 
+% for country_i = 1:n_mrio_countries
+%     country_ISO3_i = char(mrio_countries_ISO3(country_i));
+%     
+%     sel_pos = find(climada_mriot.countries_iso == country_ISO3_i);
+% 
+%     input_sub_agg(country_i) = sum(input_sub(sel_pos));
+%     output_sub_agg(country_i) = sum(output_sub(sel_pos));
+% end
+% 
+% [input_sub_agg_sorted, input_sort_index] = sort(input_sub_agg, 'descend');
+% input_sub_temp = [input_sub_agg_sorted(1:5) nansum(input_sub_agg_sorted(6:end))];
+% 
+% input_index_sub = cellstr({[char(mrio_countries_ISO3(input_sort_index(1)))]...
+%              [char(mrio_countries_ISO3(input_sort_index(2)))]...
+%              [char(mrio_countries_ISO3(input_sort_index(3)))]...
+%              [char(mrio_countries_ISO3(input_sort_index(4)))]...
+%              [char(mrio_countries_ISO3(input_sort_index(5)))]...
+%              , 'Other'});
+% 
+% [output_sub_agg_sorted, output_sort_index] = sort(output_sub_agg, 'descend');
+% output_sub_temp = [output_sub_agg_sorted(1:5) nansum(output_sub_agg_sorted(6:end))];
+% 
+% output_index_sub = cellstr({[char(mrio_countries_ISO3(output_sort_index(1)))]...
+%              [char(mrio_countries_ISO3(output_sort_index(2)))]...
+%              [char(mrio_countries_ISO3(output_sort_index(3)))]...
+%              [char(mrio_countries_ISO3(output_sort_index(4)))]...
+%              [char(mrio_countries_ISO3(output_sort_index(5)))]...
+%              , 'Other'});
+% 
+% %labels=[imports_list(:,1) ;  exports_list(:,1) ; 'Switzerland domestic & RoW'];
+% unit = '%'; sep = [1];
+% labels=[input_index_sub ;  output_index_sub];
+% drawSankey(input_sub_temp', output_sub_temp', unit, labels);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Figure 4: Stacked bar graph of the different production layers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% % only consider total subsector output of the subsector specified
+% total_output_sub = zeros(size(total_output));
+% total_output_sub(risk_index) = total_output(risk_index);
+% 
+% indirect_country_risk_sub = leontief.inverse * total_output_sub;
+% 
+% % calculate the first 5 layers / tiers and a remainder
+% n_layers = 5;
+% leontief_layers = zeros(n_subsectors*n_mrio_countries,5+1);
+% leontief_layers(:,1) = leontief.techn_coeffs * total_output_sub;
+% for layer_i = 2:n_layers
+%     leontief_layers(:,layer_i) = leontief.techn_coeffs * leontief_layers(:,layer_i-1);
+% end % layer_i
+% leontief_layers(:,n_layers+1) = indirect_country_risk_sub - sum(leontief_layers(:,1:n_layers-1),2); % TO DO
+% 
+% % aggregate components of production layers - per country
+% leontief_layer_agg = zeros(n_mrio_countries,size(leontief_layers,2));
+% for country_i = 1:n_mrio_countries
+%     country_ISO3_i = char(mrio_countries_ISO3(country_i));
+%     sel_pos = find(climada_mriot.countries_iso == country_ISO3_i); 
+%     
+%     leontief_layer_agg(country_i,:) = sum(leontief_layers(sel_pos,:),1);
+% end
+% 
+% index_sub = categorical({['layer_1']...
+%              ['layer_2']...
+%              ['layer_3']...
+%              ['layer_4']...
+%              ['layer_5']...
+%              ['layer_6_n']});
+% 
+% legend_sub = {[char(mrio_countries_ISO3)]};
+% 
+% barh(leontief_layer_agg', 0.5, 'stack');
+% legend(legend_sub)
+% 
+% % Add title and axis labels
+% title('production layers')
+% xlabel('')
+% ylabel('')
+% 
+% saveas(risk_structure,[fig_dir filesep 'risk_structure'],'jpg')
 
 end % mrio_subsector_risk_report
