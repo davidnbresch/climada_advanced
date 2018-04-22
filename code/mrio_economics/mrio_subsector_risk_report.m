@@ -201,7 +201,7 @@ end % cell_i
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % components of subsector risk - per subsector
-risk_structure_sub = (direct_intensity_vector .* leontief.inverse(:,risk_index)')/sum(direct_intensity_vector .* leontief.inverse(:,risk_index)');
+risk_structure_sub = (leontief.risk_structure(:,risk_index)/sum(leontief.risk_structure(:,risk_index)))';
 
 [risk_structure_sorted, sort_index] = sort(risk_structure_sub, 'descend');
 risk_structure_temp = [risk_structure_sorted(1:5) nansum(risk_structure_sorted(6:end))];
