@@ -29,7 +29,7 @@
 %   Q3.1: same, but probabilistic
 %   => need to diversify globally, at least in three countries
 %
-%   Q4.0: if you would like to reduce years with payout to once in five (ten) years, 
+%   Q4.0: if you would like to reduce the payout frequency to once in five (ten) years, 
 %   how would you choose attachement and cover per country? Find a good
 %   trade-off betweenhigh RoE, low max. payout and RoE for payout period >= 5 (10).
 %   Q4.1: same, but probabilistic
