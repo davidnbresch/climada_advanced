@@ -84,6 +84,7 @@ function hazard = climada_hazard_reset_yearset(hazard,join_duplicate_years_only,
 % Samuel Eberenz, eberenz@posteo.eu, 20180329, initial
 % Samuel Eberenz, eberenz@posteo.eu, 20180406, add functionality b 
 % Samuel Eberenz, 20180417, added extra notes in description
+% Samuel Eberenz, 20180503, improve verbose mode
 
 if ~exist('hazard','var'),error('no hazard provided.');end
 if ~exist('join_duplicate_years_only','var'),join_duplicate_years_only=0;end
@@ -147,12 +148,12 @@ if ~join_duplicate_years_only
     min_year   = hazard.yyyy(1);
     max_year   = hazard.yyyy(end); % start time of track, as we otherwise might count one year too much
     hazard.orig_years = max_year - min_year+1;
-end
+end % ~join_duplicate_years_only
 %% (b) get rid of duplicates in orig_yearset
 yyyy_unique = sort(unique([hazard.orig_yearset.yyyy]));
 if length(yyyy_unique)~=length([hazard.orig_yearset.yyyy]) ||...
         ~min(yyyy_unique==[hazard.orig_yearset.yyyy])
-    length(yyyy_unique)
+    if ~verbose_mode, disp(length(yyyy_unique));end
     for orig_year_i = 1:length(yyyy_unique)    
         orig_yearset_new(orig_year_i).yyyy = yyyy_unique(orig_year_i);
         orig_yearset_new(orig_year_i).event_count=sum([hazard.orig_yearset([hazard.orig_yearset.yyyy]==yyyy_unique(orig_year_i)).event_count]);

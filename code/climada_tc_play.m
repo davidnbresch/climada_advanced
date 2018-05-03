@@ -25,11 +25,16 @@
 %   Q2.1: same, but probabilistic
 %
 %   Q3.0: if you would like to avoid paying out more than 2 bn in any year,
-%   how would you distribute covers?
+%   how would you distribute covers? (attach of 1 bn per country)
 %   Q3.1: same, but probabilistic
 %   => need to diversify globally, at least in three countries
 %
-%   Q4: attachement should matter...
+%   Q4.0: if you would like to reduce years with payout to once in five (ten) years, 
+%   how would you choose attachement and cover per country? Find a good
+%   trade-off betweenhigh RoE, low max. payout and RoE for payout period >= 5 (10).
+%   Q4.1: same, but probabilistic
+%   => attachement matters to increase payout period and optimize your
+%   risks
 %   
 %   previous call: none
 %   next call: many
@@ -47,12 +52,14 @@
 % OUTPUTS:
 %   res: the output, empty if not successful
 % MODIFICATION HISTORY:
-% David N. Bresch, david.bresch@gmail.com, 20160603
-% David N. Bresch, david.bresch@gmail.com, 20170212, climada_progress2stdout
-% David N. Bresch, david.bresch@gmail.com, 20170313, reverted from erroneous save under another name
+% David N. Bresch, david.bresch@gmail.com, 20180503 init
+% Samuel Eberenz, eberenz@posteo.eu, 20180503, add payout_period + Q4
 %-
 
 RoE_sum=[]; % init output
+max_annual_damage = [];
+tol_annual_damage = [];
+payout_period=[]; 
 
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
@@ -71,9 +78,15 @@ if ~exist('silent',         'var') ,silent          = 0;end
 if ~exist('total_cover',    'var') ,total_cover     = 0;end
 if ~exist('total_attach',   'var') ,total_attach    = 0;end
 
-if ~exist('hazard_hist','var'),hazard_hist=climada_hazard_load('GLB_0360as_TC_hist');end
-if ~exist('hazard_prob','var'),hazard_prob=climada_hazard_load('GLB_0360as_TC');end
-
+if ~exist('hazard_hist','var')
+    hazard_hist = climada_hazard_load('GLB_0360as_TC_hist');
+    hazard_hist = climada_hazard_reset_yearset(hazard_hist,1,1);
+end
+if ~exist('hazard_prob','var')
+    hazard_prob = climada_hazard_load('GLB_0360as_TC');
+    hazard_prob = climada_hazard_reset_yearset(hazard_prob,1,1);
+end
+%%
 n_countries=length(country_names);
 
 % calculate damage sets for all countries
@@ -105,7 +118,7 @@ else
     EDS=EDS_hist;
 end
 
-% covert to annual, makes all interpretation easier
+% convert to annual, makes all interpretation easier
 for country_i=1:n_countries
     if prob_switch==1
         YDS(country_i)=climada_EDS2YDS(EDS(country_i),hazard_prob,[],[],1);
@@ -135,9 +148,10 @@ for country_i=1:n_countries
 end % country_i
 
 max_annual_damage=max(country_damage_set);
-threshold_index=ceil(length(country_damage_set)/10);
+threshold_index=floor(length(country_damage_set)/10);
 country_damage_set=sort(country_damage_set);
 tol_annual_damage=country_damage_set(end-threshold_index);
+payout_period = floor(length(find(country_damage_set==0))/(length(find(country_damage_set>0)))+1);
 
 
 if isempty(country_premium),country_premium=country_damage*1.3;end
