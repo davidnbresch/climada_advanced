@@ -39,21 +39,17 @@
 %   previous call: none
 %   next call: many
 % CALLING SEQUENCE:
-%   res=climada_template(param1,param2);
+%   [RoE_sum,country_attach,country_cover,country_premium]=climada_tc_play(country_attach,country_cover,country_premium,prob_switch,silent)
 % EXAMPLE:
-%   climada_template(param1,param2);
+%   climada_tc_play
 % INPUTS:
-%   param1:
-%       > promted for if not given
-%   OPTION param1: a structure with the fields...
-%       this way, parameters can be passed on a fields, see below
+%   currently run as a batch, no parameters passed, see code
 % OPTIONAL INPUT PARAMETERS:
-%   param2: as an example
 % OUTPUTS:
-%   res: the output, empty if not successful
 % MODIFICATION HISTORY:
-% David N. Bresch, david.bresch@gmail.com, 20180503 init
+% David N. Bresch, david.bresch@gmail.com, 20180503, init
 % Samuel Eberenz, eberenz@posteo.eu, 20180503, add payout_period + Q4
+% David N. Bresch, david.bresch@gmail.com, 20180505, octave compatibility (half way)
 %-
 
 RoE_sum=[]; % init output
@@ -80,11 +76,11 @@ if ~exist('total_attach',   'var') ,total_attach    = 0;end
 
 if ~exist('hazard_hist','var')
     hazard_hist = climada_hazard_load('GLB_0360as_TC_hist');
-    hazard_hist = climada_hazard_reset_yearset(hazard_hist,1,1);
+    if ~climada_global.octave_mode,hazard_hist = climada_hazard_reset_yearset(hazard_hist,1,1);end
 end
 if ~exist('hazard_prob','var')
     hazard_prob = climada_hazard_load('GLB_0360as_TC');
-    hazard_prob = climada_hazard_reset_yearset(hazard_prob,1,1);
+    if ~climada_global.octave_mode,hazard_prob = climada_hazard_reset_yearset(hazard_prob,1,1);end
 end
 %%
 n_countries=length(country_names);
