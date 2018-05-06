@@ -74,54 +74,64 @@ if ~exist('silent',         'var') ,silent          = 0;end
 if ~exist('total_cover',    'var') ,total_cover     = 0;end
 if ~exist('total_attach',   'var') ,total_attach    = 0;end
 
-if ~exist('hazard_hist','var')
-    hazard_hist = climada_hazard_load('GLB_0360as_TC_hist');
-    if ~climada_global.octave_mode,hazard_hist = climada_hazard_reset_yearset(hazard_hist,1,1);end
+
+if climada_global.octave_mode
+    
+    % special preparation for Octave
+    if ~exist('hazard_hist','var')
+        hazard_hist = climada_hazard_load('GLB_0360as_TC_hist_OCT');
+        hazard_prob=[];
+    end
+    prob_switch=0; % no probabilistic for Octave (takes too long)
+    
+else
+    
+    if ~exist('hazard_hist','var')
+        hazard_hist = climada_hazard_load('GLB_0360as_TC_hist');
+        hazard_hist = climada_hazard_reset_yearset(hazard_hist,1,1);
+    end
+    if ~exist('hazard_prob','var')
+        hazard_prob = climada_hazard_load('GLB_0360as_TC');
+        hazard_prob = climada_hazard_reset_yearset(hazard_prob,1,1);
+    end
+    
 end
-if ~exist('hazard_prob','var')
-    hazard_prob = climada_hazard_load('GLB_0360as_TC');
-    if ~climada_global.octave_mode,hazard_prob = climada_hazard_reset_yearset(hazard_prob,1,1);end
-end
-%%
+
 n_countries=length(country_names);
 
 % calculate damage sets for all countries
-if ~exist('EDS_hist','var')
-    %clear EDS_hist EDS_prob
+if ~exist('YDS_hist','var') %to force: clear YDS_hist YDS_prob
     for country_i=1:n_countries
         [country_name,country_ISO3]=climada_country_name(country_names{country_i});
         entity_file=[climada_global.entities_dir filesep country_ISO3 '_' country_name '_10x10.mat'];
         if ~exist(entity_file,'file')
             entity=climada_entity_country(country_ISO3);
             entity=climada_assets_encode(entity,hazard_hist);
-            save(entity.assets.filename,'entity',climada_global.save_file_version);
+            %save(entity.assets.filename,'entity',climada_global.save_file_version);
         else
             entity=climada_entity_load(entity_file);
             if ~isfield(entity.assets,'centroid_index')
                 entity=climada_assets_encode(entity,hazard_hist);
-                save(entity.assets.filename,'entity',climada_global.save_file_version);
+                %save(entity.assets.filename,'entity',climada_global.save_file_version);
             end
         end
         
         EDS_hist(country_i)=climada_EDS_calc(entity,hazard_hist);
-        EDS_prob(country_i)=climada_EDS_calc(entity,hazard_prob);
-    end % country_i
-end
-    
-if prob_switch==1
-    EDS=EDS_prob;
-else
-    EDS=EDS_hist;
-end
+        YDS_hist(country_i)=climada_EDS2YDS(EDS_hist(country_i),hazard_hist,[],[],1);
 
-% convert to annual, makes all interpretation easier
-for country_i=1:n_countries
-    if prob_switch==1
-        YDS(country_i)=climada_EDS2YDS(EDS(country_i),hazard_prob,[],[],1);
-    else
-        YDS(country_i)=climada_EDS2YDS(EDS(country_i),hazard_hist,[],[],1);
-    end
-end
+        % special, make sure entities can later be read in Octave (strange)
+        if ~climada_global.octave_mode
+            save(entity_file,'entity','-v6'); % save as -v6 for later use in Octave
+            EDS_prob(country_i)=climada_EDS_calc(entity,hazard_prob); % prob calc only in MATLAB
+            YDS_prob(country_i)=climada_EDS2YDS(EDS_prob(country_i),hazard_prob,[],[],1);
+        end
+                
+    end % country_i
+
+end % ~exist('EDS_hist','var')
+    
+YDS=YDS_hist; % default is historic perspective
+if prob_switch==1,YDS=YDS_prob;end
 
 if isempty(country_attach),country_attach = zeros(1,n_countries)*1e9;end
 if isempty(country_cover),country_cover   = ones(1,n_countries)*1e9;end
