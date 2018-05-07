@@ -29,9 +29,9 @@
 %   Q3.1: same, but probabilistic
 %   => need to diversify globally, at least in three countries
 %
-%   Q4.0: if you would like to reduce the payout frequency to once in five (ten) years, 
-%   how would you choose attachement and cover per country? Find a good
-%   trade-off betweenhigh RoE, low max. payout and RoE for payout period >= 5 (10).
+%   Q4.0: if you would like to reduce the payout frequency to once in five years, 
+%   how would you choose attachement and cover per country?
+%   Find a good trade-off between high RoE, low max. payout for payout period >= 5.
 %   Q4.1: same, but probabilistic
 %   => attachement matters to increase payout period and optimize your
 %   risks
@@ -47,13 +47,13 @@
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
 % MODIFICATION HISTORY:
-% David N. Bresch, david.bresch@gmail.com, 20180503, init
+% David N. Bresch, david.bresch@gmail.com, 20180503 init
 % Samuel Eberenz, eberenz@posteo.eu, 20180503, add payout_period + Q4
 % David N. Bresch, david.bresch@gmail.com, 20180505, octave compatibility (half way)
 %-
 
 RoE_sum=[]; % init output
-max_annual_damage = [];
+max_annual_payout = [];
 tol_annual_damage = [];
 payout_period=[]; 
 
@@ -116,12 +116,15 @@ if ~exist('YDS_hist','var') %to force: clear YDS_hist YDS_prob
             end
         end
         
+        if ~climada_global.octave_mode, save(entity_file,'entity','-v6'); end % save as -v6 for later use in Octave
+
+        if isequal(country_ISO3,'JPN'),entity.damagefunctions.MDD=entity.damagefunctions.MDD*0.05;end
+        if isequal(country_ISO3,'TWN'),entity.damagefunctions.MDD=entity.damagefunctions.MDD*0.05;end   
+        
         EDS_hist(country_i)=climada_EDS_calc(entity,hazard_hist);
         YDS_hist(country_i)=climada_EDS2YDS(EDS_hist(country_i),hazard_hist,[],[],1);
 
-        % special, make sure entities can later be read in Octave (strange)
         if ~climada_global.octave_mode
-            save(entity_file,'entity','-v6'); % save as -v6 for later use in Octave
             EDS_prob(country_i)=climada_EDS_calc(entity,hazard_prob); % prob calc only in MATLAB
             YDS_prob(country_i)=climada_EDS2YDS(EDS_prob(country_i),hazard_prob,[],[],1);
         end
@@ -153,7 +156,7 @@ for country_i=1:n_countries
     country_damage(country_i)=YDS(country_i).frequency*min(max(YDS(country_i).damage-country_attach(country_i),0),country_cover(country_i))';
 end % country_i
 
-max_annual_damage=max(country_damage_set);
+max_annual_payout=max(country_damage_set);
 threshold_index=floor(length(country_damage_set)/10);
 country_damage_set=sort(country_damage_set);
 tol_annual_damage=country_damage_set(end-threshold_index);
