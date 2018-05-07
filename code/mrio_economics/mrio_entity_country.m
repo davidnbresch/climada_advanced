@@ -39,6 +39,8 @@ function mrio_entity_country(GLB_entity, climada_mriot, check_figure, markersize
 % OUTPUTS:
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180217, initial
+% Ediz Herms, ediz.herms@outlook.com, 20180506, option to switch between normalized asset values and ones scaled up with the total sector production
+%
 
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
@@ -76,6 +78,7 @@ if ~isfield(params,'centroids_file') || isempty(params.centroids_file)
         end
     end
 end
+if ~isfield(params,'switch_scale'), params.switch_scale = 1; end
 
 % load global centroids of which we use the NatID to cut out the entities on country level
 centroids = climada_centroids_load(params.centroids_file);
@@ -84,6 +87,21 @@ countries_ISO3 = centroids.ISO3_list(:,1);
 
 % save filename which will be 
 [~, fN, fE] = fileparts(GLB_entity.assets.filename);
+
+% prompt for mainsector name if necessary (for scaling)
+if params.switch_scale == 2
+    mainsectors = unique(climada_mriot.climada_sect_name, 'stable');
+    
+    [mainsectors_liststr, mainsectors_sort_index] = sort(mainsectors);
+    if isempty(mainsector_name)
+        % compile list of all mrio countries, then call recursively below
+        [selection_mainsector] = listdlg('PromptString','Select mainsectors (or one):',...
+            'ListString',mainsectors_liststr);
+        selection_mainsector = mainsectors_sort_index(selection_mainsector);
+    else
+        selection_mainsector = find(mainsectors == mainsector_name);
+    end
+end
 
 % check whether we have passed over a climada mriot struct or a country ISO3 code
 if isfield(climada_mriot,'mrio_data')
@@ -125,11 +143,19 @@ for mrio_country_i = 1:n_mrio_countries
         end
         
         entity.assets.lon = GLB_entity.assets.lon(sel_pos); % restrict entity to country
-        entity.assets.lat = GLB_entity.assets.lat(sel_pos);        
-        entity.assets.Value = GLB_entity.assets.Value(sel_pos)/sum(GLB_entity.assets.Value(sel_pos)); % normalize asset values
+        entity.assets.lat = GLB_entity.assets.lat(sel_pos);  
+        
+        if switch_scale == 2 % scale up with total mainsector production
+            mainsector_index = find(ismember(climada_mriot.climada_sect_name,mainsectors(selection_mainsector)));
+            country_index = find(ismember(climada_mriot.countries_iso,country_ISO3_i));
+            total_mainsector_production = sum(climada_mriot.total_production(intersect(country_index,mainsector_index)));
+            entity.assets.Value = (GLB_entity.assets.Value(sel_pos)/sum(GLB_entity.assets.Value(sel_pos))) * total_mainsector_production;
+        else % normalize asset values
+            entity.assets.Value = GLB_entity.assets.Value(sel_pos)/sum(GLB_entity.assets.Value(sel_pos));
+        end
         
         % for consistency, update Deductible and Cover
-        entity.assets.Cover = GLB_entity.assets.Cover(sel_pos)/sum(GLB_entity.assets.Cover(sel_pos)); 
+        entity.assets.Cover = entity.assets.Value; 
         entity.assets.Deductible = GLB_entity.assets.Deductible(sel_pos);
         
         % pass over Value_unit, DamageFunID, centroid_index,...
