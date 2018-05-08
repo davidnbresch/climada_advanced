@@ -16,6 +16,8 @@
 % set maximum cover and attachment globally
 
 plot_switch = 0; % Show plots of damage per return period and country
+global_prop_switch = 1;
+
 total_cover  = 5e9;
 total_attach = 1e9;
 
@@ -32,10 +34,10 @@ country_cover =[10 0 0 0 0]*5e8; % distribute a total of 10 points (total= USD 5
     country_attach=[0 0 0 0 0]*5e8; % leaf at zero for Q1 (no retention)
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('\n--> Q1.0 Group 1 (hist): RoE = %+2.3f\n',RoE_sum*100);
-    if ~climada_global.octave_mode
+    fprintf('\n--> Q1.0 Group 1 (hist): RoE = %+2.3f%%\n',RoE_sum*100);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q1.1 Group 1 (prob): RoE = %+2.3f\n',RoE_sum*100);
+    fprintf('--> Q1.1 Group 1 (prob): RoE = %+2.3f%%\n',RoE_sum*100);
     end
 
 % group 2
@@ -44,10 +46,10 @@ country_cover =[0 0 4 4 2]*5e8;
     country_attach=[0 0 0 0 0]*5e8;
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q1.0 Group 2 (hist): RoE = %+2.3f\n',RoE_sum*100);
-    if ~climada_global.octave_mode
+    fprintf('--> Q1.0 Group 2 (hist): RoE = %+2.3f%%\n',RoE_sum*100);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q1.1 Group 2 (prob): RoE = %+2.3f\n',RoE_sum*100);
+    fprintf('--> Q1.1 Group 2 (prob): RoE = %+2.3f%%\n',RoE_sum*100);
     end
     
 % group 3
@@ -56,10 +58,10 @@ country_cover =[0 0 0 0 10]*5e8;
     country_attach=[0 0 0 0 0]*5e8;
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q1.0 Group 3 (hist): RoE = %+2.3f\n',RoE_sum*100);
-    if ~climada_global.octave_mode
+    fprintf('--> Q1.0 Group 3 (hist): RoE = %+2.3f%%\n',RoE_sum*100);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q1.1 Group 3 (prob): RoE = %+2.3f\n',RoE_sum*100);
+    fprintf('--> Q1.1 Group 3 (prob): RoE = %+2.3f%%\n',RoE_sum*100);
     end
 %%
 % group 4
@@ -68,10 +70,10 @@ country_cover =[2 2 2 2 2]*5e8;
     country_attach=[0 0 0 0 0]*5e8;
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q1.0 Group 4 (hist): RoE = %+2.3f\n',RoE_sum*100);
-    if ~climada_global.octave_mode
+    fprintf('--> Q1.0 Group 4 (hist): RoE = %+2.3f%%\n',RoE_sum*100);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q1.1 Group 4 (prob): RoE = %+2.3f\n',RoE_sum*100);
+    fprintf('--> Q1.1 Group 4 (prob): RoE = %+2.3f%%\n',RoE_sum*100);
     end
     fprintf('\n')
 %%
@@ -83,10 +85,10 @@ country_attach=[10 0 0 0 0]*1e8; % distribute a total of 10 points (total= USD 1
 
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q2.0 Group 1 (hist): RoE = %+2.3f\n',RoE_sum*100);
-    if ~climada_global.octave_mode
+    fprintf('--> Q2.0 Group 1 (hist): RoE = %+2.3f%%\n',RoE_sum*100);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q2.1 Group 1 (prob): RoE = %+2.3f\n',RoE_sum*100);
+    fprintf('--> Q2.1 Group 1 (prob): RoE = %+2.3f%%\n',RoE_sum*100);
     end
 
 % group 2
@@ -95,10 +97,10 @@ country_attach=[0 0 5 4 1]*1e8;
 
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q2.0 Group 2 (hist): RoE = %+2.3f\n',RoE_sum*100);
-    if ~climada_global.octave_mode
+    fprintf('--> Q2.0 Group 2 (hist): RoE = %+2.3f%%\n',RoE_sum*100);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q2.1 Group 2 (prob): RoE = %+2.3f\n',RoE_sum*100);
+    fprintf('--> Q2.1 Group 2 (prob): RoE = %+2.3f%%\n',RoE_sum*100);
     end
 % group 3
 country_cover =[0 0 0 0 10]*5e8;
@@ -106,10 +108,10 @@ country_attach=[0 0 0 0 10]*1e8;
 
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q2.0 Group 3 (hist): RoE = %+2.3f\n',RoE_sum*100);
-    if ~climada_global.octave_mode
+    fprintf('--> Q2.0 Group 3 (hist): RoE = %+2.3f%%\n',RoE_sum*100);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q2.1 Group 3 (prob): RoE = %+2.3f\n',RoE_sum*100);
+    fprintf('--> Q2.1 Group 3 (prob): RoE = %+2.3f%%\n',RoE_sum*100);
     end
 
 % group 4
@@ -118,10 +120,10 @@ country_attach=[2 2 2 2 2]*1e8;
 
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q2.0 Group 4 (hist): RoE = %+2.3f\n',RoE_sum*100);
-    if ~climada_global.octave_mode
+    fprintf('--> Q2.0 Group 4 (hist): RoE = %+2.3f%%\n',RoE_sum*100);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q2.1 Group 4 (prob): RoE = %+2.3f\n',RoE_sum*100);
+    fprintf('--> Q2.1 Group 4 (prob): RoE = %+2.3f%%\n',RoE_sum*100);
     end
     fprintf('\n')
 
@@ -134,10 +136,12 @@ country_cover =[10 0 0 0 0]*5e8; % distribute a total of 10 points (total= USD 5
     country_attach=[2 2 2 2 2]*1e8;  % do not change attachement point for Q3 (USD 0.2bn for each country)
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q3.0 Group 1 (hist): RoE = %+2.3f, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
-    if ~climada_global.octave_mode
+    fprintf('--> Q3.0 Group 1 (hist): RoE = %+2.3f%%, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q3.1 Group 1 (prob): RoE = %+2.3f, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('--> Q3.1 Group 1 (prob): RoE = %+2.3f%%, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
     end
 % group 2
 country_cover =[0 0 2 4 4]*5e8;
@@ -145,10 +149,12 @@ country_cover =[0 0 2 4 4]*5e8;
     country_attach=[2 2 2 2 2]*1e8;
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q3.0 Group 2 (hist): RoE = %+2.3f, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
-    if ~climada_global.octave_mode
+    fprintf('--> Q3.0 Group 2 (hist): RoE = %+2.3f%%, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q3.1 Group 2 (prob): RoE = %+2.3f, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('--> Q3.1 Group 2 (prob): RoE = %+2.3f%%, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
     end
 % group 3
 country_cover =[2 2 2 2 2]*5e8;
@@ -156,10 +162,12 @@ country_cover =[2 2 2 2 2]*5e8;
     country_attach=[2 2 2 2 2]*1e8;
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q3.0 Group 3 (hist): RoE = %+2.3f, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
-    if ~climada_global.octave_mode
+    fprintf('--> Q3.0 Group 3 (hist): RoE = %+2.3f%%, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q3.1 Group 3 (prob): RoE = %+2.3f, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('--> Q3.1 Group 3 (prob): RoE = %+2.3f%%, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
     end
 % group 4
 country_cover =[.5 .5 4 4 1]*5e8;
@@ -167,10 +175,12 @@ country_cover =[.5 .5 4 4 1]*5e8;
     country_attach=[2 2 2 2 2]*1e8;
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q3.0 Group 4 (hist): RoE = %+2.3f, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
-    if ~climada_global.octave_mode
+    fprintf('--> Q3.0 Group 4 (hist): RoE = %+2.3f%%, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q3.1 Group 4 (prob): RoE = %+2.3f, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('--> Q3.1 Group 4 (prob): RoE = %+2.3f%%, max annual payout %2.3g\n',RoE_sum*100,max_annual_payout);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
     end
     fprintf('\n')
 
@@ -185,10 +195,12 @@ country_attach=[5 0 0 0 0]*1e8;
 
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q4.0 Group 1 (hist): RoE = %+2.3f, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period);  
-    if ~climada_global.octave_mode
+    fprintf('--> Q4.0 Group 1 (hist): RoE = %+2.3f%%, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period);  
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q4.1 Group 1 (prob): RoE = %+2.3f, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period)
+    fprintf('--> Q4.1 Group 1 (prob): RoE = %+2.3f%%, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period)
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
     end
 % group 2
 country_cover =[0 0 4 2 4]*5e8;
@@ -196,10 +208,12 @@ country_attach=[0 0 4 2 4]*1e8;
 
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q4.0 Group 2 (hist): RoE = %+2.3f, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period);
-    if ~climada_global.octave_mode
+    fprintf('--> Q4.0 Group 2 (hist): RoE = %+2.3f%%, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q4.1 Group 2 (prob): RoE = %+2.3f, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period)
+    fprintf('--> Q4.1 Group 2 (prob): RoE = %+2.3f%%, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period)
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
     end
 % group 3
 country_cover =[2 2 2 2 2]*5e8;
@@ -207,10 +221,12 @@ country_attach=[5 5 5 5 5]*1e8;
 
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q4.0 Group 3 (hist): RoE = %+2.3f, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period);
-    if ~climada_global.octave_mode
+    fprintf('--> Q4.0 Group 3 (hist): RoE = %+2.3f%%, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q4.1 Group 3 (prob): RoE = %+2.3f, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period)
+    fprintf('--> Q4.1 Group 3 (prob): RoE = %+2.3f%%, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period)
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
     end
 % group 4
 country_cover =[2 2 2 2 2]*5e8;
@@ -218,10 +234,12 @@ country_attach=[1.5 1.8 2 3 3]*1e8;
 
     country_premium=[];
     prob_switch=0;silent=1;climada_tc_play
-    fprintf('--> Q4.0 Group 4 (hist): RoE = %+2.3f, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period);
-    if ~climada_global.octave_mode
+    fprintf('--> Q4.0 Group 4 (hist): RoE = %+2.3f%%, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period);
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
+    if ~climada_global.octave_mode && global_prop_switch
     prob_switch=1;silent=1;climada_tc_play
-    fprintf('--> Q4.1 Group 4 (prob): RoE = %+2.3f, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period)
+    fprintf('--> Q4.1 Group 4 (prob): RoE = %+2.3f%%, max annual payout %2.3g, payout every %i year(s)\n',RoE_sum*100,max_annual_payout,payout_period)
+    fprintf('                  actual RoE = %+2.3f%% (dependant on max annual payout)\n',RoE_sum*100*total_cover/max_annual_payout);
     end
 %%
 
