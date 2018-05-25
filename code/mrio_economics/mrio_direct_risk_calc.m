@@ -64,7 +64,8 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 % Ediz Herms, ediz.herms@outlook.com, 20180212, possibility to provide entity on subsector level
 % Ediz Herms, ediz.herms@outlook.com, 20180416, impact_analysis_mode: option to only calculate direct risk for a subset of country x mainsector-combinations
 % Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
-%
+% Kaspar Tobler, 20180525 add use of mrio_generate_damagefunctions to make calculation with the appropriate damage functions (details in mrio_generate_damagefunctions).
+
 
 direct_subsector_risk = []; % init output
 direct_country_risk = []; % init output
@@ -115,7 +116,10 @@ mainsectors = unique(climada_mriot.climada_sect_name, 'stable');
 n_mainsectors = length(mainsectors);
 
 subsectors = unique(climada_mriot.sectors, 'stable');
-n_subsectors = climada_mriot.no_of_sectors;   
+n_subsectors = climada_mriot.no_of_sectors; 
+
+nwp_countries = {'JPN','VNM','MYS','PHL','CHN','KOR','TWN'};  % Which countries are considered part of the north-west Pacific (NWP)?
+                                                              % Quite ugly hardcoded version for time reasons. Later maybe base on actual coordinates of country being part of nwp region (predefine only coordinate boundary of region) and use admin0 file or so...
 
 if params.impact_analysis_mode
     % prompt country (one or many)
@@ -301,6 +305,14 @@ direct_country_risk = table(unique(climada_mriot.countries','stable'),unique(cli
 
 %% Risk calculation function    
 function risk = risk_calc(entity, hazard, risk_measure)
+    % Calculate damagefunctions based on Emanuel (see function for
+    % details); need to check whether current country is in north-west
+    % Pacific or not (differing dfs):
+    if ismember(country_ISO3,nwp_countries)
+        entity.damagefunctions = mrio_generate_damagefunctions(entity.damagefunctions,25,61,0.08);
+    else
+        entity.damagefunctions = mrio_generate_damagefunctions(entity.damagefunctions,25,61,0.64);
+    end    
     
     % calculate event damage set
     EDS = climada_EDS_calc(entity, hazard, '', '', 2, '');
