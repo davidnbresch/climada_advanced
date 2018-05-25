@@ -8,7 +8,7 @@ function [entity, entity_save_file] = mrio_generate_utilities_entity(params)
 %   Construct a global entity file based on a global data set of power plant locations.
 %   These are for now taken as a proxy for the utilities mainsector.
 %
-%   next call:
+%   next call: 
 %       mrio_entity_country to generate country entities and to prepare for mrio 
 %       (multi regional I/O table) project
 %
@@ -223,10 +223,25 @@ else
     error('There was an error with loading the data. Missing data on longitude and latitude.')
 end
     
-% Assign lon and lat data as well as palceholder-value of 1 to asset value:
+% Assign lon and lat data:
 entity.assets.lon = raw_data{:,lon_col}; %#ok
 entity.assets.lat = raw_data{:,lat_col}; %#ok
-entity.assets.Value = ones(1,length(entity.assets.lon));
+
+% Check for data on capacity and use as proxy for asset value (will be
+% normalized in entity preparation step). If not found, use 1 as
+% placeholder value for all assets:
+
+% NOTE: CAPACITY HAS TOO MANY NAN VALUES! A LARGE PROPORTION OF DATA LOST. 
+% WE THUS TAKE OUTPUR AS PROXY, DESPITE SOME DOWNSIDES (FOR ABOUT 1/4 OF PLANTS = 0; 
+% BUT THE YEAR REPRESENTED IN DATASET MIGHT NOT BE REPRESENTATIVE OF
+% LONG-TERM PRODUCTION)...
+
+if nnz(contains(vars,'output','IgnoreCase',true)) > 0
+    output_col = find(contains(vars,'output','IgnoreCase',true));
+    entity.assets.Value = raw_data{:,output_col}; %#ok
+else
+    entity.assets.Value = ones(1,length(entity.assets.lon));
+end
 
 % for consistency, update Deductible and Cover
 entity.assets.Deductible = entity.assets.Value*0;
@@ -279,4 +294,3 @@ catch
     if params.verbose, fprintf('done\n'); end
 end
 
-end % mrio_generate_utilities_entity
