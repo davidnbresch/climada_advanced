@@ -42,6 +42,9 @@ if isempty(mriot_type) || strcmpi(mriot_type,'wiod')
 elseif strcmpi(mriot_type(1:4),'exio')
     params.mriot.file_name = 'mrIot_version2.2.2.txt';
     params.mriot.table_flag = 'exiobase';
+elseif strcmpi(mriot_type(1:4),'eora')
+    params.mriot.file_name = 'Eora26_2013_bp_T.txt';
+    params.mriot.table_flag = 'eora26';
 else
     params.mriot.file_name = 'WIOT2014_Nov16_ROW.xlsx'; 
     params.mriot.table_flag = 'wiod';   
