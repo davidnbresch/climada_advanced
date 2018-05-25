@@ -245,6 +245,14 @@ if strcmpi(table_flag(1:3),'eor') %In case user provided flag containing typo on
     
 end % read eora26 type mriot
 
+%%% (TEMPORARY) WORK-AROUND TO REMEDY PROBLEMS WITH SECTORS WITH NEGATIVE
+%%% VALUE-ADDED (THESE ARE NOT TOLERABLE FOR UPCOMING CALCULATIONS):
+
+intermediate_consumption = sum(climada_mriot.mrio_data);
+probl_i = find(climada_mriot.total_production' < intermediate_consumption);
+climada_mriot.total_production(probl_i) = climada_mriot.total_production(probl_i)+(intermediate_consumption(probl_i)' - climada_mriot.total_production(probl_i))+1;
+
+
 %% LOCAL FUNCTIONS:
 
 %%%%%%%%%%%%%%  READ WIOD TABLES; LOCAL FUNCTION
@@ -395,7 +403,7 @@ climada_mriot.mrio_data = mrio_data_temp(1:length(climada_mriot.sectors),1:lengt
 if tot_last_row == true
     climada_mriot.total_production = mrio_data_temp(1:length(climada_mriot.sectors),end);   % Last column of the table.
 else
-    climada_mriot.total_production = sum(mrio_data_temp(1:length(climada_mriot.sectors),1:end-1),2);
+    climada_mriot.total_production = sum(mrio_data_temp(1:length(climada_mriot.sectors),1:end-1),2); % Refine later since if last row did not contain tot, we likely would need to go to 1:end, not end-1...
 end
 
 clear mrio_data_temp
@@ -421,15 +429,6 @@ if ~isequal(length(climada_mriot.sectors),length(climada_mriot.countries_iso),..
         size(climada_mriot.mrio_data,2),(climada_mriot.no_of_countries*climada_mriot.no_of_sectors))
     error('Fatal error importing mrio table: sector, country and mapping dimensions do not agree. Cannot proceed.')
 end
-
-%%% TEMPORARY WORK-AROUND TO REMEDY PROBLEMS WITH SECTORS WITH NEGATIVE
-%%% VALUE-ADDED:
-
-intermediate_consumption = sum(climada_mriot.mrio_data);
-probl_i = find(climada_mriot.total_production' < intermediate_consumption);
-climada_mriot.total_production(probl_i) = climada_mriot.total_production(probl_i)+(intermediate_consumption(probl_i)' - climada_mriot.total_production(probl_i))+1;
-
-
 
  %End local function read_wiod
 
@@ -468,7 +467,7 @@ function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
   % To make it one step more resilient against future changes in the order
   % of the columns in the label file, we don't hardcode which column
   % contains which information but find out dynamically. Still, there is some 
-  % hardcoded stuff which rely on certain fixed properties of the user input
+  % hardcoded stuff which relies on certain fixed properties of the user input
   % which shall be mentioned in the user manual:
   for col_i = 1:length(labels.Properties.VariableNames)
       if iscell(labels{10,col_i}) % To avoid error that the contains function is applied to a double type. 
@@ -481,7 +480,6 @@ function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
           end
       end
   end
-
   
   % Now convert the columns of the table into the different fields of
   % the climada_mriot struct (we also transpose to row vector):
@@ -493,7 +491,7 @@ function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
   % of the sector column. We remove it:
   tot = climada_mriot.sectors(end);
   if contains(char(tot),'total','IgnoreCase',1)
-      sel_rows = climada_mriot.sectors == tot;
+      sel_rows = find(climada_mriot.sectors == tot);
       climada_mriot.sectors(sel_rows) = [];
   end
   
@@ -501,7 +499,7 @@ function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
   % discrepancies. This has to be removed:
   dummy = climada_mriot.countries(end);
   if contains(char(dummy),'statist','IgnoreCase',1)  % In case is removed in further releases; make sure that we don't accidentally remove an actual country.
-    sel_rows = climada_mriot.countries == dummy;
+    sel_rows = find(climada_mriot.countries == dummy);
     climada_mriot.countries(sel_rows) = [];
     climada_mriot.countries_iso(sel_rows) = [];
   end
@@ -528,9 +526,8 @@ function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
   climada_mriot.climada_sect_name = repmat(climada_sectors,1,climada_mriot.no_of_countries);
   
   % Climada_sect_id using helper function to map given names to corresponding
-  % id. For info on how sector names are mapped to an id, see manual.
+  % id. For info on how sector names are mapped to an id, see funtion.
   climada_mriot.climada_sect_id = mrio_mainsector_mapping(climada_mriot.climada_sect_name);
-
           
   % Now read actual mrio data:
   mrio_data = dlmread(mriot_file,'\t');
@@ -553,11 +550,12 @@ function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
   % The unit is nowhere in the above mentioned files explicitly mentioned. The project's
   % website states it's all in 10^3USD (20180215). We have to assume this
   % remains the same in future versions.
-  climada_mriot.unit = '1e3 USD';
+  climada_mriot.unit = '1e3USD';
   
-  %% IMPORTING FINAL DEMAND DATA:
+      
+  % IMPORTING FINAL DEMAND DATA FOR TOTAL PRODUCTION CALCULATION:
   % First getting labels of final demand file:
-  labels_fd = readtable(labels_fd_file,'ReadVariableNames',0);
+  labels_fd = readtable(eora_fd_labels_file,'ReadVariableNames',0);
   % Count how many different final demand categories we have (might change
   % in future). We need this to know how many lines to sum up later in the
   % fd data to obtain total FD for each country.
@@ -575,7 +573,24 @@ function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
   else
       fd_data(end-(no_of_additional-1):end,:) = [];
   end
+  % Remove equivalent to above TOT term, if any:
+  switch smallest_dim
+      case 1
+          if size(fd_data,2) > length(climada_mriot.countries)
+              diff = size(fd_data,2) - length(climada_mriot.countries);
+              fd_data(:,end-(diff-1)) = [];
+          end
+      case 2
+          if size(fd_data,1) > length(climada_mriot.countries)
+              diff = size(fd_data,1) - length(climada_mriot.countries);
+              fd_data(end-(diff-1):end,:) = [];
+          end
+  end
   
+  % Now calculate total output to final demand of each sector:
+  output_to_fd = sum(fd_data,2);
+  % From here and with previous mrio_data, calculate actual total production of each sector including output to final demand:
+  climada_mriot.total_production = sum(climada_mriot.mrio_data,2) + output_to_fd;
   
   % End local function eora26 import.
     
@@ -586,35 +601,17 @@ function climada_mriot = read_exiobase(mriot_file,climada_mriot,module_data_dir)
 global climada_global
 
    % For EXIOBASE, main table is in a txt file (user input) and label info is 
-   % stored in a separate excel file called types_[version_no]. 
-   % We first get this filename. It is by default located in same dir as main table:
+   % stored in a separate excel file called types_[version_no]. Further,
+   % there is the mrFinalDemand_[version_no] file which we need to calculate total
+   % production.
+   % We first get the latter two filenames. They are by default located in same dir as the main table:
    exio_types_file = dir([fileparts(mriot_file) filesep '*types*.xls*']);
-   %%% In case there are several copies of "types" files found (e.g.
-   %%% different versions), let user choose with which one to go forward:
-   if length(exio_types_file) > 1
-    [selection, ok] = listdlg('ListString',{exio_types_file.name},...
-           'SelectionMode','single','Name','Choose "types" file...','PromptString','We found several exiobase "types" files. Please choose one to work with.','ListSize',[400 100]);
-    if isequal(ok,0)  %If 'OTHER' chosen or canceled. 
-        error('Without choosing an exiobase "types" file the function cannot proceed.')
-    else  
-    %Set exio_types_file based on selection dialog:
-    exio_types_file = exio_types_file(selection);
-    end
-   end
-       
-   % If cannot find fitting file at all, open file dialog; else save
-         % final file name as string with full path included.
-       if isempty(exio_types_file)
-            [filename, pathname] = uigetfile([module_data_dir filesep '*.xls*'], 'Open the EXIOBASE types file:');
-            if isequal(filename,0) || isequal(pathname,0)
-                error('Please choose the EXIOBASE types file. Cannot proceed without.')
-                %return; % cancel pressed by user
-            else
-                exio_types_file = fullfile(pathname,filename);
-            end
-       else
-           exio_types_file = fullfile(exio_types_file.folder,exio_types_file.name);
-       end
+   exio_fd_file = dir([fileparts(mriot_file) filesep '*FinalDemand*.txt*']);
+   %%% In case there are several copies of "types" and/o final deman files found (e.g.
+   %%% different versions) or none at all, let user choose (done by
+   %%% internal function check_file:
+   exio_types_file = check_file(exio_types_file,'*.xls*','exiobase "types"',module_data_dir);
+   exio_fd_file = check_file(exio_fd_file,'*.txt*','exiobase "findal demand"',module_data_dir); 
        
    % Now read in and prepare datastore for each relevant sheet in excel file. 
    % First country names:
@@ -716,7 +713,7 @@ global climada_global
    % also in future EXIOBASE releases where no. of header lines and label
    % columns might change.
    %toc % ~45 seconds
-   % Final mriot structure is ~490mb. > 99.9% due to data matrix
+   % Final mriot structure is ~490mb. 
    
        %tic
        % mriot.mrio_data = single(mriot.mrio_data);
@@ -729,6 +726,15 @@ global climada_global
 climada_mriot.no_of_countries = no_countries;
 climada_mriot.no_of_sectors = no_sectors;
 
+% Now import final demand data to calculate total sector production. The
+% final demand file (.txt) is built up analogously to the full
+% sectot-sector table file:
+final_demand = dlmread(exio_fd_file,'\t',2,3); 
+
+% Total production of each sector equals sum of total production for other
+% sectors and total production for final demand in all countries:
+climada_mriot.total_production = sum(climada_mriot.mrio_data,2) + sum(final_demand,2);
+
 % Unit:
 % (Currently highly inefficient since entire column is read even though
 % only one value needed. Still only takes ~10s, but nevertheless too long... Check back later.
@@ -736,7 +742,18 @@ fid = fopen(mriot_file);
 units = textscan(fid, '%*s %*s %s %*[^\n]','HeaderLines',2,'Delimiter','\t');
 fclose(fid);
 units = units{1};
-climada_mriot.unit = units{1};
+if contains(units,'M.EUR','IgnoreCase',true)
+    units = [num2str(1e6*1.20),'USD'];   % RELIES ON EXCHANGE RATE!
+else
+    units = inputdlg('We could not find the mrio table''s unit. Please specify the unit IN USD as in the examples given:',...
+                'Enter unit',[1,70],{'1e6USD, 1000USD, 1USD, etc.'});
+            if isempty(units)
+                warning('No unit was given by user. 1e6*1.20 USD (1e6EUR) is used as default.')
+            else
+               units = units{1}; 
+            end
+end                
+climada_mriot.unit = units;
        
  % Final sanity checks:
  if ~isequal(length(climada_mriot.sectors),length(climada_mriot.countries_iso),...
