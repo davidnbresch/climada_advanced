@@ -325,6 +325,7 @@ if isequal(full_aggregation_flag,1)
         
 else 
     aggregated_mriot.mrio_data = 'No full aggregation on mrio data was computed to save memory and computing time. If such an aggregation is sought, please pass the respective flag argument to function mrio_aggregate_table.';
+    aggregated_mriot.total_prduction = 'No full aggregation also holds true for total_production vector';
 end  % if isequal(full_aggregation_flag,1)
 
 %% Local functions (aggregation of RoW regions and full table aggregation)
