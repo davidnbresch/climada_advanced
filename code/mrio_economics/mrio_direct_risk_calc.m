@@ -239,7 +239,7 @@ for mainsector_j = 1:n_mainsectors % different exposure (asset) base as generate
         entity_sel = entity;
         entity_sel.assets.Value = entity.assets.Value .* sel_assets;  % set values = 0 for all assets outside country i.
         
-        if ~(sum(entity_sel.assets.Value == 1) 
+        if ~(sum(entity_sel.assets.Value == 1))
             entity_sel.assets.Value = entity_sel.assets.Value/sum(entity_sel.assets.Value); % make sure normalized assets are used
         end
 
