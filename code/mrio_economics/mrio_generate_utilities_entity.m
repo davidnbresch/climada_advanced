@@ -173,7 +173,7 @@ if ~isfield(params,'verbose'), params.verbose = 1; end
 %%
 % Get file with all power plants globally. For source and user
 % requirements, check user manual or readme file.
-utilities_file = [module_data_dir filesep 'mrio' filesep 'sparql.csv'];
+utilities_file = [module_data_dir filesep 'entities' filesep 'utilities_source.csv'];
 %
 % Source: http://enipedia.tudelft.nl/wiki/Using_SPARQL_with_Enipedia
 %         Section Advanced > Download all power plant data.

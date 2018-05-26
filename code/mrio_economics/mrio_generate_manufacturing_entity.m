@@ -135,11 +135,7 @@ if ~exist('params', 'var'), params = []; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
-if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
-    module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
-else
-    module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
-end
+    module_data_dir = [climada_global.data_dir];
 
 % PARAMETERS
 %
@@ -173,7 +169,7 @@ if ~isfield(params,'verbose'), params.verbose = 1; end
 %%
 % Get file with gridded industry NOx emissions globally. For source and user
 % requirements, check user manual or readme file.
-manu_file = [module_data_dir filesep 'mrio' filesep 'ECLIPSE_base_CLE_V5a_NOx.nc'];
+manu_file = [module_data_dir filesep 'entities' filesep 'ECLIPSE_base_CLE_V5a_NOx.nc'];
 %
 % Source: http://www.iiasa.ac.at/web/home/research/researchPrograms/air/ECLIPSEv5a.html
 %
@@ -295,3 +291,5 @@ catch
     save(entity_save_file,'entity','-v7.3');
     if params.verbose, fprintf('done\n'); end
 end
+
+end % mrio_generate_manufacturing_entity
