@@ -65,7 +65,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 % Ediz Herms, ediz.herms@outlook.com, 20180416, impact_analysis_mode: option to only calculate direct risk for a subset of country x mainsector-combinations
 % Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
 % Kaspar Tobler, 20180525 add use of mrio_generate_damagefunctions to make calculation with the appropriate damage functions (details in mrio_generate_damagefunctions).
-
+%
 
 direct_subsector_risk = []; % init output
 direct_country_risk = []; % init output

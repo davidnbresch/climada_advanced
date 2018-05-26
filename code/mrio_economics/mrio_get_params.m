@@ -60,7 +60,7 @@ params.full_aggregation = 0; % If set to 0 (default), no full aggregation of mri
                              % and the aggregation info (i.e. which subsectors belong to which mainsector).
 params.verbose = 1; % whether we printf progress to stdout (=1, default) or not (=0)
 
-params.switch_io_approach = 1; % If set to 1 (default), indirect risk is estimated using Inoperability Input-Output Model (IIM)
+params.switch_io_approach = 2; % If set to 2 (default), indirect risk is estimated using Ghosh (supply-driven) methodology
 params.impact_analysis_mode = 0; % If set to 1, direct risk is only calculated for one mainsector in one country (prompted for). During the further
                                   % calculation (mrio_leontief_calc) indirect impact of that particular direct risk is estimated.
         
