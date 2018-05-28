@@ -145,7 +145,7 @@ for mrio_country_i = 1:n_mrio_countries
         entity.assets.lon = GLB_entity.assets.lon(sel_pos); % restrict entity to country
         entity.assets.lat = GLB_entity.assets.lat(sel_pos);  
         
-        if switch_scale == 2 % scale up with total mainsector production
+        if params.switch_scale == 2 % scale up with total mainsector production
             mainsector_index = find(ismember(climada_mriot.climada_sect_name,mainsectors(selection_mainsector)));
             country_index = find(ismember(climada_mriot.countries_iso,country_ISO3_i));
             total_mainsector_production = sum(climada_mriot.total_production(intersect(country_index,mainsector_index)));
