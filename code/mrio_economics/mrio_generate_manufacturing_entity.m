@@ -242,8 +242,6 @@ entity.assets.lat = lat(data_vector > 1e-1);
 %%% ECLIPSE data is in kt); this has to be reviewed carefully later...
 % entity.assets.Value = ones(1,length(entity.assets.lon));
 entity.assets.Value = data_vector(data_vector > 1e-1); 
-% An we normalize the values::
-entity.assets.Value = (entity.assets.Value - min(entity.assets.Value))./(max(entity.assets.Value) - min(entity.assets.Value));
 
 % for consistency, update Deductible and Cover
 entity.assets.Deductible = entity.assets.Value*0;
