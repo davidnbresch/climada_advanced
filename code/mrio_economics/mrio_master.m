@@ -35,8 +35,21 @@
 %   country_risk: table with indirect risk per country based on the risk measure chosen
 %       in one variable and two "label" variables containing corresponding 
 %       country names and country ISO codes.
-%   leontief_inverse: the leontief inverse matrix which relates final demand to production
-%   climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
+%   leontief: a structure with 5 fields. It represents a general climada
+%       leontief structure whose basic properties are the same regardless of the
+%       provided mriot it is based on. The fields are:
+%           risk_structure: industry-by-industry table of expected annual damages (in millions
+%               of US$) that, for each industry, contains indirect risk implicitly
+%               obtained from the different industry.
+%           inverse: the leontief inverse matrix which relates final demand to production
+%           coefficients: either the technical coefficient matrix which gives the amount of input that a 
+%               given sector must receive from every other sector in order to create one dollar of 
+%               output or the allocation coefficient matrix that indicates the allocation of outputs
+%               of each sector
+%           layers: the first 5 layers and a remainder term that gives the
+%               user information on which stage/tier the risk incurs
+%           climada_mriot: struct that contains information on the mrio table used
+%           climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20171207, initial (under construction)
 

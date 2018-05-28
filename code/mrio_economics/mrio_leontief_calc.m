@@ -6,15 +6,20 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %   mrio_leontief_calc
 % PURPOSE:
 %   Derive indirect risk from direct risk table whereby we are using Leontief I/O 
-%   models to estimate indirect risk. There are two I/O models to choose from, namely
+%   models to estimate indirect risk. There are three I/O models to choose from, namely
 %
-%   [1] Inoperability Input-Output Model (IIM), cf.
-%       Christopher W. Anderson , Joost R. Santos & Yacov Y. Haimes (2007) 
-%       A Risk- based Input-Output Methodology for Measuring the Effects of the August 2003 Northeast Blackout, 
-%       Economic Systems Research, 19:2, 183-204, DOI: 10.1080/09535310701330233
+%   [1] Standard Input-Output (IO) Model, cf.
+%       W. W. Leontief (1944) 
+%       Output, employment, consumption, and investment, 
+%       The Quarterly Journal of Economics 58 (2) 290?314.
 %
-%   [2] Environmentally Extended Input-Output Analysis (EEIOA), cf.
-%       Justin Kitzes (2013)
+%   [2] Ghosh Model, cf.
+%       Ghosh, A. (1958)
+%       Input-Output Approach in an Allocation System,
+%       Economica, New Series, 25, no. 97: 58-64. doi:10.2307/2550694.
+%
+%   [3] Environmentally Extended Input-Output Analysis (EEIOA), cf.
+%       Kitzes, J. (2013)
 %       An Introduction to Environmentally-Extended Input-Output Analysis,
 %       Resources 2013, 2, 489-503; doi:10.3390/resources2040489
 %
@@ -42,7 +47,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %   params: a structure to pass on parameters, with fields as
 %       (run params = mrio_get_params to obtain all default values)
 %       switch_io_approach: specifying what I-O approach is applied in this procedure 
-%           to estimate indirect risk, IIM (=1, default) or EEIOA (2)
+%           to estimate indirect risk, Ghosh (=2, default) or standard IO (1) or EEIOA (3)
 % OUTPUTS:
 %   total_subsector_risk: table with indirect and direct risk per subsector/country combination 
 %       based on the risk measure chosen in one variable and three "label" variables 
@@ -63,19 +68,21 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %               of US$) that, for each industry, contains indirect risk implicitly
 %               obtained from the different industry.
 %           inverse: the leontief inverse matrix which relates final demand to production
-%           techn_coeffs: the technical coefficient matrix which gives the amount of input that a 
-%               given sector must receive from every other sector in order to create one dollar of output.
+%           coefficients: either the technical coefficient matrix which gives the amount of input that a 
+%               given sector must receive from every other sector in order to create one dollar of 
+%               output or the allocation coefficient matrix that indicates the allocation of outputs
+%               of each sector
 %           layers: the first 5 layers and a remainder term that gives the
 %               user information on which stage/tier the risk incurs
 %           climada_mriot: struct that contains information on the mrio table used
 %           climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
-% Ediz Herms, ediz.herms@outlook.com, 20171207, initial
+% Ediz Herms, ediz.herms@outlook.com, 20180115, initial
 % Kaspar Tobler, 20180119 implement returned results as tables to improve readability (countries and sectors corresponding to the values are visible on first sight).
-% Ediz Herms, ediz.herms@outlook.com, 20180411, option to choose between IIM and EEIOA methodology
 % Ediz Herms, ediz.herms@outlook.com, 20180411, set up industry-by-industry risk structure table to track source of indirect risk 
 % Ediz Herms, ediz.herms@outlook.com, 20180417, set up general leontief struct that contains rel. info (leontief inverse, risk structure, technical coefficient matrix) 
 % Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
+% Ediz Herms, ediz.herms@outlook.com, 20180511, option to choose between standard IO (demand-driven), Ghosh (supply-driven) and EEIOA ('environmental accounting') methodology
 %
 
 total_subsector_risk = []; % init output
@@ -104,7 +111,7 @@ end
 % PARAMETERS
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(direct_subsector_risk), direct_subsector_risk = mrio_direct_risk_calc('', '', climada_mriot, ''); end
-if ~isfield(params,'switch_io_approach'), params.switch_io_approach = 1; end
+if ~isfield(params,'switch_io_approach'), params.switch_io_approach = 2; end
 
 leontief.climada_nan_mriot = isnan(climada_mriot.mrio_data); % save NaN values to trace affected relationships and values
 climada_mriot.mrio_data(isnan(climada_mriot.mrio_data)) = 0; % for calculation purposes we need to replace NaN values with zeroes
@@ -125,16 +132,26 @@ end
 leontief.climada_mriot.table_type = climada_mriot.table_type;
 leontief.climada_mriot.filename = climada_mriot.filename;
 
-% technical coefficient matrix
+% technical coefficient/allocation matrix
 total_output = climada_mriot.total_production;  % total output per sector per country
-leontief.techn_coeffs = zeros(size(climada_mriot.mrio_data)); % init
-for column_i = 1:n_subsectors*n_mrio_countries
-    if ~isnan(climada_mriot.mrio_data(:,column_i)./total_output(column_i))
-        leontief.techn_coeffs(:,column_i) = climada_mriot.mrio_data(:,column_i)./total_output(column_i); % normalize with total output
-    else 
-        leontief.techn_coeffs(:,column_i) = 0;
-    end
-end % column_i
+leontief.coefficients = zeros(size(climada_mriot.mrio_data)); % init
+if params.switch_io_approach ~= 2
+    for column_i = 1:n_subsectors*n_mrio_countries
+        if ~isnan(climada_mriot.mrio_data(:,column_i)./total_output(column_i))
+            leontief.coefficients(:,column_i) = climada_mriot.mrio_data(:,column_i)./total_output(column_i); % normalize with total output
+        else 
+            leontief.coefficients(:,column_i) = 0;
+        end
+    end % column_i
+else
+    for column_i = 1:n_subsectors*n_mrio_countries
+        if ~isnan(climada_mriot.mrio_data(column_i,:)./total_output(column_i))
+            leontief.coefficients(column_i,:) = climada_mriot.mrio_data(column_i,:)./total_output(column_i); % normalize with total output
+        else 
+            leontief.coefficients(column_i,:) = 0;
+        end
+    end % column_i
+end
 
 % direct intensity vector
 direct_intensity_vector = zeros(1,length(direct_subsector_risk)); % init
@@ -147,33 +164,52 @@ end % cell_i
 % risk calculation
 switch params.switch_io_approach
     
-    case 1 % Inoperability Input-Output Model (IIM), cf. Anderson et al., 2007 [1]
+    case 1 % Standard Input-Output (IO) model, cf. Leontief (1944) [1]
         
-        inv_total_output = 1./total_output;
-        inv_total_output(inv_total_output==Inf) = 0;
-        
-        % inverse of diagonalized production vector = \hat(x)^{-1}
-        inv_diag_total_output = diag(inv_total_output);
+        % degraded final demand f .* q (elementwise)
+        consumption = climada_mriot.total_production - nansum(climada_mriot.mrio_data,2); 
+        degr_consumption = consumption .* direct_intensity_vector';
 
-        % leontief inverse = (I-A^*)^{-1}
-        leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - inv_diag_total_output * leontief.techn_coeffs * diag(total_output));
+        % leontief inverse = (I-A)^{-1}
+        leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - leontief.coefficients);
         
-        % normalized degraded final demand = (1-A^*)*q 
-        rel_risk_structure = zeros(size(leontief.inverse));
+        % set up industry-by-industry risk structure table
         leontief.risk_structure = zeros(size(leontief.inverse));
         for column_i = 1:size(leontief.inverse,1)
-           rel_risk_structure(:,column_i) = (leontief.inverse(column_i,:) .* direct_intensity_vector)';
-           leontief.risk_structure(:,column_i) = rel_risk_structure(:,column_i) .* total_output(column_i);
+           leontief.risk_structure(:,column_i) = ((leontief.inverse(column_i,:) .* degr_consumption')';
         end % column_i
-        degr_final_demand = nansum(rel_risk_structure,1);
+
+        % degraded production L* Deltaf
+        indirect_subsector_risk = nansum(leontief.risk_structure,1);
+
+    case 2 % Ghosh Model, cf. Ghosh (1958) [2]
         
-        % denormalize 
-        indirect_subsector_risk = (degr_final_demand .* total_output');
+        %inv_total_output = 1./total_output;
+        %inv_total_output(inv_total_output==Inf) = 0;
         
-    case 2 % Environmentally Extended Input-Output Analysis (EEIOA), cf. Kitzes (2013) [2]
+        % inverse of diagonalized production vector = \hat(x)^{-1}
+        %inv_diag_total_output = diag(inv_total_output);
+        
+        % degraded value added v .* q (elementwise)
+        value_added = climada_mriot.total_production - nansum(climada_mriot.mrio_data,1)'; 
+        degr_value_added = value_added .* direct_intensity_vector';
+
+        % Ghosh inverse = (I-E)^{-1}
+        leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - leontief.coefficients);
+        
+        % set up industry-by-industry risk structure table
+        leontief.risk_structure = zeros(size(leontief.inverse));
+        for column_i = 1:size(leontief.inverse,1)
+           leontief.risk_structure(:,column_i) = ((degr_value_added .* leontief.inverse(:,column_i)));
+        end % column_i
+        
+        % degraded production Deltav*H
+        indirect_subsector_risk = nansum(leontief.risk_structure,1);
+        
+    case 3 % Environmentally Extended Input-Output Analysis (EEIOA), cf. Kitzes (2013) [3]
         
         % leontief inverse 
-        leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - leontief.techn_coeffs);
+        leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - leontief.coefficients);
         
         % set up industry-by-industry risk structure table
         leontief.risk_structure = zeros(size(leontief.inverse));
@@ -194,9 +230,9 @@ end % params.switch_io_approach
 % calculate the first 5 layers / tiers and a remainder
 n_layers = 5;
 leontief.layers = zeros(n_subsectors*n_mrio_countries,n_layers+1);
-leontief.layers(:,1) = leontief.techn_coeffs * total_output;
+leontief.layers(:,1) = leontief.coefficients * total_output;
 for layer_i = 2:n_layers
-    leontief.layers(:,layer_i) = leontief.techn_coeffs * leontief.layers(:,layer_i-1);
+    leontief.layers(:,layer_i) = leontief.coefficients * leontief.layers(:,layer_i-1);
 end % layer_i
 leontief.layers(:,n_layers+1) = indirect_subsector_risk' - sum(leontief.layers(:,1:n_layers),2);
 

@@ -247,10 +247,10 @@ end % read eora26 type mriot
 
 %%% (TEMPORARY) WORK-AROUND TO REMEDY PROBLEMS WITH SECTORS WITH NEGATIVE
 %%% VALUE-ADDED (THESE ARE NOT TOLERABLE FOR UPCOMING CALCULATIONS):
-
-intermediate_consumption = sum(climada_mriot.mrio_data);
-probl_i = find(climada_mriot.total_production' < intermediate_consumption);
-climada_mriot.total_production(probl_i) = climada_mriot.total_production(probl_i)+(intermediate_consumption(probl_i)' - climada_mriot.total_production(probl_i))+1;
+%
+%intermediate_consumption = sum(climada_mriot.mrio_data);
+%probl_i = find(climada_mriot.total_production' < intermediate_consumption);
+%climada_mriot.total_production(probl_i) = climada_mriot.total_production(probl_i)+(intermediate_consumption(probl_i)' - climada_mriot.total_production(probl_i))+1;
 
 
 %% LOCAL FUNCTIONS:
