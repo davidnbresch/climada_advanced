@@ -112,7 +112,8 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 % Kaspar Tobler, 20180215 finished extension to also provide capabilities to read an EORA26 database.
 % Kaspar Tobler, 20180219 small changes to how climada_sect_id is dealt with; now not requiring a user input anymore but using helper function mrio_mainsector_mapping to map existing mainsector names (in climada_sect_name) to the corresponding IDs...
 % Kaspar Tobler, 20180418 also import info on total production (including production for final consumption etc.). For now working for WIOD. Eora26 and exiobase follow soon.
-
+% Ediz Herms, ediz.herms@outlook.com, 20180606, save climada_mriot struct as .mat file for fast access
+%
 climada_mriot=[]; % init output
 
 global climada_global
@@ -143,7 +144,7 @@ if isempty(mriot_file) %If empty, open file dialog.
         error('Please choose a mriot file.')
         %return; % cancel pressed by user
     else
-        mriot_file=fullfile(pathname,filename);
+        mriot_file = fullfile(pathname,filename);
     end
 end
 
@@ -169,10 +170,9 @@ if isempty(table_flag) %If empty, provide GUI list.
     end
 end % if table_flag is empty
 
-
 % If only filename and no path is passed, add the latter:
 % complete path, if missing
-[fP,fN,fE]=fileparts(mriot_file);
+[fP,fN,fE] = fileparts(mriot_file);
 if isempty(fP)
     fP=module_data_dir;
     if strcmpi(table_flag,'wiod')
@@ -184,66 +184,107 @@ if isempty(fP)
     end
     mriot_file=[fP filesep fN fE];
 end
-
-% For eora26, there are various files for the table available, depending
-% on which info one is interested in; sector-sector relations, final demand,
-% satellite accounts, value added, etc. Our analysis only works with the first, which in
-% eora26 terminology is termed the "T" matrix (check manual for meaning). We check whether user chose
-% such a T matrix as input. We herebey rely on fixed file name conventions.
-% This has to be stated in the user manual.
-
-if strcmpi(table_flag(1:3),'eor')
-    [~,fN] = fileparts(mriot_file);
-    if ~strcmpi(fN(end-1:end),'_T')
-        error(['Please provide a file representing the T matrix. You provided a ',...
-            fN(end-2:end),' matrix. Check user manual for more details.']);
+    
+[fP,fN,fE] = fileparts(mriot_file);
+if isempty(fE), fE = climada_global.spreadsheet_ext;end
+if isempty(fP) % complete path, if missing
+    mrio_file = [module_data_dir filesep fN fE];
+    if ~exist(mrio_file,'file');
+        fprintf('Note: %s does nor exist, switched to .xlsx\n',mrio_file)
+        mriot_file = [module_data_dir filesep fN '.xlsx']; % try this, too
     end
 end
+[fP,fN] = fileparts(mriot_file);
+mriot_save_file = [fP filesep fN '.mat'];
 
-% Setting up mriot structure:
-climada_mriot(1).countries = [];
-climada_mriot(1).countries_iso = [];
-climada_mriot(1).sectors = [];
-climada_mriot(1).climada_sect_name = [];
-climada_mriot(1).climada_sect_id = [];
-climada_mriot(1).mrio_data = [];
-climada_mriot(1).table_type = table_flag;
-climada_mriot(1).filename = mriot_file;
-climada_mriot(1).no_of_countries = 0;
-climada_mriot(1).no_of_sectors = 0;
-climada_mriot(1).unit = '';
-climada_mriot(1).total_production = [];
-climada_mriot(1).RoW_aggregation = 'None';
-
-
-%%% If input is a WIOD table:
-
-if strcmpi(table_flag(1:3),'wio') %In case user provided flag containing typo only compare first three letters.
+if climada_check_matfile(mriot_file, mriot_save_file)
+    % there is a .mat file more recent than the Excel
+    load(mriot_save_file)
     
-    climada_mriot = read_wiod(mriot_file,climada_mriot);
+    % check for valid/correct climada_mriot.filename
+    if isfield(climada_mriot,'mrio_data')
+        if ~isfield(climada_mriot,'filename'), climada_mriot.filename = mriot_save_file; end
+        if ~strcmp(mriot_save_file ,climada_mriot.filename)
+            climada_mriot.filename = mriot_save_file;
+            try
+                save(mriot_save_file,'climada_mriot')
+            catch
+                save(mriot_save_file,'climada_mriot','-v7.3')
+            end
+        end
+    end % isfield(climada_mriot,'mrio_data')  
     
-end % Read WIOD type mriot 
+else
 
-%%% If input is an EXIOBASE table:
+    % For eora26, there are various files for the table available, depending
+    % on which info one is interested in; sector-sector relations, final demand,
+    % satellite accounts, value added, etc. Our analysis only works with the first, which in
+    % eora26 terminology is termed the "T" matrix (check manual for meaning). We check whether user chose
+    % such a T matrix as input. We herebey rely on fixed file name conventions.
+    % This has to be stated in the user manual.
 
-if strcmpi(table_flag(1:3),'exi') %In case user provided flag containing typo only compare first three letters.
-    
-    climada_mriot = read_exiobase(mriot_file,climada_mriot,module_data_dir); %% For exiobase we need the path info in the local function since we also have to find and load the exiobase "types" file, ideally automatically.
-    % The long categorical arrays climada_mriot.countries etc.
-    % are not shown in the matlab variable editor (there seems to be a
-    % max. length of around 4000 elements; longer arrays are not shown). 
-    % This is normal behavior.
-    warning('The long categorical arrays climada_mriot.countries etc. are not shown in the matlab variable editor (there seems to be a max. length of around 4000 elements; longer arrays are not shown). This is NORMAL behavior.')
-    
-end % read exiobase type mriot
+    if strcmpi(table_flag(1:3),'eor')
+        [~,fN] = fileparts(mriot_file);
+        if ~strcmpi(fN(end-1:end),'_T')
+            error(['Please provide a file representing the T matrix. You provided a ',...
+                fN(end-2:end),' matrix. Check user manual for more details.']);
+        end
+    end
 
-%%% If input is an EORA26 table:
+    % Setting up mriot structure:
+    climada_mriot(1).countries = [];
+    climada_mriot(1).countries_iso = [];
+    climada_mriot(1).sectors = [];
+    climada_mriot(1).climada_sect_name = [];
+    climada_mriot(1).climada_sect_id = [];
+    climada_mriot(1).mrio_data = [];
+    climada_mriot(1).table_type = table_flag;
+    climada_mriot(1).filename = mriot_file;
+    climada_mriot(1).no_of_countries = 0;
+    climada_mriot(1).no_of_sectors = 0;
+    climada_mriot(1).unit = '';
+    climada_mriot(1).total_production = [];
+    climada_mriot(1).RoW_aggregation = 'None';
 
-if strcmpi(table_flag(1:3),'eor') %In case user provided flag containing typo only compare first three letters.
+
+    %%% If input is a WIOD table:
+
+    if strcmpi(table_flag(1:3),'wio') %In case user provided flag containing typo only compare first three letters.
+
+        climada_mriot = read_wiod(mriot_file,climada_mriot);
+
+    end % Read WIOD type mriot 
+
+    %%% If input is an EXIOBASE table:
+
+    if strcmpi(table_flag(1:3),'exi') %In case user provided flag containing typo only compare first three letters.
+
+        climada_mriot = read_exiobase(mriot_file,climada_mriot,module_data_dir); %% For exiobase we need the path info in the local function since we also have to find and load the exiobase "types" file, ideally automatically.
+        % The long categorical arrays climada_mriot.countries etc.
+        % are not shown in the matlab variable editor (there seems to be a
+        % max. length of around 4000 elements; longer arrays are not shown). 
+        % This is normal behavior.
+        warning('The long categorical arrays climada_mriot.countries etc. are not shown in the matlab variable editor (there seems to be a max. length of around 4000 elements; longer arrays are not shown). This is NORMAL behavior.')
+
+    end % read exiobase type mriot
+
+    %%% If input is an EORA26 table:
+
+    if strcmpi(table_flag(1:3),'eor') %In case user provided flag containing typo only compare first three letters.
+
+        climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir); %% For eora26 we need the path info in the local function since we also have to find and load the eora26 "labels" and "FD" files, ideally automatically.
+
+    end % read eora26 type mriot
     
-    climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir); %% For eora26 we need the path info in the local function since we also have to find and load the eora26 "labels" and "FD" files, ideally automatically.
+    % save climada_mriot struct as .mat file for fast access
+    fprintf('saving mrio struct as %s\n', mriot_save_file);
+    try
+        save(mriot_save_file,'climada_mriot')
+    catch
+        save(mriot_save_file,'climada_mriot','-v7.3')
+    end
     
-end % read eora26 type mriot
+end % climada_check_matfile
 
 %%% (TEMPORARY) WORK-AROUND TO REMEDY PROBLEMS WITH SECTORS WITH NEGATIVE
 %%% VALUE-ADDED (THESE ARE NOT TOLERABLE FOR UPCOMING CALCULATIONS):
