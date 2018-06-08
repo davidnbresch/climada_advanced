@@ -124,6 +124,7 @@ if istable(direct_subsector_risk)
     for var_i = 1:length(direct_subsector_risk.Properties.VariableNames) % Keeping it flexible in case future vesions of table change order of variables or variable names.
         if isnumeric(direct_subsector_risk{1,var_i})
             direct_subsector_risk = direct_subsector_risk{:,var_i}';
+            break
         end
     end % var_i
 end
@@ -135,7 +136,7 @@ leontief.climada_mriot.filename = climada_mriot.filename;
 % technical coefficient/allocation matrix
 total_output = climada_mriot.total_production;  % total output per sector per country
 leontief.coefficients = zeros(size(climada_mriot.mrio_data)); % init
-if params.switch_io_approach ~= 2
+if params.switch_io_approach ~= 2 % technical coefficient matrix
     for column_i = 1:n_subsectors*n_mrio_countries
         if ~isnan(climada_mriot.mrio_data(:,column_i)./total_output(column_i))
             leontief.coefficients(:,column_i) = climada_mriot.mrio_data(:,column_i)./total_output(column_i); % normalize with total output
@@ -143,7 +144,7 @@ if params.switch_io_approach ~= 2
             leontief.coefficients(:,column_i) = 0;
         end
     end % column_i
-else
+else % allocation coefficient matrix
     for column_i = 1:n_subsectors*n_mrio_countries
         if ~isnan(climada_mriot.mrio_data(column_i,:)./total_output(column_i))
             leontief.coefficients(column_i,:) = climada_mriot.mrio_data(column_i,:)./total_output(column_i); % normalize with total output
@@ -151,7 +152,7 @@ else
             leontief.coefficients(column_i,:) = 0;
         end
     end % column_i
-end
+end % params.switch_io_approach
 
 % direct intensity vector
 direct_intensity_vector = zeros(1,length(direct_subsector_risk)); % init
@@ -173,22 +174,24 @@ switch params.switch_io_approach
         % leontief inverse = (I-A)^{-1}
         leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - leontief.coefficients);
         
-        % set up industry-by-industry risk structure table
+        % set up industry-by-industry risk structure table (degraded production L* Deltaf)
         leontief.risk_structure = zeros(size(leontief.inverse));
         for column_i = 1:size(leontief.inverse,1)
-           leontief.risk_structure(:,column_i) = ((leontief.inverse(column_i,:) .* degr_consumption')';
+           leontief.risk_structure(:,column_i) = (leontief.inverse(column_i,:) .* degr_consumption')';
         end % column_i
-
-        % degraded production L* Deltaf
-        indirect_subsector_risk = nansum(leontief.risk_structure,1);
+        
+        % calculate the first 4 layers / tiers and a remainder
+        n_layers = 4;
+        leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1);
+        for layer_i = 1:n_layers
+            for column_i = 1:size(leontief.inverse,1)
+                leontief.layer(:,column_i,layer_i) = (leontief.coefficients(column_i,:) .* degr_consumption')';
+            end % column_i
+            degr_consumption = sum(leontief.layer(:,:,layer_i),1)';
+        end % layer_i
+        leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
 
     case 2 % Ghosh Model, cf. Ghosh (1958) [2]
-        
-        %inv_total_output = 1./total_output;
-        %inv_total_output(inv_total_output==Inf) = 0;
-        
-        % inverse of diagonalized production vector = \hat(x)^{-1}
-        %inv_diag_total_output = diag(inv_total_output);
         
         % degraded value added v .* q (elementwise)
         value_added = climada_mriot.total_production - nansum(climada_mriot.mrio_data,1)'; 
@@ -197,15 +200,23 @@ switch params.switch_io_approach
         % Ghosh inverse = (I-E)^{-1}
         leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - leontief.coefficients);
         
-        % set up industry-by-industry risk structure table
+        % set up industry-by-industry risk structure table (degraded production Deltav*H)
         leontief.risk_structure = zeros(size(leontief.inverse));
         for column_i = 1:size(leontief.inverse,1)
-           leontief.risk_structure(:,column_i) = ((degr_value_added .* leontief.inverse(:,column_i)));
+           leontief.risk_structure(:,column_i) = degr_value_added .* leontief.inverse(:,column_i);
         end % column_i
-        
-        % degraded production Deltav*H
-        indirect_subsector_risk = nansum(leontief.risk_structure,1);
-        
+
+        % calculate the first 4 layers / tiers and a remainder
+        n_layers = 4;
+        leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1);
+        for layer_i = 1:n_layers
+            for column_i = 1:size(leontief.inverse,1)
+                leontief.layer(:,column_i,layer_i) = degr_value_added .* leontief.coefficients(:,column_i);
+            end % column_i
+            degr_value_added = sum(leontief.layer(:,:,layer_i),1)';
+        end % layer_i
+        leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
+
     case 3 % Environmentally Extended Input-Output Analysis (EEIOA), cf. Kitzes (2013) [3]
         
         % leontief inverse 
@@ -218,23 +229,26 @@ switch params.switch_io_approach
             leontief.risk_structure(:,column_i) = (direct_intensity_vector .* leontief.inverse(:,column_i)') .* total_output(column_i);
         end % column_i
         
-        % sum up the risk contributions to obtain the indirect subsector risk
-        indirect_subsector_risk = nansum(leontief.risk_structure,1);
-        %indirect_subsector_risk = ((direct_intensity_vector * leontief.inverse) .* total_output');
+        % calculate the first 4 layers / tiers and a remainder
+        n_layers = 4;
+        leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1);
+        leontief.layer(:,column_i,1) = (direct_intensity_vector .* leontief.coefficients(:,column_i)') .* total_output(column_i);
+        for layer_i = 2:n_layers
+            for column_i = 1:size(leontief.inverse,1)
+                leontief.layer(:,column_i,layer_i) = (direct_intensity_vector .* leontief.coefficients(:,column_i)') .* sum(leontief.layer(:,:,layer_i-1),1)';
+            end % column_i
+        end % layer_i
+        leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
     
     otherwise
+        
         fprintf('I/0 approach [%i] not implemented yet.\n', params.switch_io_approach)
         return
+        
 end % params.switch_io_approach
 
-% calculate the first 5 layers / tiers and a remainder
-n_layers = 5;
-leontief.layers = zeros(n_subsectors*n_mrio_countries,n_layers+1);
-leontief.layers(:,1) = leontief.coefficients * total_output;
-for layer_i = 2:n_layers
-    leontief.layers(:,layer_i) = leontief.coefficients * leontief.layers(:,layer_i-1);
-end % layer_i
-leontief.layers(:,n_layers+1) = indirect_subsector_risk' - sum(leontief.layers(:,1:n_layers),2);
+% sum up the risk contributions to obtain the indirect subsector risk
+indirect_subsector_risk = nansum(leontief.risk_structure,1);
 
 % aggregate indirect risk across all sectors of a country
 indirect_country_risk = zeros(1,n_mrio_countries); % init
