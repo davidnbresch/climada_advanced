@@ -294,3 +294,4 @@ catch
     if params.verbose, fprintf('done\n'); end
 end
 
+end % mrio_generate_utilities_entity

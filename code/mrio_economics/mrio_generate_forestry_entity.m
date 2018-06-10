@@ -194,9 +194,6 @@ full_img_file = [module_data_dir filesep 'mrio' filesep 'ESACCI-LC-L4-LCCS-Map-3
 % source can be found in the README file _readme.txt in the module's data dir.
 %%
 %
-% reference points to generate a damage function (obtained through expert knowledge)
-reference_points = [00 0; 10 0; 20 0; 30 .001; 40 .01; 50 .1; 120 0.8];
-%
 % template entity file, such that we do not need to construct the entity from scratch
 entity_file = [climada_global.entities_dir filesep 'entity_template' climada_global.spreadsheet_ext];
 %
@@ -317,12 +314,6 @@ for asset_i = 1:length(entity.assets.Value)
 end % asset_i
 
 if params.verbose, climada_progress2stdout(0); end % terminate
-
-% fit damagefunction to the reference_points using a lognormal function
-[damagefunctions, ~] = mrio_fit_damagefunctions(reference_points,10:10:120,'','','lognormal','TC');
-
-% replace select damagefunctions with the ones provided
-entity = climada_damagefunctions_replace(entity, damagefunctions);
 
 % save filename and comment to ensure transparency
 entity.assets.reference_year = climada_global.present_reference_year;
