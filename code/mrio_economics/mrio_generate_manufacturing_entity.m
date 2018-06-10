@@ -171,14 +171,21 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
 end
 if ~isfield(params,'verbose'), params.verbose = 1; end
 %%
-% Get file with gridded industry NOx emissions globally. For source and user
-% requirements, check user manual or readme file.
+% file with gridded industry NOx emissions globally
 manu_file = [module_data_dir filesep 'mrio' filesep 'ECLIPSE_base_CLE_V5a_NOx.nc'];
 %
-% Source: http://www.iiasa.ac.at/web/home/research/researchPrograms/air/ECLIPSEv5a.html
+% Source: 
+% Greenhouse gas ? Air pollution Interactions and Synergies (GAINS) model,
+% International Institute for Applied Systems Analysis (IIASA),
+% 2015, "ECLIPSE V5a global emission fields" [Data file],
+% http://www.iiasa.ac.at/web/home/research/researchPrograms/air/ECLIPSEv5a.html
+% (Accessed 26 05 2018)
 %
+% detailed instructions where to obtain the files and references to the original 
+% source can be found in the user manual or README file _readme.txt in the 
+% module's data dir.
 %%
-
+%
 % template entity file, such that we do not need to construct the entity from scratch
 entity_file = [climada_global.entities_dir filesep 'entity_template' climada_global.spreadsheet_ext];
 

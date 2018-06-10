@@ -179,13 +179,14 @@ data_file = [module_data_dir filesep 'mrio' filesep 'spam2005V3r2_global_V_agg_T
 concordance_file = [module_data_dir filesep 'mrio' filesep 'lut_cell5m_iso3_allockey.txt'];
 %
 % Source:
-% International Food Policy Research Institute (IFPRI); 
+% International Food Policy Research Institute (IFPRI),
 % International Institute for Applied Systems Analysis (IIASA), 
-% 2016, "Global Spatially-Disaggregated Crop Production Statistics Data for 2005 Version 3.2", 
-% http://dx.doi.org/10.7910/DVN/DHXBJX, Harvard Dataverse, V9
+% 2016, "Global Spatially-Disaggregated Crop Production Statistics Data for 2005 Version 3.2" [Data file], 
+% http://dx.doi.org/10.7910/DVN/DHXBJX, Harvard Dataverse, V9 (Accessed 26 05 2018)
 %
 % detailed instructions where to obtain the files and references to the original 
-% source can be found in the README file _readme.txt in the module's data dir.
+% source can be found in the user manual or README file _readme.txt in the 
+% module's data dir.
 %%
 %
 % template entity file, such that we do not need to construct the entity from scratch

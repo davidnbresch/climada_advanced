@@ -175,14 +175,13 @@ if ~isfield(params,'verbose'), params.verbose = 1; end
 % Nighttime Lights Time Series 
 %
 % Source: 
-% Version 4 DMSP-OLS Nighttime Lights Time Series
-% Image and data processing by NOAA's National Geophysical Data Center.
-% DMSP data collected by US Air Force Weather Agency.
-% http://ngdc.noaa.gov/eog/dmsp/downloadV4composites.html#AVSLCFC3
+% NOAA and US Air Force Weather Agency,
+% 2012, "Version 4 DMSP-OLS Nighttime Lights Time Series" [Data file],
+% http://ngdc.noaa.gov/eog/dmsp/downloadV4composites.html#AVSLCFC3 (Accessed 26 05 2018)
 %
-% detailed instructions where to obtain the file and references to the original 
-% source can be found in the README file % F182012.v4c_web.stable_lights.avg_vis.txt 
-% in the country risk module's data dir.
+% detailed instructions where to obtain the files and references to the original 
+% source can be found in the user manual or README file _readme.txt in the 
+% module's data dir.
 %%
 %
 % template entity file, such that we do not need to construct the entity from scratch

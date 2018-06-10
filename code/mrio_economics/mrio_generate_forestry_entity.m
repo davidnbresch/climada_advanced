@@ -185,13 +185,13 @@ if ~isfield(params,'verbose'), params.verbose = 1; end
 full_img_file = [module_data_dir filesep 'mrio' filesep 'ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7.nc'];
 %
 % Source:
-% Land Cover from the Climate Change Initiative (CCI) 
-% processed by ESA and by the Université Catholique de Louvain,
-% 2015, "Land Cover Map 2015, Version 2.0",
-% http://maps.elie.ucl.ac.be/CCI/viewer/
+% ESA and Université Catholique de Louvain,
+% 2015, "Land Cover Map 2015, Version 2.0" [Data file],
+% http://maps.elie.ucl.ac.be/CCI/viewer/ (Accessed 26 05 2018)
 %
-% detailed instructions where to obtain the file and references to the original 
-% source can be found in the README file _readme.txt in the module's data dir.
+% detailed instructions where to obtain the files and references to the original 
+% source can be found in the user manual or README file _readme.txt in the 
+% module's data dir.
 %%
 %
 % template entity file, such that we do not need to construct the entity from scratch

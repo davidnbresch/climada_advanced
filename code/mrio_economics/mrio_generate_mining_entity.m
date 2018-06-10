@@ -176,22 +176,21 @@ if ~isfield(params,'verbose'), params.verbose = 1; end
 filename{1} = [module_data_dir filesep 'mrio' filesep 'mineplant.xls'];
 %
 % Source:
-% Originator: U.S. Geological Survey
-% Publication_Date = 2005
-% Title: Active Mines and Mineral Processing
-% Link: https://mrdata.usgs.gov/mineplant/
+% U.S. Geological Survey,
+% 2005, "Active Mines and Mineral Processing" [Data file],
+% https://mrdata.usgs.gov/mineplant/ (Accessed 26 05 2018)
 %
 % and the file with the mineral operations outside the United States
 filename{2} = [module_data_dir filesep 'mrio' filesep 'minfac.xls'];
 %
 % Source:
-% Originator: U.S. Geological Survey
-% Publication_Date = 2010
-% Title: Mineral operations outside the United States
-% Link: https://mrdata.usgs.gov/mineral-operations/
+% U.S. Geological Survey,
+% 2010, " Mineral operations outside the United States" [Data file],
+% https://mrdata.usgs.gov/mineral-operations/ (Accessed 26 05 2018)
 %
 % detailed instructions where to obtain the files and references to the original 
-% source can be found in the README file _readme.txt in the module's data dir.
+% source can be found in the user manual or README file _readme.txt in the 
+% module's data dir.
 %%
 %
 % template entity file, such that we do not need to construct the entity from scratch

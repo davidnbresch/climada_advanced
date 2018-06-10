@@ -171,14 +171,20 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
 end
 if ~isfield(params,'verbose'), params.verbose = 1; end
 %%
-% Get file with all power plants globally. For source and user
-% requirements, check user manual or readme file.
+% file with all power plants globally
 utilities_file = [module_data_dir filesep 'mrio' filesep 'sparql.csv'];
 %
-% Source: http://enipedia.tudelft.nl/wiki/Using_SPARQL_with_Enipedia
-%         Section Advanced > Download all power plant data.
+% Source:
+% Davis, C. B., Chmieliauskas, A., Dijkema, G. P., and Nikolic, I.,
+% 2014, "ENIPEDIA" [Data file],
+% http://enipedia.tudelft.nl (Accessed 26 05 2018),
+% Section Advanced > Download all power plant data
+%
+% detailed instructions where to obtain the files and references to the original 
+% source can be found in the user manual or README file _readme.txt in the 
+% module's data dir.
 %%
-
+%
 % template entity file, such that we do not need to construct the entity from scratch
 entity_file = [climada_global.entities_dir filesep 'entity_template' climada_global.spreadsheet_ext];
 
@@ -208,7 +214,6 @@ if exist(entity_file,'file')
 else
     fprintf('WARNING: base entity %s not found, entity just entity.assets\n', entity_file);
 end
-
 
 % Read from provided source file (.csv):
 
