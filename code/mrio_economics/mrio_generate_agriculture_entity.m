@@ -273,7 +273,7 @@ entity = climada_assets_encode(entity, hazard);
 if params.verbose, fprintf('get NatID for %i assets ...\n',n_assets); end
 entity.assets.ISO3_list = centroids.ISO3_list;
 
-if params.verbose, climada_progress2stdout end % init, see terminate below
+if params.verbose, climada_progress2stdout; end % init, see terminate below
 
 for asset_i = 1:n_assets
     sel_centroid = entity.assets.centroid_index(asset_i);
