@@ -1,4 +1,4 @@
-function [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params) % uncomment to run as function
+function [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, switch_io_approach) % uncomment to run as function
 % mrio leontief calc
 % MODULE:
 %   advanced
@@ -30,7 +30,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %   next call:  % just to illustrate
 %   
 % CALLING SEQUENCE:
-%   [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params);
+%   [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, switch_io_approach);
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
@@ -44,9 +44,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %       mriot structure whose basic properties are the same regardless of the
 %       provided mriot it is based on, see mrio_read_table;
 % OPTIONAL INPUT PARAMETERS:
-%   params: a structure to pass on parameters, with fields as
-%       (run params = mrio_get_params to obtain all default values)
-%       switch_io_approach: specifying what I-O approach is applied in this procedure 
+%   switch_io_approach: specifying what I-O approach is applied in this procedure 
 %           to estimate indirect risk, Ghosh (=2, default) or standard IO (1) or EEIOA (3)
 % OUTPUTS:
 %   total_subsector_risk: table with indirect and direct risk per subsector/country combination 
@@ -98,20 +96,24 @@ if ~climada_init_vars,return;end % init/import global variables
 % and to set default value where  appropriate
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end 
 if ~exist('direct_subsector_risk', 'var'), direct_subsector_risk = []; end 
-if ~exist('params','var'), params = struct; end
+if ~exist('switch_io_approach', 'var'), switch_io_approach = []; end 
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
 if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
-    module_data_dir=[climada_global.modules_dir filesep 'advanced' filesep 'data'];
+    module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
 else
-    module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+    module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
 end
 
 % PARAMETERS
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(direct_subsector_risk), direct_subsector_risk = mrio_direct_risk_calc('', '', climada_mriot, ''); end
-if ~isfield(params,'switch_io_approach'), params.switch_io_approach = 2; end
+if isfield(switch_io_approach,'switch_io_approach')
+    switch_io_approach = switch_io_approach.switch_io_approach;
+elseif isempty(switch_io_approach)
+    switch_io_approach = 2; 
+end
 
 leontief.climada_nan_mriot = isnan(climada_mriot.mrio_data); % save NaN values to trace affected relationships and values
 climada_mriot.mrio_data(isnan(climada_mriot.mrio_data)) = 0; % for calculation purposes we need to replace NaN values with zeroes
@@ -125,9 +127,9 @@ if istable(direct_subsector_risk)
         if isnumeric(direct_subsector_risk{1,var_i})
             direct_subsector_risk = direct_subsector_risk{:,var_i}';
             break
-        end
+        end % isnumeric
     end % var_i
-end
+end % istable
 
 % Fill climada leontief struct with basic information from mrio table
 leontief.climada_mriot.table_type = climada_mriot.table_type;
@@ -136,13 +138,13 @@ leontief.climada_mriot.filename = climada_mriot.filename;
 % technical coefficient/allocation matrix
 total_output = climada_mriot.total_production;  % total output per sector per country
 leontief.coefficients = zeros(size(climada_mriot.mrio_data)); % init
-if params.switch_io_approach ~= 2 % technical coefficient matrix
+if switch_io_approach ~= 2 % technical coefficient matrix
     for column_i = 1:n_subsectors*n_mrio_countries
         if ~isnan(climada_mriot.mrio_data(:,column_i)./total_output(column_i))
             leontief.coefficients(:,column_i) = climada_mriot.mrio_data(:,column_i)./total_output(column_i); % normalize with total output
         else 
             leontief.coefficients(:,column_i) = 0;
-        end
+        end % ~isnan
     end % column_i
 else % allocation coefficient matrix
     for column_i = 1:n_subsectors*n_mrio_countries
@@ -150,20 +152,20 @@ else % allocation coefficient matrix
             leontief.coefficients(column_i,:) = climada_mriot.mrio_data(column_i,:)./total_output(column_i); % normalize with total output
         else 
             leontief.coefficients(column_i,:) = 0;
-        end
+        end % ~isnan
     end % column_i
-end % params.switch_io_approach
+end % switch_io_approach
 
 % direct intensity vector
 direct_intensity_vector = zeros(1,length(direct_subsector_risk)); % init
 for cell_i = 1:length(direct_subsector_risk)
     if ~isnan(direct_subsector_risk(cell_i)/total_output(cell_i))
         direct_intensity_vector(cell_i) = direct_subsector_risk(cell_i)/total_output(cell_i);
-    end
+    end % ~isnan
 end % cell_i
 
 % risk calculation
-switch params.switch_io_approach
+switch switch_io_approach
     
     case 1 % Standard Input-Output (IO) model, cf. Leontief (1944) [1]
         
@@ -229,23 +231,24 @@ switch params.switch_io_approach
             leontief.risk_structure(:,column_i) = (direct_intensity_vector .* leontief.inverse(:,column_i)') .* total_output(column_i);
         end % column_i
         
-        % calculate the first 4 layers / tiers and a remainder
-        n_layers = 4;
-        leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1);
-        leontief.layer(:,column_i,1) = (direct_intensity_vector .* leontief.coefficients(:,column_i)') .* total_output(column_i);
-        for layer_i = 2:n_layers
-            for column_i = 1:size(leontief.inverse,1)
-                leontief.layer(:,column_i,layer_i) = (direct_intensity_vector .* leontief.coefficients(:,column_i)') .* sum(leontief.layer(:,:,layer_i-1),1)';
-            end % column_i
-        end % layer_i
-        leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
+%         % calculate the first 4 layers / tiers and a remainder
+%         n_layers = 4;
+%         leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1);
+%         leontief.layer(:,column_i,1) = ((direct_intensity_vector .* leontief.coefficients(:,column_i)') .* total_output(column_i))';
+%         for layer_i = 2:n_layers-1
+%             for column_i = 1:size(leontief.inverse,1)
+%                 leontief.layer(:,column_i,layer_i) = ((direct_intensity_vector .* leontief.coefficients(:,column_i)') .* sum(leontief.layer(:,:,layer_i-1),1))';
+%             end % column_i
+%             total_output = sum(leontief.layer(:,:,layer_i),1)';
+%         end % layer_i
+%         leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
     
     otherwise
         
-        fprintf('I/0 approach [%i] not implemented yet.\n', params.switch_io_approach)
+        fprintf('I/0 approach [%i] not implemented yet.\n', switch_io_approach)
         return
         
-end % params.switch_io_approach
+end % switch_io_approach
 
 % sum up the risk contributions to obtain the indirect subsector risk
 indirect_subsector_risk = nansum(leontief.risk_structure,1);
