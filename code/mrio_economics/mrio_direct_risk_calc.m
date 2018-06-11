@@ -47,6 +47,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %           is =0 where all country x mainsector-combinations are evaluated. 
 %           During the further calculation (mrio_leontief_calc) indirect impact 
 %           of that particular direct risk is estimated.              
+%       verbose: whether we printf progress to stdout (=1, default) or not (=0)
 % OUTPUTS:
 %   direct_subsector_risk: a table containing as one variable the direct risk for each
 %       subsector x country-combination covered in the original mriot. The
@@ -108,6 +109,7 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
     end
 end
 if ~isfield(params,'impact_analysis_mode'), params.impact_analysis_mode = 0; end
+if ~isfield(params,'verbose'), params.verbose = 1; end
 
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 n_mrio_countries = length(mrio_countries_ISO3);
@@ -176,7 +178,7 @@ for subsector_j = 1:n_subsectors
     mainsector_j = find(mainsector_name == mainsectors);
     for mrio_country_i = 1:n_mrio_countries
         country_ISO3 = char(mrio_countries_ISO3(mrio_country_i)); % extract ISO code
-        if ismember(mainsector_j+n_mainsectors*(mrio_country_i-1),selection_risk) & (exist(fullfile(climada_global.entities_dir, [country_ISO3 '_' mainsector_name '_' subsector_name '.mat']), 'file') == 2) 
+        if ismember(mainsector_j+n_mainsectors*(mrio_country_i-1),selection_risk) && (exist(fullfile(climada_global.entities_dir, [country_ISO3 '_' mainsector_name '_' subsector_name '.mat']), 'file') == 2) 
             % if entity on subsector level exists (condition fullfilled) assign value = 1
             subsector_information(subsector_j+n_subsectors*(mrio_country_i-1)) = 1;
         end
@@ -187,7 +189,7 @@ subsector_information = find(subsector_information);
 % load hazard
 hazard = climada_hazard_load(params.hazard_file);
 
-climada_progress2stdout % init, see terminate below
+if params.verbose, climada_progress2stdout; end % init, see terminate below
 
 % direct risk calculation per mainsector and per country
 risk_i = 0;
@@ -251,7 +253,7 @@ for mainsector_j = 1:n_mainsectors % different exposure (asset) base as generate
         end
 
         risk_i = risk_i + length(aggregated_mriot.aggregation_info.(mainsector_name)) - length(subsector_information)/n_mainsectors/n_mrio_countries;
-        climada_progress2stdout(risk_i,n_mrio_countries*n_subsectors,5,'risk calculations'); % update
+        if params.verbose, climada_progress2stdout(risk_i,n_mrio_countries*n_subsectors,5,'risk calculations'); end % update
 
     end % mrio_country_i
 
@@ -280,10 +282,10 @@ for subsector_i = 1:length(subsector_information)
         direct_subsector_risk(sel_pos) = 0;
     end
     
-    climada_progress2stdout(risk_i + subsector_i,n_mrio_countries*n_subsectors,5,'risk calculations'); % update
+    if params.verbose, climada_progress2stdout(risk_i + subsector_i,n_mrio_countries*n_subsectors,5,'risk calculations'); end % update
 end % subsector_i
 
-climada_progress2stdout(0) % terminate
+if params.verbose, climada_progress2stdout(0); end % terminate
 
 % aggregate direct risk across all sectors per country to obtain direct
 % country risk:
