@@ -7,7 +7,9 @@ function mrio_entity_country(GLB_entity, climada_mriot, switch_scale, check_figu
 % PURPOSE:
 %   Generates entity files based on a global entity struct for a predefined 
 %   set of countries. Furthermore, entities are prepared for mrio (multi 
-%   regional I/O table) project.
+%   regional I/O table) project, including
+%       - NatID for each asset
+%       - normalized asset values as specified
 %
 %   NOTE: see PARAMETERS in code
 %
@@ -29,9 +31,9 @@ function mrio_entity_country(GLB_entity, climada_mriot, switch_scale, check_figu
 %       OR: a country ISO3 code, in which case the entity is restricted to
 %       the corresponding country.
 % OPTIONAL INPUT PARAMETERS:
-%   switch_scale: set to 1 to scale asset values with total main sector 
+%   switch_scale: set to 2 to scale asset values with total main sector 
 %       production per country as given by mrio table, by default normalize 
-%       asset values per country so that they add up to one (=0)
+%       asset values per country so that they add up to one (=1)
 %   check_figure: set to 1 to visualize figures, by default entities are not plotted (=0)
 %   markersize: the size of the 'tiles', one might need to experiment a
 %       bit (that's why markersize is not part of params.)
@@ -71,13 +73,13 @@ end
 % PARAMETERS
 if isempty(GLB_entity), GLB_entity = climada_entity_load; end
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
-if isempty(switch_scale), switch_scale = 0; end
+if isempty(switch_scale), switch_scale = 1; end
 if isempty(check_figure), check_figure = 0; end
 if isempty(markersize), markersize = 2; end
 if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
     if (exist(fullfile(climada_global.hazards_dir, 'GLB_0360as_TC_hist.mat'), 'file') == 2) 
         params.hazard_file = 'GLB_0360as_TC_hist.mat';
-    else % prompt for hazard filename
+    elseif switch_scale ~= 0 % prompt for hazard filename
         params.hazard_file = [climada_global.hazards_dir];
         [filename, pathname] = uigetfile(params.hazard_file, 'Select hazard file:');
         if isequal(filename,0) || isequal(pathname,0)
@@ -90,7 +92,7 @@ end
 if ~isfield(params,'centroids_file') || isempty(params.centroids_file)
     if (exist(fullfile(climada_global.centroids_dir, 'GLB_NatID_grid_0360as_adv_1.mat'), 'file') == 2) 
         params.centroids_file = 'GLB_NatID_grid_0360as_adv_1.mat';
-    else % prompt for centroids filename
+    elseif switch_scale ~= 0 % prompt for centroids filename
         params.centroids_file = [climada_global.centroids_file];
         [filename, pathname] = uigetfile(params.centroids_file, 'Select centroids file:');
         if isequal(filename,0) || isequal(pathname,0)
@@ -123,7 +125,7 @@ end
 n_mrio_countries = length(mrio_countries_ISO3);
 
 % prompt for mainsector name to identify production values for scaling asset values
-if switch_scale == 1
+if switch_scale == 2
     mainsectors = unique(climada_mriot.climada_sect_name, 'stable');
     
     [mainsectors_liststr, mainsectors_sort_index] = sort(mainsectors);
@@ -198,13 +200,15 @@ for mrio_country_i = 1:n_mrio_countries
         entity.assets.lon = GLB_entity.assets.lon(sel_pos); % restrict entity to country
         entity.assets.lat = GLB_entity.assets.lat(sel_pos);  
         
-        if switch_scale == 1 % scale up with total mainsector production
+        if switch_scale == 0
+            entity.assets.Value = GLB_entity.assets.Value(sel_pos);
+        elseif switch_scale == 1 % normalize asset values
+            entity.assets.Value = GLB_entity.assets.Value(sel_pos)/sum(GLB_entity.assets.Value(sel_pos));
+        elseif switch_scale == 2 % scale up with total mainsector production
             mainsector_index = find(ismember(climada_mriot.climada_sect_name,mainsectors(selection_mainsector)));
             country_index = find(ismember(climada_mriot.countries_iso,country_ISO3_i));
             total_mainsector_production = sum(climada_mriot.total_production(intersect(country_index,mainsector_index)));
             entity.assets.Value = (GLB_entity.assets.Value(sel_pos)/sum(GLB_entity.assets.Value(sel_pos))) * total_mainsector_production;
-        else % normalize asset values
-            entity.assets.Value = GLB_entity.assets.Value(sel_pos)/sum(GLB_entity.assets.Value(sel_pos));
         end
         
         % for consistency, update Deductible and Cover
