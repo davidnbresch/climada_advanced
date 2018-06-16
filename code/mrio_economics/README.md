@@ -7,19 +7,17 @@ This submodule contains a risk assessment method which allows businesses from al
 
 This method combines the core climada functionality with multi-regional input-output (MRIO) economics. It is primarily based on output of MRIO models. We have made an effort to be compatible with major MRIO tables that are freely available. For full details on the MRIO models and table details, please see the [original databases (link to come)]().
 
-The function ***mrio_read_table*** allows to import data from a given MRIO table and put it in a climada mriot structure. ***mrio_direct_risk_calc*** will run all damage calculations to obtain the direct risk per country and sector. Special attention should be given to the assumed exposure and vulnerability for the different sectors. Last but not least, ***mrio_leontief_calc*** estimates the indirect risk using environmentally extended MRIO analysis techniques. The core function is ***mrio_master***, which does it all in one go. Read the [mrio economics manual (link to come)]() for more details.
+The function ***mrio_read_table*** allows to import data from a given MRIO table and put it in a climada mriot structure. ***mrio_aggregate_table*** allows to transform the climada mriot table into an aggregated table that shows values on main sector level. It further can aggregate several different Rest of World (RoW) regions into one. ***mrio_direct_risk_calc*** will run all damage calculations to obtain the direct risk per country and sector. Special attention should be given to the assumed exposure and vulnerability for the different sectors. Last but not least, ***mrio_leontief_calc*** estimates the indirect risk using environmentally extended MRIO analysis techniques. The core function is ***mrio_master***, which does it all in one go. Read the [climada advanced module manual](https://github.com/davidnbresch/climada_advanced/blob/master/docs/climada_advanced.pdf) for more details.
 
-The method allows advanced users to provide additional data on exposure of subsectors for single countries, please proceed as follows:
+The method comes with basic entities for the six mainsectors as described in the manual. For the risk calculations it is assumed that the geographical distribution of the sub-sectors is sufficiently represented by that of the main sectors. However, it allows advanced users to provide additional data on exposure of subsectors for single countries, please proceed as follows:
 
-1. Download the file
-2. Move it to  .../advanced/data/mrio/
-3. Use e.g. ***climada_shaperead*** or ***climada_csvread*** to read in the data
-4. Generate your asset-base (so-called entity). You can use the structure of ***mrio_generate_forestry_entity*** (tif) or ***mrio_generate_agriculture_entity*** (csv) as a guide. 
+1. Construct an entity (see either the [climada advanced module manual](https://github.com/davidnbresch/climada_advanced/blob/master/docs/climada_advanced.pdf) or see comments in header section of ***mrio_generate_agriculture_entity***)
+2. Move it to  .../climada_data/entity/
 4. Give it a reasonable name following the mrio naming system (ISO3_MAINSECTOR_SUBSECTOR) corresponding to the MRIO table you are going to use
 
-This is holds for data on exposure of mainsectors. In such a case, the name should correspond to the structure ISO3_MAINSECTOR_XXX.
+This is holds for data on exposure of mainsectors also. In such a case, the name should correspond to the structure ISO3_MAINSECTOR_XXX.
 
-See [mrio economics manual (link to come)]() for more details.
+See [climada advanced module manual](https://github.com/davidnbresch/climada_advanced/blob/master/docs/climada_advanced.pdf) for more details.
 <br>
 
 **Get to know** ***climada***
