@@ -1,8 +1,9 @@
-function climada_mriot=mrio_read_table(mriot_file,table_flag)
+function climada_mriot = mrio_read_table(mriot_file, table_flag)
+% mrio read table
 % MODULE:
 %   climada_advanced
 % NAME:
-%   read_mriot
+%   mrio_read_table
 % PURPOSE:
 %   Reads data from a provided mrio table (mriot) into a climada mriot
 %   struct. Currently made to work with EXIOBASE (industry-by-industry)
@@ -11,18 +12,16 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 %   
 %   previous call:
 %
-%   next call: climada_aggregate_mriot 
-%
+%   next call:  % just to illustrate
+%       aggregated_mriot = mrio_aggregate_table(climada_mriot, full_aggregation_flag, RoW_flag);
 % CALLING SEQUENCE:
-%  
+%  climada_mriot = mrio_read_table(mriot_file, table_flag);
 % EXAMPLE:
-%   mrio_read_table; no arguments provided. Prompted for via GUI.
-%   mrio_read_table('WIOT2014_Nov16_ROW.xlsx',wiod); importing a WIOD table.
-%   mrio_read_table('mrIot_version2.2.2.txt',exio); importing an EXIOBASE table.
-%   mrio_read_table('Eora26_2013_bp_T.txt',eora); importing an EORA26 table.
-%
+%   mrio_read_table; % no arguments provided. Prompted for via GUI.
+%   mrio_read_table('WIOT2014_Nov16_ROW.xlsx',wiod); % importing a WIOD table.
+%   mrio_read_table('mrIot_version2.2.2.txt',exio); % importing an EXIOBASE table.
+%   mrio_read_table('Eora26_2013_bp_T.txt',eora); % importing an EORA26 table.
 % INPUTS:
-%
 % OPTIONAL INPUT PARAMETERS:
 %   mriot_file: path to a mriot file (currently either WIOD, EXIOBASE or EORA26).
 %       Promted for via GUI if not provided. 
@@ -76,32 +75,27 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 %           combinations the total production. Total production includes
 %           production flowing into final consumption, i.e. not into other
 %           sector for further processing.
-%
 % GENERAL NOTES:
-% The function is not as flexible as it could be due to difficulties with
-% differing file types and basic structures of the various MRIOT's. It
-% relies on internal functions targeted at each of the MRIOT versions.
-% Further, it relies on the user following certain requirements for the
-% data provided and on several occasions has too hard-coded passages. To be
-% removed in future. Generally, the code is longish and
-% certainly with lots of potential for improvement (especially regarding 
-% parameter definitions). Basic functionality is provided.
+%   The function is not as flexible as it could be due to difficulties with
+%   differing file types and basic structures of the various MRIOT's. It
+%   relies on internal functions targeted at each of the MRIOT versions.
+%   Further, it relies on the user following certain requirements for the
+%   data provided and on several occasions has too hard-coded passages. To be
+%   removed in future. Generally, the code is longish and
+%   certainly with lots of potential for improvement (especially regarding 
+%   parameter definitions). Basic functionality is provided.
 %
-% Currently, importing a WIOD table takes approx. 130 seconds, an EXIOBASE 
+%   Currently, importing a WIOD table takes approx. 130 seconds, an EXIOBASE 
 %   table approx. 80 seconds.
-%
-%
 % POSSIBLE EXTENSIONS TO BE IMPLEMENTED:
-% Maybe add an optional input argument "aggregate_flag" or so where, if 1,
-% the function directly calls climada_aggregate_mriot in the end and returns
-% the aggregated mriot as a second optional output (for more info, check header 
-% of function climada_aggregate_mriot).
+%   Maybe add an optional input argument "aggregate_flag" or so where, if 1,
+%   the function directly calls climada_aggregate_mriot in the end and returns
+%   the aggregated mriot as a second optional output (for more info, check header 
+%   of function climada_aggregate_mriot).
 %
-% Possibly also add a "saving-flag" where, if 1, the resulting mriot struct
-% is saved as an .m file. So the user can choose do delete the result from
-% the workspace if computer working memory is at its limits.
-%
-%
+%   Possibly also add a "saving-flag" where, if 1, the resulting mriot struct
+%   is saved as an .m file. So the user can choose do delete the result from
+%   the workspace if computer working memory is at its limits.
 % MODIFICATION HISTORY:
 % Kaspar Tobler, 20171207 initializing function
 % Kaspar Tobler, 20171208 adding import capabilities for both WIOD and EXIOBASE table
@@ -114,23 +108,24 @@ function climada_mriot=mrio_read_table(mriot_file,table_flag)
 % Kaspar Tobler, 20180418 also import info on total production (including production for final consumption etc.). For now working for WIOD. Eora26 and exiobase follow soon.
 % Ediz Herms, ediz.herms@outlook.com, 20180606, save climada_mriot struct as .mat file for fast access
 %
-climada_mriot=[]; % init output
+
+climada_mriot = []; % init output
 
 global climada_global
-if ~climada_init_vars,return;end % init/import global variables
+if ~climada_init_vars, return; end % init/import global variables
 
 % poor man's version to check arguments
 % and to set default value where  appropriate
-if ~exist('mriot_file','var'),mriot_file=[];end 
-if ~exist('table_flag','var'),table_flag=[]; end
+if ~exist('mriot_file','var'), mriot_file = []; end 
+if ~exist('table_flag','var'), table_flag = []; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
 % account for different directory structures
 if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
-    module_data_dir=[climada_global.modules_dir filesep 'advanced' filesep 'data'];
+    module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
 else
-    module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+    module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
 end
 
 % PARAMETERS
@@ -147,7 +142,6 @@ if isempty(mriot_file) %If empty, open file dialog.
         mriot_file = fullfile(pathname,filename);
     end
 end
-
 
 %Promt for table_flag (which table type?) if not passed:
 if isempty(table_flag) %If empty, provide GUI list.
@@ -174,15 +168,15 @@ end % if table_flag is empty
 % complete path, if missing
 [fP,fN,fE] = fileparts(mriot_file);
 if isempty(fP)
-    fP=module_data_dir;
+    fP = module_data_dir;
     if strcmpi(table_flag,'wiod')
-        fP=[fP filesep 'wiod'];
+        fP = [fP filesep 'wiod'];
     elseif strcmpi(table_flag(1:4),'exio')
-        fP=[fP filesep 'exiobase']; 
+        fP = [fP filesep 'exiobase']; 
     elseif strcmpi(table_flag(1:4),'eora')
-        fP=[fP filesep 'eora26']; 
+        fP = [fP filesep 'eora26']; 
     end
-    mriot_file=[fP filesep fN fE];
+    mriot_file = [fP filesep fN fE];
 end
     
 [fP,fN,fE] = fileparts(mriot_file);
@@ -245,7 +239,6 @@ else
     climada_mriot(1).unit = '';
     climada_mriot(1).total_production = [];
     climada_mriot(1).RoW_aggregation = 'None';
-
 
     %%% If input is a WIOD table:
 
@@ -471,7 +464,7 @@ if ~isequal(length(climada_mriot.sectors),length(climada_mriot.countries_iso),..
     error('Fatal error importing mrio table: sector, country and mapping dimensions do not agree. Cannot proceed.')
 end
 
- %End local function read_wiod
+%end % read_wiod
 
 
 function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
@@ -633,7 +626,7 @@ function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
   % From here and with previous mrio_data, calculate actual total production of each sector including output to final demand:
   climada_mriot.total_production = sum(climada_mriot.mrio_data,2) + output_to_fd;
   
-  % End local function eora26 import.
+  %end % read_eora26
     
 
 %%%%%%%%%%%%%%   READ EXIO TABLES; LOCAL FUNCTION
@@ -804,7 +797,7 @@ climada_mriot.unit = units;
     error('Fatal error importing mrio table: sector, country and mapping dimensions do not agree. Cannot proceed.')
  end
  
-% End local function read_exio   
+%end % read_exio   
 
 %%% Small local helper function to check for various special cases for user
 %%% file input:
@@ -835,7 +828,7 @@ function file_variable = check_file(file_variable_in,file_abbr,file_name,module_
     end
     
     
-% End local function check_file
+%end local function check_file
 
-%end % Main function read_mriot. Wraps local functions to have shared
+%end % mrio_read_table
 %variable workspace --> Currently not necessary.

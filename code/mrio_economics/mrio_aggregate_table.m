@@ -1,4 +1,4 @@
-function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot, full_aggregation_flag, RoW_flag)
+function [aggregated_mriot, climada_mriot] = mrio_aggregate_table(climada_mriot, full_aggregation_flag, RoW_flag)
 % mrio aggregate table
 % MODULE:
 %   climada_advanced
@@ -18,14 +18,12 @@ function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot, f
 %   calculations with a RoW aggregated version of climada_mriot, she or he
 %   has to ask for its output.
 %   
-%   previous call: mrio_read_table 
-%
-%   next call: mrio_direct_risk_calc
-%
+%   previous call: 
+%       mrio_read_table 
+%   next call: % just to illustrate
+%       [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
 % CALLING SEQUENCE:
-%   mrio_read_table;
-%   mrio_aggregate_table;
-%  
+%   [aggregated_mriot, climada_mriot] = mrio_aggregate_table(climada_mriot, full_aggregation_flag, RoW_flag);
 % EXAMPLE:
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot,'',0); 
 %               Already existing climada_mriot struct provided as argument, 
@@ -44,15 +42,21 @@ function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot, f
 %               Full aggregation is computed and RoW regions are partly aggregated, with only
 %               RoW Asia/Pacific and RoW America kept, if applicable (Note if table does in fact not
 %               contain several RoW-regions, this is noted to the user).
-%
-%
 % INPUTS:
-%
 % OPTIONAL INPUT PARAMETERS:
 %   climada_mriot: a climada_mriot structure containing a full mriot as
 %       imported with the function climada_read_mriot. If not provided, user is
 %       prompted whether the climada_read_mriot function should be called prior to 
 %       continuing with current function or whether current function should be aborted.
+%  full_aggregation_flag: flag sepcifying whether a full aggregation shall
+%      be computed (=1; i.e. we aggregate all mrio sector-sector data) or a
+%      "minimal" aggregation (=0, default), where the mrio data itself is not
+%      aggregated and only the country and sector labels corresponding to the
+%      mainsectors as well as info on which subsectors belong to which
+%      mainsector are computed.
+%      Note: if this flag is 0, but the RoW-flag either 1 or 2, the full
+%      aggregations is still computed since it is needed for the RoW
+%      aggregation.
 %  RoW_flag: integer flag; can be: 
 %       1: stating that the aggregation should also include the
 %          aggregation of several RoW-regions present in some MRIOTs (e.g.
@@ -64,16 +68,6 @@ function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot, f
 %          Cautionary note: doing this aggregation has implications for the
 %          disaggregation computation too!
 %       0: no RoW aggregation takes place.   
-%  full_aggregation_flag: flag sepcifying whether a full aggregation shall
-%      be computed (=1; i.e. we aggregate all mrio sector-sector data) or a
-%      "minimal" aggregation (=0, default), where the mrio data itself is not
-%      aggregated and only the country and sector labels corresponding to the
-%      mainsectors as well as info on which subsectors belong to which
-%      mainsector are computed.
-%      Note: if this flag is 0, but the RoW-flag either 1 or 2, the full
-%      aggregations is still computed since it is needed for the RoW
-%      aggregation.
-%  
 % OUTPUTS:
 %   aggregated_mriot: 
 %       a structure with 13 fields. It represents an 
@@ -85,66 +79,59 @@ function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot, f
 %       have been aggregated into each climada sector. 
 %       No aggregation is done on the countries.
 %       For comparability, the resulting structure retains an 
-%       analogous - well - structure,  to the full table. 
-%   The fields are:
-%       countries: a categorical array containing the full list of all
-%           countries in the order they appear in the
-%           industry-by-industry mriot. 
-%           List of countries is repeated m number of times with m =
-%           no. of sectors, i.e. here m = 6.
-%       countries_iso: 3-digit iso code of each country. As above.
-%       sectors: as above for countries, but for all six climada sectors. 
-%           List of sectors will be repeated n number of times with n =
-%           no. of countries.
-%       aggregation_info: itself a struct with six fields, containing for each 
-%           climada sector the list of subsectors that constitute it. Each
-%           field stands for one cliamda sectors (hence, six fields). The
-%           entries in each field will depend on the original mriot type
-%           the climada_mriot is based on (exiobase, wiod, etc.).
-%       mrio_data: sector-by-sector numerical data matrix (quadratic). 
-%           The actual aggregated mriot, without any labels. To get a commodity
-%           exchange value of interest, index into here with the
-%           corresponding row- and column indices as extracted from the full countries and/or
-%           sectors arrays. If it was chosen to only compute a minimal
-%           aggregation, this field contains a character array specifying
-%           this.
-%       table_type: character array simply stating the table type the mriot
-%           struct is originally based on. Is unchanged from the
-%           climada_mriot struct.
-%       filename: character array specifying the full path to the mriot
-%           file originally passed as argument to climada_read_mriot to construct 
-%           climada mriot structure. Is unchanged from the
-%           climada_mriot struct.
-%       no_of_countries: integer value stating the number of countries that
-%           is contained in the mriot struct (i.e. in the table type the
-%           struct is based on). Different for different table types and
-%           might change with future releases. Is unchanged from the
-%           climada_mriot struct.
-%       no_of_sectors: as above but for number of sectors. Here always 6,
-%           unless basic climada sectors are extended in future. 
-%       RoW_aggregation: char vector specifying whether RoW aggregation
-%           took place and if so, which type.
-%       unit: unit used in the original mriot. Same as in full climada_mriot.
-%       total_production: a numeric column array containing for all country-sector
-%           combinations the total production. Total production includes
-%           production flowing into final consumption, i.e. not into other
-%           sector for further processing.
-%       
+%       analogous - well - structure,  to the full table. The fields are:
+%           countries: a categorical array containing the full list of all
+%               countries in the order they appear in the
+%               industry-by-industry mriot. 
+%               List of countries is repeated m number of times with m =
+%               no. of sectors, i.e. here m = 6.
+%           countries_iso: 3-digit iso code of each country. As above.
+%           sectors: as above for countries, but for all six climada sectors. 
+%               List of sectors will be repeated n number of times with n =
+%               no. of countries.
+%           aggregation_info: itself a struct with six fields, containing for each 
+%               climada sector the list of subsectors that constitute it. Each
+%               field stands for one cliamda sectors (hence, six fields). The
+%               entries in each field will depend on the original mriot type
+%               the climada_mriot is based on (exiobase, wiod, etc.).
+%           mrio_data: sector-by-sector numerical data matrix (quadratic). 
+%               The actual aggregated mriot, without any labels. To get a commodity
+%               exchange value of interest, index into here with the
+%               corresponding row- and column indices as extracted from the full countries and/or
+%               sectors arrays. If it was chosen to only compute a minimal
+%               aggregation, this field contains a character array specifying
+%               this.
+%           table_type: character array simply stating the table type the mriot
+%               struct is originally based on. Is unchanged from the
+%               climada_mriot struct.
+%           filename: character array specifying the full path to the mriot
+%               file originally passed as argument to climada_read_mriot to construct 
+%               climada mriot structure. Is unchanged from the
+%               climada_mriot struct.
+%           no_of_countries: integer value stating the number of countries that
+%               is contained in the mriot struct (i.e. in the table type the
+%               struct is based on). Different for different table types and
+%           	might change with future releases. Is unchanged from the
+%               climada_mriot struct.
+%           no_of_sectors: as above but for number of sectors. Here always 6,
+%               unless basic climada sectors are extended in future. 
+%           RoW_aggregation: char vector specifying whether RoW aggregation
+%               took place and if so, which type.
+%           unit: unit used in the original mriot. Same as in full climada_mriot.
+%           total_production: a numeric column array containing for all country-sector
+%               combinations the total production. Total production includes
+%               production flowing into final consumption, i.e. not into other
+%               sector for further processing.
 %   climada_mriot: if not provided as argument by user newly created. If
 %       provided and if asked for RoW-aggregation, the returned
 %       climada_mriot struct contains these aggregation and a field
 %       informing about type of RoW-aggregation is added.
-%
 % GENERAL NOTES:
-%
-% NO IN-DEPTH TESTING OF RESULTS CONDUCTED YET!
-%
-% In next step, consider extending mrio_read_table with a flag which
-% directly calls mrio_aggregate_table from within the prior function,
-% returning both the full and the aggregated table directly (could lead to
-% some function workspace memory issues)...
-%
-%
+%   NO IN-DEPTH TESTING OF RESULTS CONDUCTED YET!
+%   In next step, consider extending mrio_read_table with a flag which
+%   directly calls mrio_aggregate_table from within the prior function,
+%   returning both the full and the aggregated table directly (could lead to
+%   some function workspace memory issues)...
 % MODIFICATION HISTORY:
 % Kaspar Tobler, 20171220 initializing function
 % Kaspar Tobler, 20180104 finishing raw prototype version. Basic capabilities are provided and work.
@@ -155,8 +142,9 @@ function [aggregated_mriot, climada_mriot]=mrio_aggregate_table(climada_mriot, f
 %       This is due to fact that for "standard" procedure as laid out in mrio_master this is not needed. In a "minimal" aggregation, only the country and sector labels etc. are adjusted to an aggregated table. 
 % Kaspar Tobler, 20180410 resolved all major issues surrounding RoW-subregion aggregation.
 % Kaspar Tobler, 20180418 added calculations dealing with the (newly implemented) total production vector for each subfunction.
+%
 
-aggregated_mriot=[]; % init output
+aggregated_mriot = []; % init output
 
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
@@ -180,7 +168,7 @@ if ~exist('full_aggregation_flag','var') || isequal(full_aggregation_flag,''),fu
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
 
-module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data']; %#ok
+module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data']; %#ok
 
 % PARAMETERS
 
@@ -198,8 +186,8 @@ if isempty(climada_mriot) %If empty, open file dialog.
             'Import climada_mriot struct.','Ok','Ok'); % Repeated string specifies default choice.
         clear ans
         climada_mriot = mrio_read_table;
-    end
-end
+    end % isequal
+end % isempty
 
 % Get no. of sectors and no. of countries in provided mriot:
 no_of_sectors = climada_mriot.no_of_sectors;
@@ -243,10 +231,10 @@ aggregated_mriot(1).RoW_aggregation = 'None';
 aggregated_mriot(1).total_production = [];
 aggregated_mriot(1).unit = climada_mriot.unit;   
 % The set-up for the field aggregation_info (itself a struct):
-for i = 1:no_of_mainsectors
-   field_name = char(unique_mainsectors(i));
+for mainsector_i = 1:no_of_mainsectors
+   field_name = char(unique_mainsectors(mainsector_i));
    aggregation_info(1).(field_name) = []; % Parentheses allow dynamic creation of field names based on provided string.
-end
+end % mainsector_i
 aggregated_mriot(1).aggregation_info = aggregation_info;
 clear aggregation_info;
 
@@ -297,7 +285,7 @@ end % if ROW_flag == 2 && no_of_ROW > 1
        aggregated_mriot.countries(j:j+no_of_mainsectors-1) = temp_countries;
        aggregated_mriot.countries_iso(j:j+no_of_mainsectors-1) = temp_iso;
        j = j + no_of_mainsectors; % See above
-   end
+   end % country_i
    % Sanity check:
    if ~isequal(length(aggregated_mriot.countries),length(aggregated_mriot.countries_iso),no_of_mainsectors*no_of_countries)
        warning('Something went wrong'); %Specify better warnings later
@@ -312,21 +300,19 @@ end % if ROW_flag == 2 && no_of_ROW > 1
 
 % Finally, the field with the aggregation info (itself a struct with k
 % fields, where k = no. of climada sectors (here 6)).
-for i = 1:no_of_mainsectors
-    field_name = char(unique_mainsectors(i));
-    sub_sectors = climada_mriot.sectors(climada_mriot.climada_sect_name == unique_mainsectors(i));
+for mainsector_i = 1:no_of_mainsectors
+    field_name = char(unique_mainsectors(mainsector_i));
+    sub_sectors = climada_mriot.sectors(climada_mriot.climada_sect_name == unique_mainsectors(mainsector_i));
     aggregated_mriot.aggregation_info.(field_name) = unique(sub_sectors,'stable');
-end
+end % mainsector_i
 
 %% Full aggregation of the mrio data is only done if the user chose to do so, i.e. if full_aggregation_flag is set to 1. 
 if isequal(full_aggregation_flag,1)
-
-    full_aggregation;   % Call with no target and no argument.
-        
+    full_aggregation;   % Call with no target and no argument. 
 else 
     aggregated_mriot.mrio_data = 'No full aggregation on mrio data was computed to save memory and computing time. If such an aggregation is sought, please pass the respective flag argument to function mrio_aggregate_table.';
     aggregated_mriot.total_prduction = 'No full aggregation also holds true for total_production vector';
-end  % if isequal(full_aggregation_flag,1)
+end % if isequal(full_aggregation_flag,1)
 
 %% Local functions (aggregation of RoW regions and full table aggregation)
   
@@ -348,7 +334,7 @@ function one_RoW
                 %jump_test(1).(['col_' num2str(col_i)]) = sum_indices;
                 RoW_mrio_data(row_i,col_i) = sum(RoW_mrio_data(row_i,sum_indices)); 
             location_i = location_i + 1;
-        end      
+        end % col_i   
     end % row_i
     RoW_mrio_data(:,RoW_locations(no_of_sectors+1:end)) = []; 
     
@@ -364,8 +350,8 @@ function one_RoW
                 RoW_mrio_data(row_i,col_i) = sum(RoW_mrio_data(sum_indices,col_i)); 
                 RoW_total_production(row_i,1) = sum(RoW_total_production(sum_indices,1)); % For now not efficient since newly calculated every time. But conditional will be inefficient too. Time-loss seems negligible. 
            location_i = location_i + 1;
-        end
-    end % row_i
+        end % row_i
+    end % col_i
     RoW_mrio_data(RoW_locations(no_of_sectors+1:end),:) = []; 
     RoW_total_production(RoW_locations(no_of_sectors+1:end),:) = []; 
     
@@ -406,7 +392,7 @@ function one_RoW
     aggregated_data_length = no_of_mainsectors*no_of_countries;
     full_data_length = no_of_sectors*no_of_countries;
 
-end % End local function one_RoW
+end % one_RoW
 
 function three_RoW 
 
@@ -485,7 +471,7 @@ function three_RoW
     no_of_countries = climada_mriot.no_of_countries;
     aggregated_data_length = no_of_mainsectors*no_of_countries;
     
-end % End local function three_RoW
+end % three_RoW
 
 function full_aggregation
     
@@ -527,8 +513,8 @@ function full_aggregation
             sum_indices = ((climada_mriot.climada_sect_id == mainsector_i) & climada_mriot.countries_iso == unique_iso(country_i))'; % Transpose to a (logical) column vector
             aggregated_mriot.mrio_data(row_i,col_i) = sum(climada_mriot.mrio_data(sum_indices,col_i));
             aggregated_mriot.total_production(row_i,1) = sum(climada_mriot.total_production(sum_indices,1));
-        end %inner row loop
-    end %outer column loop
+        end % row_i
+    end % col_i
     %toc % Approx. 1 minute.
 
     % Second step is to aggregate along columns too, so that we get a quadratic
@@ -547,8 +533,8 @@ function full_aggregation
             % First get all positions (i.e. here column-indices) over which we have to sum up the original mrio data:
             sum_indices = ((climada_mriot.climada_sect_id == mainsector_i) & climada_mriot.countries_iso == unique_iso(country_i)); % Here no transposing since we want a row vector.
             aggregated_mriot.mrio_data(row_i,col_i) = sum(aggregated_mriot.mrio_data(row_i,sum_indices));
-        end %inner column loop
-    end %outer row loop
+        end % col_i
+    end % row_i
     % toc % Approx. 5 seconds.
     % Remove all now obsolete columns with indices > data_length:
             aggregated_mriot.mrio_data(:,(aggregated_data_length+1):end) = [];
@@ -556,12 +542,6 @@ function full_aggregation
     % Add RoW-label:
     aggregated_mriot.RoW_aggregation = climada_mriot.RoW_aggregation;  
 
-end % End local function full_aggregation
+end % full_aggregation
         
-end % End main function. Wraps local functions to enable shared workspace.
-
-
-
-
-
-
+end % mrio_aggregate_table
