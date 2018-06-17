@@ -26,7 +26,7 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure);
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
 %   next call:  % just to illustrate
 %   
 % CALLING SEQUENCE:
@@ -34,12 +34,16 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
-%   direct_subsector_risk = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure);
+%   direct_subsector_risk = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
 %   [total_subsector_risk, total_country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % INPUTS:
-%   direct_subsector_risk: table which contains the direct risk per country
-%       based on the risk measure chosen in one variable and three "label" variables 
-%       containing corresponding country names, country iso codes and sector names.
+%   direct_subsector_risk: a table containing as one variable the direct risk (EAD) for each
+%       subsector/country combination covered in the original mriot. The
+%       order of entries follows the same as in the entire process, i.e.
+%       entry mapping is still possible via the climada_mriot.setors and
+%       climada_mriot.countries arrays. The table further contins three
+%       more variables with the country names, country ISO codes and sector names
+%       corresponging to the direct risk values.
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
 %       provided mriot it is based on, see mrio_read_table;
@@ -50,18 +54,16 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %       2: supply-driven Ghosh model (DEFAULT)
 %       3: EEIOA ('environmental accounting')
 % OUTPUTS:
-%   total_subsector_risk: table with indirect and direct risk per subsector/country combination 
-%       based on the risk measure chosen in one variable and three "label" variables 
-%       containing corresponding country names, country ISO codes and sector names.
-%   total_country_risk: table with indirect and direct risk per country based on the risk measure chosen
+%   total_subsector_risk: table with indirect and direct risk (EAD) per subsector/country combination 
+%       in one variable and three "label" variables containing corresponding country names, country ISO codes and sector names.
+%   total_country_risk: table with indirect and direct risk (EAD) per country
 %       in one variable and two "label" variables containing corresponding 
 %       country names and country ISO codes.
-%   indirect_subsector_risk: table with indirect risk per subsector/country combination 
-%       based on the risk measure chosen in one variable and three "label" variables 
-%       containing corresponding country names, country ISO codes and sector names.
-%   indirect_country_risk: table with indirect risk per country based on the risk measure chosen
-%       in one variable and two "label" variables containing corresponding 
-%       country names and country ISO codes.
+%   indirect_subsector_risk: table with indirect risk (EAD) per subsector/country combination 
+%       in one variable and three "label" variables containing corresponding country names, 
+%       country ISO codes and sector names.
+%   indirect_country_risk: table with indirect risk (EAD) per country in one variable and two "label" 
+%       variables containing corresponding country names and country ISO codes.
 %   leontief: a structure with 5 fields. It represents a general climada
 %       leontief structure whose basic properties are the same regardless of the
 %       provided mriot it is based on. The fields are:

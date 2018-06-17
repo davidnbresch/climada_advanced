@@ -1,4 +1,4 @@
-function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure, params) % uncomment to run as function
+function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params) % uncomment to run as function
 % mrio direct risk ralc
 % MODULE:
 %   advanced
@@ -15,7 +15,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %   next call:  % just to illustrate
 %   [total_subsector_risk, total_country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % CALLING SEQUENCE:
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, risk_measure, params);
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
@@ -27,7 +27,6 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %   aggregated_mriot: an aggregated climada mriot struct as
 %       produced by mrio_aggregate_table.
 % OPTIONAL INPUT PARAMETERS:
-%   risk_measure: risk measure to be applied (string), default is the Expected Annual Damage (EAD)
 %   params: a structure with the fields
 %       mriot: a structure with the fields
 %           filename: the filename (and path, optional) of a previously saved 
@@ -49,16 +48,15 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %           of that particular direct risk is estimated.              
 %       verbose: whether we printf progress to stdout (=1, default) or not (=0)
 % OUTPUTS:
-%   direct_subsector_risk: a table containing as one variable the direct risk for each
-%       subsector x country-combination covered in the original mriot. The
+%   direct_subsector_risk: a table containing as one variable the direct risk (EAD) for each
+%       subsector/country combination covered in the original mriot. The
 %       order of entries follows the same as in the entire process, i.e.
 %       entry mapping is still possible via the climada_mriot.setors and
 %       climada_mriot.countries arrays. The table further contins three
 %       more variables with the country names, country ISO codes and sector names
 %       corresponging to the direct risk values.
-%  direct_country_risk: a table containing as one variable the direct risk per country (aggregated across all subsectors) 
-%       based on the risk measure chosen. Further a variable with correpsonding country
-%       names and country ISO codes, respectively.
+%   direct_country_risk: a table containing as one variable the direct risk (EAD) per country (aggregated across all subsectors). 
+%       Further a variable with correpsonding country names and country ISO codes, respectively.
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180115, initial
 % Ediz Herms, ediz.herms@outlook.com, 20180118, disaggregate direct risk to all subsectors for each country
@@ -77,7 +75,6 @@ if ~climada_init_vars, return; end % init/import global variables
 % poor man's version to check arguments
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end
 if ~exist('aggregated_mriot', 'var'), aggregated_mriot = []; end
-if ~exist('risk_measure', 'var'), risk_measure = []; end
 if ~exist('params','var'), params = struct; end
 if ~exist('country_name','var'), country_name = []; end
 if ~exist('mainsector_name','var'), mainsector_name = []; end
@@ -94,7 +91,6 @@ end
 % PARAMETERS
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(aggregated_mriot), aggregated_mriot = mrio_aggregate_table(climada_mriot); end
-if isempty(risk_measure), risk_measure = 'EAD'; end
 if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
     if (exist(fullfile(climada_global.hazards_dir, 'GLB_0360as_TC_hist.mat'), 'file') == 2) 
         params.hazard_file = 'GLB_0360as_TC_hist.mat';
@@ -247,7 +243,7 @@ for mainsector_j = 1:n_mainsectors % different exposure (asset) base as generate
 
         % risk calculation (see subfunction)
         if ~isempty(entity_sel.assets.Value) & (isempty(selection_risk) | ismember(mainsector_j+n_mainsectors*(mrio_country_i-1),selection_risk))
-            direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = risk_calc(entity_sel, hazard, risk_measure);
+            direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = risk_calc(entity_sel, hazard);
         elseif isempty(entity_sel.assets.Value) | (~isempty(selection_risk) & ~ismember(mainsector_j+n_mainsectors*(mrio_country_i-1),selection_risk))
             direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = 0;
         end
@@ -277,7 +273,7 @@ for subsector_i = 1:length(subsector_information)
     
     % risk calculation (see subfunction) + multiplication with each subsector's total production
     if ~isempty(entity.assets.Value)
-        direct_subsector_risk(sel_pos) = risk_calc(entity, hazard, risk_measure) * total_subsector_production(sel_pos);
+        direct_subsector_risk(sel_pos) = risk_calc(entity, hazard) * total_subsector_production(sel_pos);
     else
         direct_subsector_risk(sel_pos) = 0;
     end
@@ -306,7 +302,7 @@ direct_country_risk = table(unique(climada_mriot.countries','stable'),unique(cli
                                 'VariableNames',{'Country','CountryISO','DirectCountryRisk'});
 
 %% Risk calculation function    
-function risk = risk_calc(entity, hazard, risk_measure)
+function risk = risk_calc(entity, hazard)
     % Calculate damagefunctions based on Emanuel (see function for
     % details); need to check whether current country is in north-west
     % Pacific or not (differing dfs):
@@ -326,34 +322,6 @@ function risk = risk_calc(entity, hazard, risk_measure)
     %YDS = climada_EDS2YDS(EDS, hazard);
     
     risk = EDS.ED;
-
-    % quantify risk with specified risk measure 
-%     switch risk_measure
-%         case 'EAD' % Expected Annual Damage
-%             risk = EDS.ED;
-%         case '100y-event' % TO DO 
-%             return_period = 100;
-%             sel_pos = max(find(DFC.return_period >= return_period));
-%             risk = DFC.damage(sel_pos);
-%         case '50y-event' % TO DO 
-%             return_period = 50;
-%             sel_pos = max(find(DFC.return_period >= return_period));
-%             risk = DFC.damage(sel_pos);
-%         case '20y-event' % TO DO 
-%             return_period = 20;
-%             sel_pos = max(find(DFC.return_period >= return_period));
-%             risk = DFC.damage(sel_pos);
-%         case '10y-event' % TO DO 
-%             return_period = 10;
-%             sel_pos = max(find(DFC.return_period >= return_period));
-%             risk = DFC.damage(sel_pos);
-%         case 'worst-case' % TO DO 
-%             sel_pos = max(find(DFC.return_period));
-%             risk = DFC.damage(sel_pos);
-%         otherwise
-%             error('Please specify risk measure properly.')
-%             return
-%     end % switch risk_measure
     
 end % risk_calc
    

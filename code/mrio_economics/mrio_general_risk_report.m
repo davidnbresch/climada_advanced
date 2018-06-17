@@ -16,22 +16,20 @@ function mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk
 % EXAMPLE:
 %   mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot);
 % INPUTS:
-%   direct_subsector_risk: a table containing as one variable the direct risk for each
+%   direct_subsector_risk: a table containing as one variable the direct risk (EAD) for each
 %       subsector/country combination covered in the original mriot. The
 %       order of entries follows the same as in the entire process, i.e.
 %       entry mapping is still possible via the climada_mriot.setors and
 %       climada_mriot.countries arrays. The table further contins three
 %       more variables with the country names, country ISO codes and sector names
 %       corresponging to the direct risk values.
-%  direct_country_risk: a table containing as one variable the direct risk per country (aggregated across all subsectors) 
-%       based on the risk measure chosen. Further a variable with correpsonding country
-%       names and country ISO codes, respectively.
-%   subsector_risk: table with indirect risk per subsector/country combination 
-%       based on the risk measure chosen in one variable and three "label" variables 
-%       containing corresponding country names, country ISO codes and sector names.
-%   country_risk: table with indirect risk per country based on the risk measure chosen
-%       in one variable and two "label" variables containing corresponding 
-%       country names and country ISO codes.
+%   direct_country_risk: a table containing as one variable the direct risk (EAD) per country (aggregated across all subsectors). 
+%       Further a variable with correpsonding country names and country ISO codes, respectively.
+%   indirect_subsector_risk: table with indirect risk (EAD) per subsector/country combination 
+%       in one variable and three "label" variables containing corresponding country names, 
+%       country ISO codes and sector names.
+%   indirect_country_risk: table with indirect risk (EAD) per country in one variable and two "label" 
+%       variables containing corresponding country names and country ISO codes.
 %   leontief: a structure with 5 fields. It represents a general climada
 %       leontief structure whose basic properties are the same regardless of the
 %       provided mriot it is based on. The fields are:
@@ -362,14 +360,42 @@ grid on
 % Figure 4-5: World map of direct and direct risk
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% for mrio_country_i = 1:n_mrio_countries
-%         country_ISO3 = char(mrio_countries_ISO3(mrio_country_i)); % extract ISO code
-%     if ~strcmp(country_ISO3,'ROW') && ~strcmp(country_ISO3,'RoW')
-%         climada_plot_world_borders('',country_ISO3,'','',[((log10(indirect_country_risk(mrio_country_i))/log10(max(indirect_country_risk)))^2)*160 max((1-(log10(indirect_country_risk(mrio_country_i))/log10(max(indirect_country_risk)))^2)*160,0) 0]/255,'')
-%         hold on
-%     end
-% end
-% 
+rel_risk = zeros(1,length(total_output));
+for i = 1:length(total_output)
+    if ~isnan(direct_subsector_risk(i)/total_output(i))
+        rel_risk(i) = direct_subsector_risk(i)/total_output(i);
+    end
+end
+rel_country_risk = zeros(1,n_mrio_countries); 
+for mrio_country_i = 1:n_mrio_countries
+    for subsector_j = 1:n_subsectors 
+        rel_country_risk(mrio_country_i) = rel_country_risk(mrio_country_i) + rel_risk((mrio_country_i-1) * n_subsectors+subsector_j);
+    end % subsector_j
+end % mrio_country_i
+
+ran=range(rel_country_risk); %finding range of data
+min_val=min(rel_country_risk);%finding maximum value of data
+max_val=max(rel_country_risk)%finding minimum value of data
+y=floor(((rel_country_risk-min_val)/ran)*63)+1; 
+col=zeros(20,3)
+p=flipud(colormap('hot'))
+for i=1:length(rel_country_risk)
+  a=y(i);
+  col(i,:)=p(a,:);
+  stem3(i,i,rel_country_risk(i),'Color',col(i,:))
+  hold on
+end
+climada_plot_world_borders
+
+for mrio_country_i = 1:n_mrio_countries
+        country_ISO3 = char(mrio_countries_ISO3(mrio_country_i)); % extract ISO code
+    if ~strcmp(country_ISO3,'ROW') && ~strcmp(country_ISO3,'RoW')
+        climada_plot_world_borders('',country_ISO3,'','',col(mrio_country_i,:),'')
+        %climada_plot_world_borders('',country_ISO3,'','',[255 (1-rel_country_risk(mrio_country_i)/max(rel_country_risk))*255 (1-rel_country_risk(mrio_country_i)/max(rel_country_risk))*255]/255,'')
+        hold on
+    end
+end
+
 % for mrio_country_i = 1:n_mrio_countries
 %         country_ISO3 = char(mrio_countries_ISO3(mrio_country_i)); % extract ISO code
 %     if ~strcmp(country_ISO3,'ROW') && ~strcmp(country_ISO3,'RoW')

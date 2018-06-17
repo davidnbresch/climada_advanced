@@ -24,22 +24,20 @@ function mrio_subsector_risk_report(country_name, subsector_name, direct_subsect
 %   country_name: the country name, either full (like 'Puerto Rico')
 %       or ISO3 (like 'PRI'). See climada_country_name for names/ISO3
 %   subsector_name: the subsector name, see e.g. mrio_read_table
-%   direct_subsector_risk: a table containing as one variable the direct risk for each
+%   direct_subsector_risk: a table containing as one variable the direct risk (EAD) for each
 %       subsector/country combination covered in the original mriot. The
 %       order of entries follows the same as in the entire process, i.e.
 %       entry mapping is still possible via the climada_mriot.setors and
 %       climada_mriot.countries arrays. The table further contins three
 %       more variables with the country names, country ISO codes and sector names
 %       corresponging to the direct risk values.
-%   direct_country_risk: a table containing as one variable the direct risk per country (aggregated across all subsectors) 
-%       based on the risk measure chosen. Further a variable with correpsonding country
-%       names and country ISO codes, respectively.
-%   subsector_risk: table with indirect risk per subsector/country combination 
-%       based on the risk measure chosen in one variable and three "label" variables 
-%       containing corresponding country names, country ISO codes and sector names.
-%   country_risk: table with indirect risk per country based on the risk measure chosen
-%       in one variable and two "label" variables containing corresponding 
-%       country names and country ISO codes.
+%   direct_country_risk: a table containing as one variable the direct risk (EAD) per country (aggregated across all subsectors). 
+%       Further a variable with correpsonding country names and country ISO codes, respectively.
+%   indirect_subsector_risk: table with indirect risk (EAD) per subsector/country combination 
+%       in one variable and three "label" variables containing corresponding country names, 
+%       country ISO codes and sector names.
+%   indirect_country_risk: table with indirect risk (EAD) per country in one variable and two "label" 
+%       variables containing corresponding country names and country ISO codes.
 %   leontief: a structure with 5 fields. It represents a general climada
 %       leontief structure whose basic properties are the same regardless of the
 %       provided mriot it is based on. The fields are:
@@ -138,15 +136,15 @@ end
 subsector_name = char(subsectors(selection_subsector));
 %
 % prompt for report_filename if not given
-if isempty(report_filename) % local GUI
-    report_filename = [climada_global.data_dir filesep 'results' filesep 'mrio' filesep datestr(now,1) filesep 'subesctor_risk_report.xls'];
-    [filename, pathname] = uiputfile(report_filename, 'Save report as:');
-    if isequal(filename,0) || isequal(pathname,0)
-        report_filename = ''; % cancel
-    else
-        report_filename = fullfile(pathname,filename);
-    end
-end
+% if isempty(report_filename) % local GUI
+%     report_filename = [climada_global.data_dir filesep 'results' filesep 'mrio' filesep datestr(now,1) filesep 'subesctor_risk_report.xls'];
+%     [filename, pathname] = uiputfile(report_filename, 'Save report as:');
+%     if isequal(filename,0) || isequal(pathname,0)
+%         report_filename = ''; % cancel
+%     else
+%         report_filename = fullfile(pathname,filename);
+%     end
+% end
 
 % local folder to write the figures
 fig_dir = [climada_global.results_dir filesep 'mrio' filesep datestr(now,1) filesep country_name '_' subsector_name];
@@ -206,28 +204,28 @@ risk_structure_sub = (leontief.risk_structure(:,risk_index)/sum(leontief.risk_st
 [risk_structure_sorted, sort_index] = sort(risk_structure_sub, 'descend');
 risk_structure_temp = [risk_structure_sorted(1:5) nansum(risk_structure_sorted(6:end))];
 
-index_sub = {[char(climada_mriot.countries_iso(sort_index(1))) ' | ' char(climada_mriot.sectors(sort_index(1)))]...
-             [char(climada_mriot.countries_iso(sort_index(2))) ' | ' char(climada_mriot.sectors(sort_index(2)))]...
-             [char(climada_mriot.countries_iso(sort_index(3))) ' | ' char(climada_mriot.sectors(sort_index(3)))]...
-             [char(climada_mriot.countries_iso(sort_index(4))) ' | ' char(climada_mriot.sectors(sort_index(4)))]...
-             [char(climada_mriot.countries_iso(sort_index(5))) ' | ' char(climada_mriot.sectors(sort_index(5)))]...
-             , 'Other'};
-
-explode = [1 1 1 1 1 0];
-text_title = ['Risk Structure of ' char(climada_mriot.sectors(risk_index)) ' in ' char(climada_mriot.countries_iso(risk_index))];
-
-risk_structure_main = figure('position', [250, 0, 750, 500]);
-pie(risk_structure_temp, explode)
-colormap([1 0 0;      %// red
-          .75 .25 0;      %// green
-          .5 .5 0;      %// blue
-          .25 .75 0;
-          0 .75 .25;
-          0 .5 .5])
-legend(index_sub,'Location','eastoutside','Orientation','vertical')
-title(text_title)
-
-saveas(risk_structure_main,[fig_dir filesep 'risk_structure'],'jpg')
+% index_sub = {[char(climada_mriot.countries_iso(sort_index(1))) ' | ' char(climada_mriot.sectors(sort_index(1)))]...
+%              [char(climada_mriot.countries_iso(sort_index(2))) ' | ' char(climada_mriot.sectors(sort_index(2)))]...
+%              [char(climada_mriot.countries_iso(sort_index(3))) ' | ' char(climada_mriot.sectors(sort_index(3)))]...
+%              [char(climada_mriot.countries_iso(sort_index(4))) ' | ' char(climada_mriot.sectors(sort_index(4)))]...
+%              [char(climada_mriot.countries_iso(sort_index(5))) ' | ' char(climada_mriot.sectors(sort_index(5)))]...
+%              , 'Other'};
+%
+% explode = [1 1 1 1 1 0];
+% text_title = ['Risk Structure of ' char(climada_mriot.sectors(risk_index)) ' in ' char(climada_mriot.countries_iso(risk_index))];
+% 
+% risk_structure_main = figure('position', [250, 0, 750, 500]);
+% pie(risk_structure_temp, explode)
+% colormap([1 0 0;      %// red
+%           .75 .25 0;      %// green
+%           .5 .5 0;      %// blue
+%           .25 .75 0;
+%           0 .75 .25;
+%           0 .5 .5])
+% legend(index_sub,'Location','eastoutside','Orientation','vertical')
+% title(text_title)
+% 
+% saveas(risk_structure_main,[fig_dir filesep 'risk_structure'],'jpg')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure 2: pier chart of contributions (mainsector level) to our subsector risk
