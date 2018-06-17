@@ -44,8 +44,11 @@ function [total_subsector_risk, total_country_risk, indirect_subsector_risk, ind
 %       mriot structure whose basic properties are the same regardless of the
 %       provided mriot it is based on, see mrio_read_table;
 % OPTIONAL INPUT PARAMETERS:
-%   switch_io_approach: specifying what I-O approach is applied in this procedure 
-%           to estimate indirect risk, Ghosh (=2, default) or standard IO (1) or EEIOA (3)
+%   switch_io_approach: specifying what I-O approach is applied in this
+%   procedure to estimate indirect risk, can be
+%       1: demand-driven standard Input-Output model 
+%       2: supply-driven Ghosh model (DEFAULT)
+%       3: EEIOA ('environmental accounting')
 % OUTPUTS:
 %   total_subsector_risk: table with indirect and direct risk per subsector/country combination 
 %       based on the risk measure chosen in one variable and three "label" variables 

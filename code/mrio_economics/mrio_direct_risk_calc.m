@@ -11,7 +11,7 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
-%
+%   [aggregated_mriot, climada_mriot] = mrio_aggregate_table;
 %   next call:  % just to illustrate
 %   [total_subsector_risk, total_country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
 % CALLING SEQUENCE:
@@ -86,9 +86,9 @@ if ~exist('subsector_name','var'), subsector_name = []; end
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
 if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
-    module_data_dir=[climada_global.modules_dir filesep 'advanced' filesep 'data'];
+    module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
 else
-    module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+    module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
 end
 
 % PARAMETERS
@@ -324,34 +324,36 @@ function risk = risk_calc(entity, hazard, risk_measure)
 
     % convert an event (per occurrence) damage set (EDS) into a year damage set (YDS)
     %YDS = climada_EDS2YDS(EDS, hazard);
+    
+    risk = EDS.ED;
 
     % quantify risk with specified risk measure 
-    switch risk_measure
-        case 'EAD' % Expected Annual Damage
-            risk = EDS.ED;
-        case '100y-event' % TO DO 
-            return_period = 100;
-            sel_pos = max(find(DFC.return_period >= return_period));
-            risk = DFC.damage(sel_pos);
-        case '50y-event' % TO DO 
-            return_period = 50;
-            sel_pos = max(find(DFC.return_period >= return_period));
-            risk = DFC.damage(sel_pos);
-        case '20y-event' % TO DO 
-            return_period = 20;
-            sel_pos = max(find(DFC.return_period >= return_period));
-            risk = DFC.damage(sel_pos);
-        case '10y-event' % TO DO 
-            return_period = 10;
-            sel_pos = max(find(DFC.return_period >= return_period));
-            risk = DFC.damage(sel_pos);
-        case 'worst-case' % TO DO 
-            sel_pos = max(find(DFC.return_period));
-            risk = DFC.damage(sel_pos);
-        otherwise
-            error('Please specify risk measure properly.')
-            return
-    end % switch risk_measure
+%     switch risk_measure
+%         case 'EAD' % Expected Annual Damage
+%             risk = EDS.ED;
+%         case '100y-event' % TO DO 
+%             return_period = 100;
+%             sel_pos = max(find(DFC.return_period >= return_period));
+%             risk = DFC.damage(sel_pos);
+%         case '50y-event' % TO DO 
+%             return_period = 50;
+%             sel_pos = max(find(DFC.return_period >= return_period));
+%             risk = DFC.damage(sel_pos);
+%         case '20y-event' % TO DO 
+%             return_period = 20;
+%             sel_pos = max(find(DFC.return_period >= return_period));
+%             risk = DFC.damage(sel_pos);
+%         case '10y-event' % TO DO 
+%             return_period = 10;
+%             sel_pos = max(find(DFC.return_period >= return_period));
+%             risk = DFC.damage(sel_pos);
+%         case 'worst-case' % TO DO 
+%             sel_pos = max(find(DFC.return_period));
+%             risk = DFC.damage(sel_pos);
+%         otherwise
+%             error('Please specify risk measure properly.')
+%             return
+%     end % switch risk_measure
     
 end % risk_calc
    

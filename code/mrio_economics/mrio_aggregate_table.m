@@ -19,9 +19,9 @@ function [aggregated_mriot, climada_mriot] = mrio_aggregate_table(climada_mriot,
 %   has to ask for its output.
 %   
 %   previous call: 
-%       mrio_read_table 
+%   climada_mriot = mrio_read_table; 
 %   next call: % just to illustrate
-%       [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
+%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
 % CALLING SEQUENCE:
 %   [aggregated_mriot, climada_mriot] = mrio_aggregate_table(climada_mriot, full_aggregation_flag, RoW_flag);
 % EXAMPLE:
@@ -127,11 +127,11 @@ function [aggregated_mriot, climada_mriot] = mrio_aggregate_table(climada_mriot,
 %       climada_mriot struct contains these aggregation and a field
 %       informing about type of RoW-aggregation is added.
 % GENERAL NOTES:
-%   NO IN-DEPTH TESTING OF RESULTS CONDUCTED YET!
-%   In next step, consider extending mrio_read_table with a flag which
-%   directly calls mrio_aggregate_table from within the prior function,
-%   returning both the full and the aggregated table directly (could lead to
-%   some function workspace memory issues)...
+% No in-depth testing of results conducted yet! 
+% In next step, consider extending mrio_read_table with a flag which
+% directly calls mrio_aggregate_table from within the prior function,
+% returning both the full and the aggregated table directly (could lead to
+% some function workspace memory issues)...
 % MODIFICATION HISTORY:
 % Kaspar Tobler, 20171220 initializing function
 % Kaspar Tobler, 20180104 finishing raw prototype version. Basic capabilities are provided and work.

@@ -10,10 +10,10 @@ function params = mrio_get_params(mriot_type)
 %   arguments during the entire standard process following the mrio_master
 %   file. Saves time.
 % CALLING SEQUENCE:
+%   params = mrio_get_params(mriot_type);
 % EXAMPLE:
 %   params = mrio_get_params;
 % INPUTS:
-%   None.
 % OPTIONAL INPUT PARAMETERS:
 %   mriot_type: character array specifying name of MRIOT table with which
 %       testing person wants to work with. Currently (20180129) either 'wiod' or 'exiobase'.

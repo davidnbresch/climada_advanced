@@ -11,9 +11,8 @@ function climada_mriot = mrio_read_table(mriot_file, table_flag)
 %   IF NOT ADHERED TO, FUNCTION DOES NOT WORK AS EXPECTED.
 %   
 %   previous call:
-%
 %   next call:  % just to illustrate
-%       aggregated_mriot = mrio_aggregate_table(climada_mriot, full_aggregation_flag, RoW_flag);
+%   aggregated_mriot = mrio_aggregate_table(climada_mriot, full_aggregation_flag, RoW_flag);
 % CALLING SEQUENCE:
 %  climada_mriot = mrio_read_table(mriot_file, table_flag);
 % EXAMPLE:
@@ -76,26 +75,26 @@ function climada_mriot = mrio_read_table(mriot_file, table_flag)
 %           production flowing into final consumption, i.e. not into other
 %           sector for further processing.
 % GENERAL NOTES:
-%   The function is not as flexible as it could be due to difficulties with
-%   differing file types and basic structures of the various MRIOT's. It
-%   relies on internal functions targeted at each of the MRIOT versions.
-%   Further, it relies on the user following certain requirements for the
-%   data provided and on several occasions has too hard-coded passages. To be
-%   removed in future. Generally, the code is longish and
-%   certainly with lots of potential for improvement (especially regarding 
-%   parameter definitions). Basic functionality is provided.
+% The function is not as flexible as it could be due to difficulties with
+% differing file types and basic structures of the various MRIOT's. It
+% relies on internal functions targeted at each of the MRIOT versions.
+% Further, it relies on the user following certain requirements for the
+% data provided and on several occasions has too hard-coded passages. To be
+% removed in future. Generally, the code is longish and
+% certainly with lots of potential for improvement (especially regarding 
+% parameter definitions). Basic functionality is provided.
 %
-%   Currently, importing a WIOD table takes approx. 130 seconds, an EXIOBASE 
-%   table approx. 80 seconds.
+% Currently, importing a WIOD table takes approx. 130 seconds, an EXIOBASE 
+% table approx. 80 seconds.
 % POSSIBLE EXTENSIONS TO BE IMPLEMENTED:
-%   Maybe add an optional input argument "aggregate_flag" or so where, if 1,
-%   the function directly calls climada_aggregate_mriot in the end and returns
-%   the aggregated mriot as a second optional output (for more info, check header 
-%   of function climada_aggregate_mriot).
+% Maybe add an optional input argument "aggregate_flag" or so where, if 1,
+% the function directly calls climada_aggregate_mriot in the end and returns
+% the aggregated mriot as a second optional output (for more info, check header 
+% of function climada_aggregate_mriot).
 %
-%   Possibly also add a "saving-flag" where, if 1, the resulting mriot struct
-%   is saved as an .m file. So the user can choose do delete the result from
-%   the workspace if computer working memory is at its limits.
+% Possibly also add a "saving-flag" where, if 1, the resulting mriot struct
+% is saved as an .m file. So the user can choose do delete the result from
+% the workspace if computer working memory is at its limits.
 % MODIFICATION HISTORY:
 % Kaspar Tobler, 20171207 initializing function
 % Kaspar Tobler, 20171208 adding import capabilities for both WIOD and EXIOBASE table

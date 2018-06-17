@@ -60,6 +60,7 @@
 %           climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180614, initial 
+%
 
 % import/setup global variables
 % global climada_global

@@ -1,4 +1,4 @@
-function [direct_subsector_risk,direct_country_risk, total_subsector_production]=mrio_disaggregate_risk(direct_mainsector_risk,climada_mriot,aggregated_mriot, countries)
+function [direct_subsector_risk, direct_country_risk, total_subsector_production] = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot, countries)
 % mrio disaggregate risk
 % MODULE:
 %   climada_advanced
@@ -13,14 +13,10 @@ function [direct_subsector_risk,direct_country_risk, total_subsector_production]
 %   Calculations are done country-wise.
 %   
 %   previous call: 
-%       mrio_direct_risk_calc
 %   next call:
-%       mrio_leontief_calc 
-%
 % CALLING SEQUENCE:
-%   [direct_subsector_risk,direct_country_risk]=mrio_disaggregate_risk(direct_mainsector_risk,climada_mriot,aggregated_mriot, countries)
+%   [direct_subsector_risk, direct_country_risk] = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot, countries)
 % EXAMPLE:
-%
 % INPUTS:
 %   direct_mainsector_risk: a row vector as produced from the core
 %       climada risk calculations with direct risk of each main sector for each
@@ -28,9 +24,7 @@ function [direct_subsector_risk,direct_country_risk, total_subsector_production]
 %   climada_mriot: a climada mriot struct as produced by mrio_read_table
 %   aggregated_mriot: an aggregated climada mriot struct as
 %       produced by mrio_aggregate_table. Can either be a full aggregation
-%       or a minimal one. Meaning of terms see in mrio_aggregate_table.
-%   ALSO SEE COMMENTS BELOW ("GENERAL NOTES").   
-%
+%       or a minimal one. Meaning of terms see in mrio_aggregate_table.  
 % OPTIONAL INPUT PARAMETERS:
 %   countries: NOT IMPLEMENTED. A country or a list of countries as a cell array containing
 %       country names or iso3 codes specifying which subset of countries one is 
@@ -46,16 +40,12 @@ function [direct_subsector_risk,direct_country_risk, total_subsector_production]
 %       order of entries follows the same as in the entire process, i.e.
 %       entry mapping is still possible via the climada_mriot.setors and
 %       climada_mriot.countries arrays. 
-%  direct_country_risk: an array containing direct risk per country (aggregated across all subsectors) 
+%   direct_country_risk: an array containing direct risk per country (aggregated across all subsectors) 
 %       based on the risk measure chosen. 
-%  total_subsector_production: an array contain for each subsector/country combination its total production. 
-%
+%   total_subsector_production: an array contain for each subsector/country combination its total production. 
 % GENERAL NOTES:
-%
-% NO IN-DEPTH TESTING OF RESULTS CONDUCTED YET!
-%
+% No in-depth testing of results conducted yet!
 % POSSIBLE EXTENSIONS TO BE IMPLEMENTED:
-%
 % In case we don't use an aggregated table at all (see thoughts below), 
 % we could think about defining the six climada sectors as a global variable 
 % (added to the climada_global struct in the mrio_master function or so...
@@ -68,7 +58,6 @@ function [direct_subsector_risk,direct_country_risk, total_subsector_production]
 % the input array but now absolute values since we multiply each input
 % (relative) main sector risk with the corresponding main sector
 % production. Could also be used for map plotting.
-%
 % MODIFICATION HISTORY:
 % Kaspar Tobler, 20180105 initializing function
 % Kaspar Tobler, 20180108 further conceptual work/changes in concept...
@@ -77,6 +66,7 @@ function [direct_subsector_risk,direct_country_risk, total_subsector_production]
 % Kaspar Tobler, 20180115-16 further smaller changes as well as begin drafting of plotting functions. 
 % Ediz Herms, 20180118 adding direct country risk calculation.
 % Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
+%
 
 % ONLY FOR DEVELOPMENT PERIOD: CREATE AN EXAMPLE INPUT ARRAY:
 % Assume that the order of values (representing direct risk for each
@@ -98,13 +88,13 @@ if ~exist('direct_mainsector_risk','var') || ... % Required inputs
     errordlg('Please provide the required input arguments.','User input error. Cannot proceed.');
     error('Please provide the required input arguments.')
 elseif ~exist('countries','var')    % Optional input
-    countries=[];  %#ok      
+    countries = [];  %#ok      
 end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
 
-module_data_dir=[climada_global.modules_dir filesep 'climada_advanced' filesep 'data']; %#ok
+module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data']; %#ok
 
 % PARAMETERS
 
@@ -255,4 +245,4 @@ end
 %         all_col = table(all_col1,all_col2,all_col3,'VariableNames',{'R','G','B'}); %#ok
 % end % plotting subfunction
 
-end %Wrap local functions to have shared variable workspace.
+end % mrio disaggregate risk
