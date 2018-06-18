@@ -28,6 +28,7 @@ function params = mrio_get_params(mriot_type)
 % Kaspar Tobler, 20180129, added possibility to choose MRIOT type via input argument.
 %                          added option to choose whether to calculate full or minimal aggregated mriot.
 %                          added option to write final results to excel file.
+%
 
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
@@ -51,8 +52,8 @@ else
 end
 
 params.centroids_file = 'GLB_NatID_grid_0360as_adv_1'; % the global centroids
-params.hazard_file = 'GLB_0360as_TC_hist'; % historic
-% params.hazard_file='GLB_0360as_TC'; % probabilistic, 10x more events than hist
+%params.hazard_file = 'GLB_0360as_TC_hist'; % historic
+params.hazard_file = 'GLB_0360as_TC'; % probabilistic, 10x more events than hist
 
 params.write_xls = 1; % If set to 1 (default) the final results are written to an excel file which can be found in module/data/results
 params.full_aggregation = 0; % If set to 0 (default), no full aggregation of mriot table is computed, as the mrio data itself is not required

@@ -1,25 +1,27 @@
-function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params) % uncomment to run as function
+function D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params) % uncomment to run as function
 % mrio direct risk ralc
 % MODULE:
 %   advanced
 % NAME:
 %   mrio_direct_risk_calc
 % PURPOSE:
-%   Caculate direct risk per subsector x country-combination given encoded entities per economic sector (assets and damage functions), 
-%   a hazard event set, a risk measure and a general climada MRIO table (as well as an aggregated climada mriot struct).
+%   given an encoded entity per economic sector (assets and damage functions) 
+%   and a hazard event set, calculate the direct year damage set (YDS) for each
+%   subsector x country-combination as defined by the general climada mriot
+%   struct provided. 
 %
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
 %   [aggregated_mriot, climada_mriot] = mrio_aggregate_table;
 %   next call:  % just to illustrate
-%   [total_subsector_risk, total_country_risk] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
+%   [total_subsector_risk, total_country_risk] = mrio_leontief_calc(D_YDS, climada_mriot);
 % CALLING SEQUENCE:
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);
+%   D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
+%   D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
 % INPUTS:
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
@@ -48,15 +50,16 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 %           of that particular direct risk is estimated.              
 %       verbose: whether we printf progress to stdout (=1, default) or not (=0)
 % OUTPUTS:
-%   direct_subsector_risk: a table containing as one variable the direct risk (EAD) for each
-%       subsector/country combination covered in the original mriot. The
-%       order of entries follows the same as in the entire process, i.e.
-%       entry mapping is still possible via the climada_mriot.setors and
-%       climada_mriot.countries arrays. The table further contins three
-%       more variables with the country names, country ISO codes and sector names
-%       corresponging to the direct risk values.
-%   direct_country_risk: a table containing as one variable the direct risk (EAD) per country (aggregated across all subsectors). 
-%       Further a variable with correpsonding country names and country ISO codes, respectively.
+%   D_YDS, the direct year damage set, a struct with the fields:
+%       ED: the total expected annual damage
+%       reference_year: the year the damages are references to
+%       yyyy(i): the year i
+%       damage(year_i): the damage amount for year_i (summed up over all
+%           assets and events)
+%       Value: the sum of all Values used in the calculation (to e.g.
+%           express damages in percentage of total Value)
+%       frequency(i): the annual frequency, =1
+%       orig_year_flag(i): =1 if year i is an original year, =0 else
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180115, initial
 % Ediz Herms, ediz.herms@outlook.com, 20180118, disaggregate direct risk to all subsectors for each country
@@ -64,10 +67,10 @@ function [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(cl
 % Ediz Herms, ediz.herms@outlook.com, 20180416, impact_analysis_mode: option to only calculate direct risk for a subset of country x mainsector-combinations
 % Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
 % Kaspar Tobler, 20180525 add use of mrio_generate_damagefunctions to make calculation with the appropriate damage functions (details in mrio_generate_damagefunctions).
+% Ediz Herms, ediz.herms@outlook.com, 20180617, direct damage year set (D_YDS) struct as output 
 %
 
-direct_subsector_risk = []; % init output
-direct_country_risk = []; % init output
+D_YDS = struct;
 
 global climada_global
 if ~climada_init_vars, return; end % init/import global variables
@@ -164,9 +167,13 @@ if params.impact_analysis_mode
     
     else 
     selection_risk = [];
-end
+end % params.impact_analysis_mode
 
 % check whether user provided data on subsector level in entity directory
+if params.verbose
+    fprintf('Check whether user provided data on subsector level in entity directory...\n');
+    fprintf('Entities on sub-sector level found: ');
+end
 subsector_information = zeros(1,n_subsectors*n_mrio_countries);
 for subsector_j = 1:n_subsectors
     subsector_name = char(climada_mriot.sectors(subsector_j)); % extract subsector name
@@ -177,19 +184,36 @@ for subsector_j = 1:n_subsectors
         if ismember(mainsector_j+n_mainsectors*(mrio_country_i-1),selection_risk) && (exist(fullfile(climada_global.entities_dir, [country_ISO3 '_' mainsector_name '_' subsector_name '.mat']), 'file') == 2) 
             % if entity on subsector level exists (condition fullfilled) assign value = 1
             subsector_information(subsector_j+n_subsectors*(mrio_country_i-1)) = 1;
+            
+            info = [char(climada_mriot.countries_iso(subsector_j+n_subsectors*(mrio_country_i-1))) ' | ' char(climada_mriot.sectors(subsector_j+n_subsectors*(mrio_country_i-1)))];
+            if params.verbose
+                fprintf('\n');
+                fprintf('%s',info); 
+            end
         end
     end % mrio_country_i
 end % subsector_j
 subsector_information = find(subsector_information);
 
+if isempty(subsector_information) && params.verbose
+    fprintf('NONE \n')
+end
+
 % load hazard
-hazard = climada_hazard_load(params.hazard_file);
+if ~exist(params.hazard_file,'file')
+    fprintf('ERROR: hazard does not exist %s\n',params.hazard_file);
+    return
+else
+    hazard = climada_hazard_load(params.hazard_file);
+end
+n_years = length(hazard.orig_yearset); ens_size=(hazard.event_count/hazard.orig_event_count)-1; 
 
 if params.verbose, climada_progress2stdout; end % init, see terminate below
 
 % direct risk calculation per mainsector and per country
+if params.verbose, fprintf('Direct risk calculation per mainsector x country-combination...\n'); end
 risk_i = 0;
-direct_mainsector_risk = zeros(1,n_mainsectors*n_mrio_countries);    
+direct_mainsector_damage = zeros(n_years*(ens_size+1),n_mainsectors*n_mrio_countries);
 for mainsector_j = 1:n_mainsectors % different exposure (asset) base as generated by mrio_generate_XXX_entity functions
     mainsector_name = char(mainsectors(mainsector_j));
 
@@ -243,23 +267,44 @@ for mainsector_j = 1:n_mainsectors % different exposure (asset) base as generate
 
         % risk calculation (see subfunction)
         if ~isempty(entity_sel.assets.Value) & (isempty(selection_risk) | ismember(mainsector_j+n_mainsectors*(mrio_country_i-1),selection_risk))
-            direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = risk_calc(entity_sel, hazard);
+            YDS_sel = risk_calc(entity, hazard, country_ISO3);
+            direct_mainsector_damage(:,mainsector_j+n_mainsectors*(mrio_country_i-1)) = YDS_sel.damage;
         elseif isempty(entity_sel.assets.Value) | (~isempty(selection_risk) & ~ismember(mainsector_j+n_mainsectors*(mrio_country_i-1),selection_risk))
-            direct_mainsector_risk(mainsector_j+n_mainsectors*(mrio_country_i-1)) = 0;
+            direct_mainsector_damage(:,mainsector_j+n_mainsectors*(mrio_country_i-1)) = 0;
         end
 
-        risk_i = risk_i + length(aggregated_mriot.aggregation_info.(mainsector_name)) - length(subsector_information)/n_mainsectors/n_mrio_countries;
-        if params.verbose, climada_progress2stdout(risk_i,n_mrio_countries*n_subsectors,5,'risk calculations'); end % update
+        risk_i = risk_i + 1;
+        if params.verbose, climada_progress2stdout(risk_i,n_mrio_countries*n_mainsectors,1,'risk calculations'); end % update
 
     end % mrio_country_i
 
 end % mainsector_j
 
+if params.verbose, climada_progress2stdout(0); end % terminate
+
 % Disaggregate direct mainsector risk to direct risk for all subsector/country combinations
-direct_subsector_risk = mrio_disaggregate_risk(direct_mainsector_risk, climada_mriot, aggregated_mriot);
+if params.verbose, fprintf('Disaggregate direct mainsector risk to direct risk for all subsector x country-combinations...\n'); end
+direct_subsector_damage = zeros(n_years*(ens_size+1),n_subsectors*n_mrio_countries);     
+for mainsector_i = 1:n_mainsectors  
+    main_fields = fields(aggregated_mriot.aggregation_info);
+    current_mainsector = char(main_fields(mainsector_i));
+        for subsector_j = 1:numel(aggregated_mriot.aggregation_info.(current_mainsector)) % How many subsectors belong to current mainsector.
+            temp_subsectors = aggregated_mriot.aggregation_info.(current_mainsector);
+            current_subsector = char(temp_subsectors(subsector_j));           
+
+            sel_subsector_pos = climada_mriot.sectors == current_subsector;
+
+            direct_subsector_damage(:,sel_subsector_pos) = direct_mainsector_damage(:,aggregated_mriot.sectors == current_mainsector);
+
+        end % subsector_j
+end % mainsector_i
 
 % direct risk calculation on subsector level
-total_subsector_production = climada_mriot.total_production';
+if ~isempty(subsector_information) && params.verbose
+    fprintf('Direct risk calculation on subsector level...\n')
+    climada_progress2stdout % init, see terminate below
+end
+
 for subsector_i = 1:length(subsector_information)
     sel_pos = subsector_information(subsector_i);
     
@@ -273,36 +318,41 @@ for subsector_i = 1:length(subsector_information)
     
     % risk calculation (see subfunction) + multiplication with each subsector's total production
     if ~isempty(entity.assets.Value)
-        direct_subsector_risk(sel_pos) = risk_calc(entity, hazard) * total_subsector_production(sel_pos);
+        YDS_sel = risk_calc(entity, hazard, country_ISO3);
+        direct_subsector_damage(:,sel_pos) = YDS_sel.damage;
     else
-        direct_subsector_risk(sel_pos) = 0;
+        direct_subsector_damage(:,sel_pos) = 0;
     end
+   
+    if params.verbose, climada_progress2stdout(subsector_i,length(subsector_information),1,'risk calculations'); end % update
     
-    if params.verbose, climada_progress2stdout(risk_i + subsector_i,n_mrio_countries*n_subsectors,5,'risk calculations'); end % update
 end % subsector_i
 
 if params.verbose, climada_progress2stdout(0); end % terminate
 
-% aggregate direct risk across all sectors per country to obtain direct
-% country risk:
-direct_country_risk = zeros(1,n_mrio_countries); 
-for mrio_country_i = 1:n_mrio_countries
-    for subsector_j = 1:n_subsectors 
-        direct_country_risk(mrio_country_i) = direct_country_risk(mrio_country_i) + direct_subsector_risk((mrio_country_i-1) * n_subsectors+subsector_j);
-    end % subsector_j
-end % mrio_country_i
+% Derive absolute damage by multiplying relative damage with total sectorial production
+total_subsector_production = climada_mriot.total_production';
+direct_subsector_damage = direct_subsector_damage .* total_subsector_production;
 
-%%% For better readability, we return final results as tables so that
-%%% countries and sectors corresponding to the values are visible on
-%%% first sight. Further, a table allows reordering of values:
+% setting up the (direct) year damage set
+%------------------------------------------------
+D_YDS.reference_year = YDS_sel.reference_year;
 
-direct_subsector_risk = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.sectors',direct_subsector_risk', ...
-                                'VariableNames',{'Country','CountryISO','Subsector','DirectSubsectorRisk'});
-direct_country_risk = table(unique(climada_mriot.countries','stable'),unique(climada_mriot.countries_iso','stable'),direct_country_risk',...
-                                'VariableNames',{'Country','CountryISO','DirectCountryRisk'});
+D_YDS.countries_iso = climada_mriot.countries_iso;
+D_YDS.sectors = climada_mriot.sectors;
 
-%% Risk calculation function    
-function risk = risk_calc(entity, hazard)
+D_YDS.damage = direct_subsector_damage; % damage per country x sector-combination and year (matrix)
+D_YDS.Value = total_subsector_production; % sectorial production as value
+D_YDS.frequency = YDS_sel.frequency'; 
+
+D_YDS.annotation_name = YDS_sel.annotation_name; 
+
+D_YDS.ED = mean(direct_subsector_damage,1); % derive annual expected damage 
+D_YDS.yyyy = YDS_sel.yyyy'; 
+D_YDS.orig_year_flag = YDS_sel.orig_year_flag';  
+
+%% Risk calculation function 
+function YDS = risk_calc(entity, hazard, country_ISO3)
     % Calculate damagefunctions based on Emanuel (see function for
     % details); need to check whether current country is in north-west
     % Pacific or not (differing dfs):
@@ -315,13 +365,8 @@ function risk = risk_calc(entity, hazard)
     % calculate event damage set
     EDS = climada_EDS_calc(entity, hazard, '', '', 2, '');
 
-    % Calculate Damage exceedence Frequency Curve (DFC)
-    %DFC = climada_EDS2DFC(EDS);
-
     % convert an event (per occurrence) damage set (EDS) into a year damage set (YDS)
-    %YDS = climada_EDS2YDS(EDS, hazard);
-    
-    risk = EDS.ED;
+    YDS = climada_EDS2YDS(EDS, hazard, '', '', 1); % silent_mode (=1)
     
 end % risk_calc
    

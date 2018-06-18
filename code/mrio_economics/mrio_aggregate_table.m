@@ -21,7 +21,7 @@ function [aggregated_mriot, climada_mriot] = mrio_aggregate_table(climada_mriot,
 %   previous call: 
 %   climada_mriot = mrio_read_table; 
 %   next call: % just to illustrate
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
+%   D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
 % CALLING SEQUENCE:
 %   [aggregated_mriot, climada_mriot] = mrio_aggregate_table(climada_mriot, full_aggregation_flag, RoW_flag);
 % EXAMPLE:

@@ -71,22 +71,22 @@ climada_global.max_encoding_distance_m = 30000;
 %if ~exist('subsector_name', 'var'), sector_name = []; end
 %if ~exist('silent_mode','var'), silent_mode = 0; end
 
-% DEFAULT PARAMETERS; useful in development phase to go through all
+%% DEFAULT PARAMETERS
 % calculations with default values so that no file dialogs etc. are opened:
 params = mrio_get_params; % Can also be used with input arguments 'wiod' or 'exiobase' to choose prefered MRIO table. 
                           % If no argument is passed, default is the WIOD table.
 
-% read MRIO table
-fprintf('Reading MRIO table...\n');tic;
+%% read MRIO table
+fprintf('<strong>Reading MRIO table...</strong>\n');tic;
 climada_mriot = mrio_read_table(params.mriot.file_name,params.mriot.table_flag);toc
 
 % aggregated MRIO table
-fprintf('Aggregating MRIO table...\n');tic;
+fprintf('<strong>Aggregating MRIO table...</strong>\n');tic;
 [aggregated_mriot, climada_mriot] = mrio_aggregate_table(climada_mriot,params.full_aggregation,0);toc
         
-% generate country entities based on global entities provided for set of 
+%% generate country entities based on global entities provided for set of 
 % countries as defined by the mrio table
-fprintf('Generating country entities based on global entity provided and prepare for mrio...\n');tic;
+fprintf('<strong>Generating country entities based on global entity provided and prepare for mrio...</strong>\n');tic;
 mainsectors = unique(climada_mriot.climada_sect_name, 'stable');
 n_mainsectors = length(mainsectors);
 for mainsector_i = 1:n_mainsectors
@@ -108,16 +108,16 @@ for mainsector_i = 1:n_mainsectors
 end % mainsector_i
 toc
 
-% calculate direct risk for all countries and sectors as specified in mrio table
-fprintf('Calculating direct risk for all countries and sectors as specified in mrio table...\n');tic;
-[direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);toc
+%% calculate direct risk for all countries and sectors as specified in mrio table
+fprintf('<strong>Calculating direct risk for all countries and sectors as specified in mrio table...</strong>\n');tic;
+D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);toc
 
-% finally, quantifying indirect risk using the Leontief I-O model
-fprintf('Quantifying indirect risk using Input-Output methodology...\n');tic;
+%% finally, quantifying indirect risk using the Leontief I-O model
+fprintf('<strong>Quantifying indirect risk using Input-Output methodology...</strong>\n');tic;
 [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params);toc
 
-% produce simple graphics based on subsector x country-combination selected
-fprintf('produce simple graphics based on subsector x country-combination selected...\n');tic;
+%% Generate simple graphics for subsector x country-combination selected
+fprintf('<strong>Generate simple graphics for subsector x country-combination selected...</strong>\n');tic;
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 n_mrio_countries = length(mrio_countries_ISO3);
 
