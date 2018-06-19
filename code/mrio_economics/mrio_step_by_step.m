@@ -26,35 +26,6 @@
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
 % OUTPUTS:
-%   direct_subsector_risk: a table containing as one variable the direct risk (EAD) for each
-%       subsector/country combination covered in the original mriot. The
-%       order of entries follows the same as in the entire process, i.e.
-%       entry mapping is still possible via the climada_mriot.setors and
-%       climada_mriot.countries arrays. The table further contins three
-%       more variables with the country names, country ISO codes and sector names
-%       corresponging to the direct risk values.
-%   direct_country_risk: a table containing as one variable the direct risk (EAD) per country (aggregated across all subsectors). 
-%       Further a variable with correpsonding country names and country ISO codes, respectively.
-%   indirect_subsector_risk: table with indirect risk (EAD) per subsector/country combination 
-%       in one variable and three "label" variables containing corresponding country names, 
-%       country ISO codes and sector names.
-%   indirect_country_risk: table with indirect risk (EAD) per country in one variable and two "label" 
-%       variables containing corresponding country names and country ISO codes.
-%   leontief: a structure with 5 fields. It represents a general climada
-%       leontief structure whose basic properties are the same regardless of the
-%       provided mriot it is based on. The fields are:
-%           risk_structure: industry-by-industry table of expected annual damages (in millions
-%               of US$) that, for each industry, contains indirect risk implicitly
-%               obtained from the different industry.
-%           inverse: the leontief inverse matrix which relates final demand to production
-%           coefficients: either the technical coefficient matrix which gives the amount of input that a 
-%               given sector must receive from every other sector in order to create one dollar of 
-%               output or the allocation coefficient matrix that indicates the allocation of outputs
-%               of each sector
-%           layers: the first 5 layers and a remainder term that gives the
-%               user information on which stage/tier the risk incurs
-%           climada_mriot: struct that contains information on the mrio table used
-%           climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180614, initial 
 %
@@ -110,11 +81,11 @@ toc
 
 %% calculate direct risk for all countries and sectors as specified in mrio table
 fprintf('<strong>Calculating direct risk for all countries and sectors as specified in mrio table...</strong>\n');tic;
-D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);toc
+IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);toc
 
 %% finally, quantifying indirect risk using the Leontief I-O model
 fprintf('<strong>Quantifying indirect risk using Input-Output methodology...</strong>\n');tic;
-[total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief] = mrio_leontief_calc(direct_subsector_risk, climada_mriot, params);toc
+[IO_YDS, leontief] = mrio_leontief_calc(IO_YDS, climada_mriot, params);toc
 
 %% Generate simple graphics for subsector x country-combination selected
 fprintf('<strong>Generate simple graphics for subsector x country-combination selected...</strong>\n');tic;

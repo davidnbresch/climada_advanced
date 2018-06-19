@@ -1,4 +1,4 @@
-function D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params) % uncomment to run as function
+function IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params) % uncomment to run as function
 % mrio direct risk ralc
 % MODULE:
 %   advanced
@@ -6,22 +6,22 @@ function D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params) 
 %   mrio_direct_risk_calc
 % PURPOSE:
 %   given an encoded entity per economic sector (assets and damage functions) 
-%   and a hazard event set, calculate the direct year damage set (YDS) for each
-%   subsector x country-combination as defined by the general climada mriot
-%   struct provided. 
+%   and a hazard event set, calculate the direct year damage set (IO_YDS.direct) 
+%   that contains information on the direct risk for each subsector x country-combination 
+%   and year as defined by the general climada mriot struct and hazard provided. 
 %
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
 %   [aggregated_mriot, climada_mriot] = mrio_aggregate_table;
 %   next call:  % just to illustrate
-%   [total_subsector_risk, total_country_risk] = mrio_leontief_calc(D_YDS, climada_mriot);
+%   IO_YDS = mrio_leontief_calc(IO_YDS, climada_mriot);
 % CALLING SEQUENCE:
-%   D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);
+%   IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);
 % EXAMPLE:
 %   climada_mriot = mrio_read_table;
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
-%   D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
+%   IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
 % INPUTS:
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
@@ -50,16 +50,17 @@ function D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params) 
 %           of that particular direct risk is estimated.              
 %       verbose: whether we printf progress to stdout (=1, default) or not (=0)
 % OUTPUTS:
-%   D_YDS, the direct year damage set, a struct with the fields:
-%       ED: the total expected annual damage
-%       reference_year: the year the damages are references to
-%       yyyy(i): the year i
-%       damage(year_i): the damage amount for year_i (summed up over all
-%           assets and events)
-%       Value: the sum of all Values used in the calculation (to e.g.
-%           express damages in percentage of total Value)
-%       frequency(i): the annual frequency, =1
-%       orig_year_flag(i): =1 if year i is an original year, =0 else
+%   IO_YDS, the Input-Output year damage set, a struct with the fields:
+%       direct, a struct itself with the field
+%           ED: the total expected annual damage
+%           reference_year: the year the damages are references to
+%           yyyy(i): the year i
+%           damage(year_i): the damage amount for year_i (summed up over all
+%               assets and events)
+%           Value: the sum of all Values used in the calculation (to e.g.
+%               express damages in percentage of total Value)
+%           frequency(i): the annual frequency, =1
+%           orig_year_flag(i): =1 if year i is an original year, =0 else
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180115, initial
 % Ediz Herms, ediz.herms@outlook.com, 20180118, disaggregate direct risk to all subsectors for each country
@@ -67,10 +68,10 @@ function D_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params) 
 % Ediz Herms, ediz.herms@outlook.com, 20180416, impact_analysis_mode: option to only calculate direct risk for a subset of country x mainsector-combinations
 % Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
 % Kaspar Tobler, 20180525 add use of mrio_generate_damagefunctions to make calculation with the appropriate damage functions (details in mrio_generate_damagefunctions).
-% Ediz Herms, ediz.herms@outlook.com, 20180617, direct damage year set (D_YDS) struct as output 
+% Ediz Herms, ediz.herms@outlook.com, 20180617, Input-Output damage year set (IO_YDS) struct as output 
 %
 
-D_YDS = struct;
+IO_YDS = struct;
 
 global climada_global
 if ~climada_init_vars, return; end % init/import global variables
@@ -336,20 +337,21 @@ direct_subsector_damage = direct_subsector_damage .* total_subsector_production;
 
 % setting up the (direct) year damage set
 %------------------------------------------------
-D_YDS.reference_year = YDS_sel.reference_year;
+IO_YDS.direct.reference_year = YDS_sel.reference_year;
 
-D_YDS.countries_iso = climada_mriot.countries_iso;
-D_YDS.sectors = climada_mriot.sectors;
+IO_YDS.direct.countries_iso = climada_mriot.countries_iso;
+IO_YDS.direct.sectors = climada_mriot.sectors;
+IO_YDS.direct.climada_sect_name = climada_mriot.climada_sect_name;
 
-D_YDS.damage = direct_subsector_damage; % damage per country x sector-combination and year (matrix)
-D_YDS.Value = total_subsector_production; % sectorial production as value
-D_YDS.frequency = YDS_sel.frequency'; 
+IO_YDS.direct.damage = direct_subsector_damage; % damage per country x sector-combination and year (matrix)
+IO_YDS.direct.Value = total_subsector_production; % sectorial production as value
+IO_YDS.direct.frequency = YDS_sel.frequency'; 
 
-D_YDS.annotation_name = YDS_sel.annotation_name; 
+IO_YDS.direct.annotation_name = YDS_sel.annotation_name; 
 
-D_YDS.ED = mean(direct_subsector_damage,1); % derive annual expected damage 
-D_YDS.yyyy = YDS_sel.yyyy'; 
-D_YDS.orig_year_flag = YDS_sel.orig_year_flag';  
+IO_YDS.direct.ED = mean(direct_subsector_damage,1); % derive annual expected damage 
+IO_YDS.direct.yyyy = YDS_sel.yyyy'; 
+IO_YDS.direct.orig_year_flag = YDS_sel.orig_year_flag';  
 
 %% Risk calculation function 
 function YDS = risk_calc(entity, hazard, country_ISO3)
