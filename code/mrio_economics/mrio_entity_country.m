@@ -6,16 +6,15 @@ function mrio_entity_country(GLB_entity, climada_mriot, switch_scale, check_figu
 %	mrio_entity_country
 % PURPOSE:
 %   Generates entity files based on a global entity struct for a predefined 
-%   set of countries. Furthermore, entities are prepared for mrio (multi 
-%   regional I/O table) project, including
-%       - NatID for each asset
-%       - normalized asset values as specified
+%   set of countries. Furthermore, entities are prepared for MRIO (Multi 
+%   Regional Input-Output) project, including
+%       - get NatID for each asset
+%       - normalize asset values as specified
 %
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
-%   entity = climada_entity_load;
-%   climada_mriot = mrio_read_table;
+%       climada_entity_load and mrio_read_table
 % CALLING SEQUENCE:
 %   mrio_entity_country(entity, climada_mriot);
 % EXAMPLE:
