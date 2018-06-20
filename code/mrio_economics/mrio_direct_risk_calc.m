@@ -69,6 +69,7 @@ function IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params)
 % Kaspar Tobler, 20180418 change calculations to use the newly implemented total_production array which includes production for final demand.
 % Kaspar Tobler, 20180525 add use of mrio_generate_damagefunctions to make calculation with the appropriate damage functions (details in mrio_generate_damagefunctions).
 % Ediz Herms, ediz.herms@outlook.com, 20180617, Input-Output damage year set (IO_YDS) struct as output 
+% Ediz Herms, ediz.herms@outlook.com, 20180620, add IO_YDS.hazard with peril_ID
 %
 
 IO_YDS = struct;
@@ -339,9 +340,11 @@ direct_subsector_damage = direct_subsector_damage .* total_subsector_production;
 %------------------------------------------------
 IO_YDS.direct.reference_year = YDS_sel.reference_year;
 
+IO_YDS.direct.countries = climada_mriot.countries;
 IO_YDS.direct.countries_iso = climada_mriot.countries_iso;
 IO_YDS.direct.sectors = climada_mriot.sectors;
 IO_YDS.direct.climada_sect_name = climada_mriot.climada_sect_name;
+IO_YDS.direct.aggregation_info = aggregated_mriot.aggregation_info;
 
 IO_YDS.direct.damage = direct_subsector_damage; % damage per country x sector-combination and year (matrix)
 IO_YDS.direct.Value = total_subsector_production; % sectorial production as value
@@ -352,6 +355,21 @@ IO_YDS.direct.annotation_name = YDS_sel.annotation_name;
 IO_YDS.direct.ED = mean(direct_subsector_damage,1); % derive annual expected damage 
 IO_YDS.direct.yyyy = YDS_sel.yyyy'; 
 IO_YDS.direct.orig_year_flag = YDS_sel.orig_year_flag';  
+
+% since a hazard event set might have been created on another Machine, make
+% sure it can later be referenced (with filesep and hence fileparts):
+hazard_peril_ID = char(hazard.peril_ID); % used below
+IO_YDS.peril_ID = hazard_peril_ID;
+IO_YDS.hazard.peril_ID = IO_YDS.peril_ID; % backward compatibility
+if ~isfield(hazard,'filename'), hazard.filename = ''; end
+IO_YDS.hazard.filename = strrep(char(hazard.filename),'\',filesep); % from PC
+IO_YDS.hazard.filename = strrep(IO_YDS.hazard.filename,'/',filesep); % from MAC
+if ~isfield(hazard,'refence_year'), hazard.refence_year = climada_global.present_reference_year; end
+IO_YDS.hazard.refence_year = hazard.refence_year;
+if ~isfield(hazard, 'scenario'), hazard.scenario = 'no climate change'; end
+IO_YDS.hazard.scenario = hazard.scenario;
+if ~isfield(hazard,'comment'), hazard.comment = ''; end
+IO_YDS.hazard.comment = hazard.comment;
 
 %% Risk calculation function 
 function YDS = risk_calc(entity, hazard, country_ISO3)
