@@ -61,6 +61,9 @@ function IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params)
 %               express damages in percentage of total Value)
 %           frequency(i): the annual frequency, =1
 %           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       hazard: itself a structure, with:
+%           filename: the filename of the hazard event set
+%           comment: a free comment
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180115, initial
 % Ediz Herms, ediz.herms@outlook.com, 20180118, disaggregate direct risk to all subsectors for each country

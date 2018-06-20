@@ -41,6 +41,9 @@ function [IO_YDS, STATUS] = mrio_IO_YDS_combine(IO_YDS, IO_YDS2, params)
 %               express damages in percentage of total Value)
 %           frequency(i): the annual frequency, =1
 %           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       hazard: itself a structure, with:
+%           filename: the filename of the hazard event set
+%           comment: a free comment
 %       If IO_YDS is empty on input, IO_YDS2 is returned. This can be
 %       useful to start summing up entities in a loop
 %       IO_YDS_c = climada_IO_YDS_combine(IO_YDS_c, IO_YDS)...  
@@ -70,6 +73,9 @@ function [IO_YDS, STATUS] = mrio_IO_YDS_combine(IO_YDS, IO_YDS2, params)
 %               express damages in percentage of total Value)
 %           frequency(i): the annual frequency, =1
 %           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       hazard: itself a structure, with:
+%           filename: the filename of the hazard event set
+%           comment: a free comment
 %   STATUS: =1 if combination successful, =0 otherwise, also if the basic
 %       combination worked (same length of damage vector), but some issues
 %       with either reference_year or frequency occurred. 
