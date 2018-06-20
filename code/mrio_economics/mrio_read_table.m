@@ -1,4 +1,4 @@
-function climada_mriot = mrio_read_table(mriot_file, table_flag)
+function [climada_mriot, mriot_save_file] = mrio_read_table(mriot_file, table_flag, force_read)
 % mrio read table
 % MODULE:
 %   climada_advanced
@@ -74,6 +74,7 @@ function climada_mriot = mrio_read_table(mriot_file, table_flag)
 %           combinations the total production. Total production includes
 %           production flowing into final consumption, i.e. not into other
 %           sector for further processing.
+%   mriot_save_file: the name the climada mrio table struct got saved to
 % GENERAL NOTES:
 % The function is not as flexible as it could be due to difficulties with
 % differing file types and basic structures of the various MRIOT's. It
@@ -106,6 +107,7 @@ function climada_mriot = mrio_read_table(mriot_file, table_flag)
 % Kaspar Tobler, 20180219 small changes to how climada_sect_id is dealt with; now not requiring a user input anymore but using helper function mrio_mainsector_mapping to map existing mainsector names (in climada_sect_name) to the corresponding IDs...
 % Kaspar Tobler, 20180418 also import info on total production (including production for final consumption etc.). For now working for WIOD. Eora26 and exiobase follow soon.
 % Ediz Herms, ediz.herms@outlook.com, 20180606, save climada_mriot struct as .mat file for fast access
+% Ediz Herms, ediz.herms@outlook.com, 20180620, mriot_save_file added as output
 %
 
 climada_mriot = []; % init output
@@ -117,6 +119,7 @@ if ~climada_init_vars, return; end % init/import global variables
 % and to set default value where  appropriate
 if ~exist('mriot_file','var'), mriot_file = []; end 
 if ~exist('table_flag','var'), table_flag = []; end
+if ~exist('force_read','var'), force_read = 0; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -190,7 +193,7 @@ end
 [fP,fN] = fileparts(mriot_file);
 mriot_save_file = [fP filesep fN '.mat'];
 
-if climada_check_matfile(mriot_file, mriot_save_file)
+if climada_check_matfile(mriot_file, mriot_save_file) && ~force_read
     % there is a .mat file more recent than the Excel
     load(mriot_save_file)
     
