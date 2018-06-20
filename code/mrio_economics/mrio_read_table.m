@@ -17,9 +17,9 @@ function [climada_mriot, mriot_save_file] = mrio_read_table(mriot_file, table_fl
 %  climada_mriot = mrio_read_table(mriot_file, table_flag);
 % EXAMPLE:
 %   mrio_read_table; % no arguments provided. Prompted for via GUI.
-%   mrio_read_table('WIOT2014_Nov16_ROW.xlsx',wiod); % importing a WIOD table.
-%   mrio_read_table('mrIot_version2.2.2.txt',exio); % importing an EXIOBASE table.
-%   mrio_read_table('Eora26_2013_bp_T.txt',eora); % importing an EORA26 table.
+%   mrio_read_table('WIOT2014_Nov16_ROW.xlsx','wiod'); % importing a WIOD table.
+%   mrio_read_table('mrIot_version2.2.2.txt','exio'); % importing an EXIOBASE table.
+%   mrio_read_table('Eora26_2013_bp_T.txt','eora'); % importing an EORA26 table.
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
 %   mriot_file: path to a mriot file (currently either WIOD, EXIOBASE or EORA26).
