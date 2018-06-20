@@ -1,16 +1,16 @@
-% mrio_step_by_step
+function mrio_step_by_step(check_figure) % uncomment to run as function
 % mrio step by step
 % MODULE:
 %   advanced
 % NAME:
 %   mrio_step_by_step
 % PURPOSE:
-%   show the core mrio key functionality step-by-step. Not a function,
-%   just a batch-file to allow the user to step trough and inspect all
-%   individual steps. See advanced module manual, as this code implements the
-%   section "Step-by-step guide" provided there.
+%   show the core mrio key functionality step-by-step. This is just a batch-file 
+%   to allow the user to step trough and inspect all individual steps. 
+%   See advanced module manual, as this code implements the section 
+%   "Step-by-step guide" provided there.
 %
-%   running it all takes (first time) about 5 minutes (faster on subsequent
+%   running it all takes (first time) about 10 minutes (faster on subsequent
 %   calls, since the mrio table is loaded rather than re-generated)
 %
 %   needs modules:
@@ -20,32 +20,31 @@
 %   advanced        https://github.com/davidnbresch/climada_module_advanced
 %
 % CALLING SEQUENCE:
-%   mrio_step_by_step
+%   mrio_step_by_step(check_figure);
 % EXAMPLE:
-%   mrio_step_by_step
+%   mrio_step_by_step(1);
 % INPUTS:
 % OPTIONAL INPUT PARAMETERS:
+%   check_figure: set to 1 to visualize figures, by default entities are not plotted (=0)
 % OUTPUTS:
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180614, initial 
 %
 
-% import/setup global variables
-% global climada_global
-% if ~climada_init_vars,return;end
+global climada_global
+if ~climada_init_vars,return;end % init/import global variables
 
 % Set max encoding distance to 30km (well enough for our purpose):
 climada_global.max_encoding_distance_m = 30000;
          
 % poor man's version to check arguments
-%if ~exist('country_name', 'var'), country_name = []; end
-%if ~exist('subsector_name', 'var'), sector_name = []; end
-%if ~exist('silent_mode','var'), silent_mode = 0; end
+if ~exist('check_figure', 'var'), check_figure = []; end
 
 %% DEFAULT PARAMETERS
 % calculations with default values so that no file dialogs etc. are opened:
 params = mrio_get_params; % Can also be used with input arguments 'wiod' or 'exiobase' to choose prefered MRIO table. 
                           % If no argument is passed, default is the WIOD table.
+if isempty(check_figure), check_figure = 0; end
 
 %% read MRIO table
 fprintf('<strong>Reading MRIO table...</strong>\n');tic;
@@ -75,7 +74,9 @@ for mainsector_i = 1:n_mainsectors
     else
         mainsector_entity = climada_entity_load(mainsector_entity_file);
     end 
-    figure; climada_entity_plot(mainsector_entity,1.5);
+    if check_figure
+    	figure; climada_entity_plot(mainsector_entity, 1.5);
+    end
 end % mainsector_i
 toc
 
@@ -127,4 +128,4 @@ subsector_name = char(subsectors(selection_subsector));
 mrio_subsector_risk_report(country_name, subsector_name, direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot, 'mrio_step_by_step');
 toc
 
-% end % mrio_step_by_step
+end % mrio_step_by_step
