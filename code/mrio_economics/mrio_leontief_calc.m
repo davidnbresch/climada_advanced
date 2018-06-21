@@ -49,9 +49,6 @@ function [IO_YDS, leontief] = mrio_leontief_calc(IO_YDS, climada_mriot, switch_i
 %               express damages in percentage of total Value)
 %           frequency(i): the annual frequency, =1
 %           orig_year_flag(i): =1 if year i is an original year, =0 else
-%       hazard: itself a structure, with:
-%           filename: the filename of the hazard event set
-%           comment: a free comment
 %   climada_mriot: a structure with ten fields. It represents a general climada
 %       mriot structure whose basic properties are the same regardless of the
 %       provided mriot it is based on, see mrio_read_table;
