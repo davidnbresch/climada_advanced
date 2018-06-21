@@ -109,7 +109,7 @@ centroids = climada_centroids_load(params.centroids_file);
 countries_ISO3 = centroids.ISO3_list(:,1);
 
 % save filename which will be 
-[~, fN, fE] = fileparts(GLB_entity.assets.filename);
+[fP, fN, fE] = fileparts(GLB_entity.assets.filename);
 
 % check whether we have passed over a climada mriot struct or a country ISO3 code
 if isfield(climada_mriot,'mrio_data')
@@ -178,9 +178,9 @@ for mrio_country_i = 1:n_mrio_countries
     country_ISO3_i = char(mrio_countries_ISO3(mrio_country_i));
     
     if contains(fN, 'GLB')
-        entity_save_file = [climada_global.entities_dir filesep replace(fN,'GLB',country_ISO3_i) fE];
+        entity_save_file = [fP filesep replace(fN,'GLB',country_ISO3_i) fE];
     else
-        entity_save_file = [climada_global.entities_dir filesep country_ISO3_i '_' fN fE];
+        entity_save_file = [fP filesep country_ISO3_i '_' fN fE];
     end
     
     if ~exist(entity_save_file,'file')
