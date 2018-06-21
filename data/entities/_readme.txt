@@ -1,8 +1,9 @@
-this folder contains entities that representate the geographical distribution of the six economic main sectors as described in the climada advanced module manual, namely:
+this folder contains entities that represent the geographical distribution of the six economic main sectors as described in the climada advanced module manual, namely:
 
 *********************************************************
 **********Agriculture (GLB_agriculture_XXX.mat)**********
 *********************************************************
+
 Source (of the underlying data):
 International Food Policy Research Institute (IFPRI),
 International Institute for Applied Systems Analysis (IIASA), 
@@ -11,7 +12,7 @@ http://dx.doi.org/10.7910/DVN/DHXBJX, Harvard Dataverse, V9 (Accessed 26 05 2018
 
 Download spam2005v3r2_global_val_prod_agg.csv.zip (ZIP archive of aggregated value of production data in CSV format for statistics or database applications)
 
-mrio_generate_agriculture_entity.m was then used to construct a global entity file based on the data mentioned above.
+mrio_generate_agriculture_entity.m was then used to construct a global entity file based on the underlying data.
 
 *********************************************************
 ***Forestry and Fishing (GLB_forestry_fishing_XXX.mat)***
@@ -24,7 +25,7 @@ http://maps.elie.ucl.ac.be/CCI/viewer/ (Accessed 26 05 2018)
 
 Download data (red button on the top-right corner) > Climate Research Data Package > Data access > LC Map 2015 (1 netcdf file, zip compression - 2.33Go)
 
-mrio_generate_forestry_entity.m was then used to construct a global entity file based on the data mentioned above.
+mrio_generate_forestry_entity.m was then used to construct a global entity file based on the underlying data.
 
 *********************************************************
 ********Manufacturing (GLB_manufacturing_XXX.mat)********
@@ -39,7 +40,7 @@ http://www.iiasa.ac.at/web/home/research/researchPrograms/air/ECLIPSEv5a.html
 
 ECLIPSE V5a global emission fields > ECLIPSE V5a Baseline scenario (CLE) > Download netCDF files of emissions (netcdf4 format)
 
-mrio_generate_manufacturing_entity.m was then used to construct a global entity file based on the data mentioned above.
+mrio_generate_manufacturing_entity.m was then used to construct a global entity file based on the underlying data.
 
 *********************************************************
 ***Mining and Quarrying (GLB_mining_quarrying_XXX.mat)***
@@ -58,7 +59,7 @@ https://mrdata.usgs.gov/mineral-operations/ (Accessed 26 05 2018)
 
 Mineral operations outside the United States > Download > Download minfac-csv.zip file
 
-mrio_generate_mining_entity.m was then used to construct a global entity file based on the data mentioned above.
+mrio_generate_mining_entity.m was then used to construct a global entity file based on the underlying data.
 
 *********************************************************
 *************Services (GLB_services_XXX.mat)*************
@@ -71,7 +72,7 @@ http://ngdc.noaa.gov/eog/dmsp/downloadV4composites.html#AVSLCFC3 (Accessed 26 05
 
 Version 4 DMSP-OLS Nighttime Lights Time Series > Download 'F182012' .tif file
 
-mrio_generate_services_entity.m was then used to construct a global entity file based on the data mentioned above.
+mrio_generate_services_entity.m was then used to construct a global entity file based on the underlying data.
 
 *********************************************************
 ************Utilities (GLB_utilities_XXX.mat)************
@@ -84,12 +85,14 @@ http://enipedia.tudelft.nl (Accessed 26 05 2018),
 
 Section Advanced > Download all power plant data
 
-mrio_generate_utilities_entity.m was then used to construct a global entity file based on the data mentioned above.
+mrio_generate_utilities_entity.m was then used to construct a global entity file based on the underlying data.
 ____________________________________________
 
-The entities were put together as part of the master master theses 'Weather and climate TC risk affecting global businesses' from Ediz Herms and Kaspar Tobler.
+The entities were put together as part of the master master theses 'Assessing tropical cyclone weather and climate risk affecting global
+businesses' from Ediz Herms and Kaspar Tobler.
 
 Master thesis (May 2018)
-'Weather and climate TC risk affecting global businesses'
+'Assessing tropical cyclone weather and climate risk affecting global
+businesses'
 Ediz Herms, ediz.herms@outlook.com
 Kaspar Tobler
