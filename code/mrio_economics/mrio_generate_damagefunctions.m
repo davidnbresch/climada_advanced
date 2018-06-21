@@ -1,32 +1,34 @@
 function dfs = mrio_generate_damagefunctions(damagefunctions,v_thresh,v_half,scaling,check_plot)
-%
+% mrio generate damagefunctions
 % MODULE:
 %   advanced
 % NAME:
 %   mrio_generate_damagefunctions
 % PURPOSE:
 %   Generate damagefunctions for default use in the tropcial cyclone mrio risk modeling
-%   process. Damagefunctions are based on the formula proposed in Emanuel, K., 2011: Global Warming Effects on U.S. Hurricane Damage. Wea. Climate Soc., 3, 261–268, https://doi.org/10.1175/WCAS-D-11-00007.1
+%   process. Damagefunctions are based on the formula proposed in 
+%
+%   Emanuel, K., 2011: 
+%   Global Warming Effects on U.S. Hurricane Damage. 
+%   Wea. Climate Soc., 3, 261–268, 
+%   https://doi.org/10.1175/WCAS-D-11-00007.1
+%
 %   Although the resulting value is then multiplied with a further scaling
-%   parameter.
-%   The function is typically not called by a user but integrated into the
-%   modeling process. There, it's usually called twice, once for a df for the
-%   north-west pacific, once for the rest of the world, with distinct
-%   parameter sets, respectively.
+%   parameter. The function is typically not called by a user but integrated into 
+%   the modeling process. There, it's usually called twice, once for a df for the
+%   north-west pacific, once for the rest of the world, with distinct parameter 
+%   sets, respectively.
 %
-%   A damagefunctions struct has to be passed and is returned. Also works
-%   if an entire entity is passed, in which case the functions updates the
-%   entity's damagefunctions field.
+%   A damagefunctions struct has to be passed and is returned. Also works if an 
+%   entire entity is passed, in which case the functions updates the entity's 
+%   damagefunctions field.
 %
-%   Note that per default, mrio-process TC damagefunctions have all PAA=1
-%   which is for now the only possibility. Might be extended to allow
-%   user-defined PAA values.
-%
+%   NOTE: per default, mrio-process TC damagefunctions have all PAA=1 which is 
+%   for now the only possibility. Might be extended to allow user-defined PAA values.
 % CALLING SEQUENCE:
-%
+%   dfs = mrio_generate_damagefunctions(damagefunctions,v_thresh,v_half,scaling,check_plot);
 % EXAMPLE:
 %   [entity.damagefunctions] = mrio_generate_damagefunctions(entity.damagefunctions,25,61,0.6)  -- call with user-defined v_threshold, v_half and scaling. 
-%
 % INPUTS:
 %    damagefunctions: a damagefunctions field (itself a struct) of an entity. Function works also if an
 %       entire entity is passed, in which case the damagefunctions field is
@@ -41,7 +43,6 @@ function dfs = mrio_generate_damagefunctions(damagefunctions,v_thresh,v_half,sca
 %       climada_damagefunction_plot) or not (=0, default)
 %       plots on the same plot on subsequent calls to allow for easy
 %       comparison of say two options
-%
 % OUTPUTS:
 %   damagefunction: a structure with
 %       filename: just for information, here 'mrio_generate_damagefunctions'
@@ -92,8 +93,8 @@ if isempty(scaling)
             end
         end
 end
-
 if isempty(check_plot), check_plot = 0; end
+
 intensities = 0:5:120;
 damagefunctions.Intensity = intensities; 
 damagefunctions.MDD = zeros(1,length(intensities));  
@@ -119,13 +120,13 @@ if is_entity
     dfs = entity;
 else
     dfs = damagefunctions;
-end
+end %is_entity
 
 if check_plot, climada_damagefunctions_plot(damagefunctions); end
 
 function df = df_localfun(intensity)  % Local function of the actual Emanuel (2013) formula; intensity is wind speed.
    v_n = max([intensity - v_thresh,0])/(v_half - v_thresh);
    df = v_n^3/(1 + v_n^3); 
-end % End local function (wrapped for shared workspace).
+end % % df_localfun
 
-end % End main function.
+end % mrio_generate_damagefunctions
