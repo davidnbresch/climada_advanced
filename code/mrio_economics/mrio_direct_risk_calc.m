@@ -224,7 +224,12 @@ for mainsector_j = 1:n_mainsectors % different exposure (asset) base as generate
 
     % load (global) mainsector entity
     mainsector_entity_file = ['GLB_' mainsector_name '_XXX.mat'];
-    mainsector_entity = climada_entity_load(mainsector_entity_file);
+    
+    if (exist(fullfile(climada_global.entities_dir, mainsector_entity_file), 'file') == 2) 
+        mainsector_entity = climada_entity_load(mainsector_entity_file);
+    else
+        mainsector_entity = climada_entity_load(fullfile([module_data_dir filesep 'entities'], mainsector_entity_file));
+    end
 
     % calculation for all countries as specified in mrio table
     for mrio_country_i = 1:n_mrio_countries
