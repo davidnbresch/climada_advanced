@@ -30,6 +30,9 @@ function [climada_mriot, mriot_save_file] = mrio_read_table(mriot_file, table_fl
 %       (this is currently not fully implemented). 
 %       Flag is also used in resulting climada mriot structure to keep info on 
 %       table's origins.
+%   force_read: if =1, force reading from Excel/.txt/... file, do NOT use the
+%       possibly already existing .mat file (climada does alaways read from
+%       Default=0.
 % OUTPUTS:
 %   climada_mriot: a structure with 13 fields. It represents a general climada
 %   mriot structure whose basic properties are the same regardless of the
@@ -108,6 +111,7 @@ function [climada_mriot, mriot_save_file] = mrio_read_table(mriot_file, table_fl
 % Kaspar Tobler, 20180418 also import info on total production (including production for final consumption etc.). For now working for WIOD. Eora26 and exiobase follow soon.
 % Ediz Herms, ediz.herms@outlook.com, 20180606, save climada_mriot struct as .mat file for fast access
 % Ediz Herms, ediz.herms@outlook.com, 20180620, mriot_save_file added as output
+% Ediz Herms, ediz.herms@outlook.com, 20180620, mrio_data_dir default path
 %
 
 climada_mriot = []; % init output
@@ -121,13 +125,16 @@ if ~exist('mriot_file','var'), mriot_file = []; end
 if ~exist('table_flag','var'), table_flag = []; end
 if ~exist('force_read','var'), force_read = 0; end
 
-% locate the module's data folder (here  one folder
-% below of the current folder, i.e. in the same level as code folder)
-% account for different directory structures
-if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
-    module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
-else
-    module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+% locate the module's data folder
+% if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
+%     module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
+% else
+%     module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+% end
+mrio_data_dir = [climada_global.data_dir filesep 'mrio'];
+if ~isdir(mrio_data_dir)
+    mkdir(climada_global.data_dir,'mrio'); % create it
+    fprintf('NOTE: store your mrio input data in %s\n', mrio_data_dir);
 end
 
 % PARAMETERS
@@ -136,7 +143,7 @@ end
 % THE FOLLOWING TWO PROMPTS WILL BE MADE MORE RESILIENT BY TRYING TO CATCH
 % ERRORS. CURRENTLY FUNCTION RETURNS ERROR IF USER INPUT FAILES.
 if isempty(mriot_file) %If empty, open file dialog.
-    [filename, pathname] = uigetfile([module_data_dir filesep '*.*'], 'Open a mrio table file that meets user requirements:');
+    [filename, pathname] = uigetfile([mrio_data_dir filesep '*.*'], 'Open a mrio table file that meets user requirements:');
     if isequal(filename,0) || isequal(pathname,0)
         error('Please choose a mriot file.')
         %return; % cancel pressed by user
@@ -170,24 +177,17 @@ end % if table_flag is empty
 % complete path, if missing
 [fP,fN,fE] = fileparts(mriot_file);
 if isempty(fP)
-    fP = module_data_dir;
-    if strcmpi(table_flag,'wiod')
-        fP = [fP filesep 'wiod'];
-    elseif strcmpi(table_flag(1:4),'exio')
-        fP = [fP filesep 'exiobase']; 
-    elseif strcmpi(table_flag(1:4),'eora')
-        fP = [fP filesep 'eora26']; 
-    end
+    fP = mrio_data_dir;
     mriot_file = [fP filesep fN fE];
 end
     
 [fP,fN,fE] = fileparts(mriot_file);
 if isempty(fE), fE = climada_global.spreadsheet_ext;end
 if isempty(fP) % complete path, if missing
-    mrio_file = [module_data_dir filesep fN fE];
+    mrio_file = [mrio_data_dir filesep 'mrio' filesep fN fE];
     if ~exist(mrio_file,'file');
         fprintf('Note: %s does nor exist, switched to .xlsx\n',mrio_file)
-        mriot_file = [module_data_dir filesep fN '.xlsx']; % try this, too
+        mriot_file = [mrio_data_dir filesep fN '.xlsx']; % try this, too
     end
 end
 [fP,fN] = fileparts(mriot_file);
@@ -254,7 +254,7 @@ else
 
     if strcmpi(table_flag(1:3),'exi') %In case user provided flag containing typo only compare first three letters.
 
-        climada_mriot = read_exiobase(mriot_file,climada_mriot,module_data_dir); %% For exiobase we need the path info in the local function since we also have to find and load the exiobase "types" file, ideally automatically.
+        climada_mriot = read_exiobase(mriot_file,climada_mriot,mrio_data_dir); %% For exiobase we need the path info in the local function since we also have to find and load the exiobase "types" file, ideally automatically.
         % The long categorical arrays climada_mriot.countries etc.
         % are not shown in the matlab variable editor (there seems to be a
         % max. length of around 4000 elements; longer arrays are not shown). 
@@ -267,7 +267,7 @@ else
 
     if strcmpi(table_flag(1:3),'eor') %In case user provided flag containing typo only compare first three letters.
 
-        climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir); %% For eora26 we need the path info in the local function since we also have to find and load the eora26 "labels" and "FD" files, ideally automatically.
+        climada_mriot = read_eora26(mriot_file,climada_mriot,mrio_data_dir); %% For eora26 we need the path info in the local function since we also have to find and load the eora26 "labels" and "FD" files, ideally automatically.
 
     end % read eora26 type mriot
     
@@ -469,7 +469,7 @@ end
 %end % read_wiod
 
 
-function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
+function climada_mriot = read_eora26(mriot_file,climada_mriot,mrio_data_dir)
 
    % For EORA26, main table is in a txt file (user input) and label info is 
    % stored in a separate excel file called 'labels_T.txt'. Further we need
@@ -488,10 +488,10 @@ function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
    %%% accounts for the case where no file(s) are found in which case a
    %%% file dialog opens as last resort.
    
-   eora_labels_file = check_file(eora_labels_file,'*.txt*','eora26 "labels"',module_data_dir);
-   eora_fd_file = check_file(eora_fd_file,'*.txt*','eora26 "FD"',module_data_dir);
-   eora_fd_labels_file = check_file(eora_fd_labels_file,'*.txt*','eora26 "FD labels"',module_data_dir);
-   eora_structure_file = check_file(eora_structure_file,'*.xls*','eora26 "structure"',module_data_dir);
+   eora_labels_file = check_file(eora_labels_file,'*.txt*','eora26 "labels"',mrio_data_dir);
+   eora_fd_file = check_file(eora_fd_file,'*.txt*','eora26 "FD"',mrio_data_dir);
+   eora_fd_labels_file = check_file(eora_fd_labels_file,'*.txt*','eora26 "FD labels"',mrio_data_dir);
+   eora_structure_file = check_file(eora_structure_file,'*.xls*','eora26 "structure"',mrio_data_dir);
  
   % First, read labels from labels_T file:
   labels = readtable(eora_labels_file,'ReadVariableNames',0);
@@ -632,7 +632,7 @@ function climada_mriot = read_eora26(mriot_file,climada_mriot,module_data_dir)
     
 
 %%%%%%%%%%%%%%   READ EXIO TABLES; LOCAL FUNCTION
-function climada_mriot = read_exiobase(mriot_file,climada_mriot,module_data_dir)
+function climada_mriot = read_exiobase(mriot_file,climada_mriot,mrio_data_dir)
 
 global climada_global
 
@@ -646,8 +646,8 @@ global climada_global
    %%% In case there are several copies of "types" and/o final deman files found (e.g.
    %%% different versions) or none at all, let user choose (done by
    %%% internal function check_file:
-   exio_types_file = check_file(exio_types_file,'*.xls*','exiobase "types"',module_data_dir);
-   exio_fd_file = check_file(exio_fd_file,'*.txt*','exiobase "findal demand"',module_data_dir); 
+   exio_types_file = check_file(exio_types_file,'*.xls*','exiobase "types"',mrio_data_dir);
+   exio_fd_file = check_file(exio_fd_file,'*.txt*','exiobase "findal demand"',mrio_data_dir); 
        
    % Now read in and prepare datastore for each relevant sheet in excel file. 
    % First country names:
@@ -804,7 +804,7 @@ climada_mriot.unit = units;
 %%% Small local helper function to check for various special cases for user
 %%% file input:
 
-function file_variable = check_file(file_variable_in,file_abbr,file_name,module_data_dir)
+function file_variable = check_file(file_variable_in,file_abbr,file_name,mrio_data_dir)
 
     if length(file_variable_in) > 1
         [selection, ok] = listdlg('ListString',{file_variable_in.name},...
@@ -818,7 +818,7 @@ function file_variable = check_file(file_variable_in,file_abbr,file_name,module_
     end
     % If cannot find fitting file at all, open file dialog, else save final file name with full path included:    
     if isempty(file_variable_in)
-        [filename, pathname] = uigetfile([module_data_dir filesep file_abbr], ['Open the ' file_name ' file.']);
+        [filename, pathname] = uigetfile([mrio_data_dir filesep file_abbr], ['Open the ' file_name ' file.']);
         if isequal(filename,0) || isequal(pathname,0)
             error(['Please choose the ' file_name ' file. Cannot proceed without.'])
             %return; % cancel pressed by user

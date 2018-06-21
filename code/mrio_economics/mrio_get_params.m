@@ -33,27 +33,35 @@ function params = mrio_get_params(mriot_type)
 global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
-if ~exist('mriot_type','var'),mriot_type=[];end
-
 climada_global.waitbar = 0;
 
+% locate the module's data folder (here  one folder
+% below of the current folder, i.e. in the same level as code folder)
+if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
+    module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
+else
+    module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+end
+
+if ~exist('mriot_type','var'),mriot_type=[];end
+
 if isempty(mriot_type) || strcmpi(mriot_type,'wiod')
-    params.mriot.file_name = 'WIOT2014_Nov16_ROW.xlsx'; 
+    params.mriot.file_name = [module_data_dir filesep 'mrio' filesep 'WIOT2014_Nov16_ROW.xlsx']; 
     params.mriot.table_flag = 'wiod';   
 elseif strcmpi(mriot_type(1:4),'exio')
-    params.mriot.file_name = 'mrIot_version2.2.2.txt';
+    params.mriot.file_name = [module_data_dir filesep 'mrio' filesep 'mrIot_version2.2.2.txt'];
     params.mriot.table_flag = 'exiobase';
 elseif strcmpi(mriot_type(1:4),'eora')
-    params.mriot.file_name = 'Eora26_2013_bp_T.txt';
+    params.mriot.file_name = [module_data_dir filesep 'mrio' filesep 'Eora26_2013_bp_T.txt'];
     params.mriot.table_flag = 'eora26';
 else
-    params.mriot.file_name = 'WIOT2014_Nov16_ROW.xlsx'; 
+    params.mriot.file_name = [module_data_dir filesep 'mrio' filesep 'WIOT2014_Nov16_ROW.xlsx']; 
     params.mriot.table_flag = 'wiod';   
 end
 
 params.centroids_file = 'GLB_NatID_grid_0360as_adv_1'; % the global centroids
-%params.hazard_file = 'GLB_0360as_TC_hist'; % historic
-params.hazard_file = 'GLB_0360as_TC'; % probabilistic, 10x more events than hist
+params.hazard_file = 'GLB_0360as_TC_hist'; % historic
+%params.hazard_file = 'GLB_0360as_TC'; % probabilistic, 10x more events than hist
 
 params.write_xls = 1; % If set to 1 (default) the final results are written to an excel file which can be found in module/data/results
 params.full_aggregation = 0; % If set to 0 (default), no full aggregation of mriot table is computed, as the mrio data itself is not required
@@ -62,7 +70,5 @@ params.full_aggregation = 0; % If set to 0 (default), no full aggregation of mri
 params.verbose = 1; % whether we printf progress to stdout (=1, default) or not (=0)
 
 params.switch_io_approach = 2; % If set to 2 (default), indirect risk is estimated using Ghosh (supply-driven) methodology
-params.impact_analysis_mode = 0; % If set to 1, direct risk is only calculated for one mainsector in one country (prompted for). During the further
-                                  % calculation (mrio_leontief_calc) indirect impact of that particular direct risk is estimated.
         
 end % mrio_get_params
