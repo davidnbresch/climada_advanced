@@ -1,4 +1,4 @@
-function [subsector_risk, country_risk] = mrio_get_risk_table(IO_YDS, country_ISO3, sector_name)
+function [subsector_risk_tb, country_risk_tb] = mrio_get_risk_table(IO_YDS, country_ISO3, sector_name, year_yyyy)
 % mrio get risk table
 % MODULE:
 %   advanced
@@ -12,29 +12,53 @@ function [subsector_risk, country_risk] = mrio_get_risk_table(IO_YDS, country_IS
 %       mrio_leontief_calc and mrio_direct_risk_calc
 %   see also: 
 % CALLING SEQUENCE:
+%   [subsector_risk_tb, country_risk_tb] = mrio_get_risk_table(IO_YDS, country_ISO3, sector_name, year_yyyy)
 % EXAMPLE:
-%   country_risk_report_raw(country_risk_calc('Barbados')); % all in one
-%
-%   country_risk0=country_risk_calc('Switzerland'); % country, admin0 level
-%   country_risk1=country_admin1_risk_calc('Switzerland'); % admin1 level
-%   country_risk_report([country_risk0 country_risk1]) % report all
+%   [subsector_risk_tb, country_risk_tb] = mrio_get_risk_table(IO_YDS, 'DEU', 'Forestry and logging', 0) 
+%   [subsector_risk_tb, country_risk_tb] = mrio_get_risk_table(IO_YDS, 'TWN', 'agriculture', 'ALL') 
 % INPUTS:
+%   IO_YDS, the Input-Output year damage set, a struct with the fields:
+%       direct, a struct itself with the field
+%           ED: the total expected annual damage
+%           reference_year: the year the damages are references to
+%           yyyy(i): the year i
+%           damage(year_i): the damage amount for year_i (summed up over all
+%               assets and events)
+%           Value: the sum of all Values used in the calculation (to e.g.
+%               express damages in percentage of total Value)
+%           frequency(i): the annual frequency, =1
+%           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       indirect, a struct itself with the field
+%           ED: the total expected annual damage
+%           reference_year: the year the damages are references to
+%           yyyy(i): the year i
+%           damage(year_i): the damage amount for year_i (summed up over all
+%               assets and events)
+%           Value: the sum of all Values used in the calculation (to e.g.
+%               express damages in percentage of total Value)
+%           frequency(i): the annual frequency, =1
+%           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       hazard: itself a structure, with:
+%           filename: the filename of the hazard event set
+%           comment: a free comment
+%   country_ISO3: the country ISO3 code
+%   sector_name: either the sub-sector name or main sector name
+%   year_yyyy: 
 % OPTIONAL INPUT PARAMETERS:
-%   print_unsorted: =1, show the results in the order they have been calculated
-%       =0, show by descending damages (default)
-%   plot_DFC: if =1, plot damage frequency curves (DFC) of all EDSs (!) in
-%       country_risk, =0 not (default)
-%       if =2, plot logarithmic scale both axes
 % OUTPUTS:
+%   subsector_risk_tb: table with indirect and direct risk per
+%       subsector/country combination (and year)
+%   country_risk_tb: table with indirect and direct risk per country
+%       (and year)
 % MODIFICATION HISTORY:
-% Ediz Herms, ediz.herms@outlook.com, 20180617, initial (under construction)
+% Ediz Herms, ediz.herms@outlook.com, 20180620, initial (first working version)
 %-
 
-subsector_risk = []; % init output
-country_risk = []; % init output
+subsector_risk_tb = []; % init output
+country_risk_tb = []; % init output
 
 global climada_global
-if ~climada_init_vars,return;end % init/import global variables
+if ~climada_init_vars, return; end % init/import global variables
 
 % poor man's version to check arguments
 % and to set default value where  appropriate
@@ -43,18 +67,9 @@ if ~exist('country_ISO3','var'), country_ISO3 = []; end
 if ~exist('sector_name','var'), sector_name = []; end
 if ~exist('mainsector_name','var'), mainsector_name = []; end
 if ~exist('subsector_name','var'), subsector_name = []; end
-% if ~exist('print_unsorted','var'),print_unsorted = 0; end
-% if ~exist('plot_DFC','var'),plot_DFC = 0; end
+if ~exist('year_yyyy','var'), year_yyyy = []; end
 
 % PARAMETERS
-%
-if ~isempty(country_ISO3)
-    country_ISO3 = char(country_ISO3); % as to create filenames etc., needs to be char
-end
-%
-if ~isempty(sector_name)
-    subsector_name = char(sector_name); % as to create filenames etc., needs to be char
-end  
 %
 if isfield(IO_YDS,'direct')
     mrio_countries_ISO3 = unique(IO_YDS.direct.countries_iso, 'stable');
@@ -65,10 +80,18 @@ else
     mainsectors = unique(IO_YDS.indirect.climada_sect_name, 'stable');
     subsectors = unique(IO_YDS.indirect.sectors, 'stable');  
 end
-n_mrio_countries = length(mrio_countries_ISO3);
-n_mainsectors = length(mainsectors);
-n_subsectors = length(subsectors);
-%
+
+if ~isempty(sector_name)
+    if find(ismember(mainsectors, sector_name))
+        mainsector_name = mainsectors(find(ismember(mainsectors, sector_name)));
+    else find(ismember(subsectors, sector_name))
+        subsector_name = mainsectors(find(ismember(mainsectors, sector_name)));
+
+        sel_index = ismember(unique(IO_YDS.direct.sectors), subsector_name)==1;
+        mainsector_name = IO_YDS.direct.climada_sect_name(sel_index(1));
+    end
+end
+
 % prompt country (one or many) - TO DO 
 [countries_liststr, countries_sort_index] = sort(mrio_countries_ISO3);
 if isempty(country_ISO3)
@@ -80,7 +103,9 @@ else
     selection_country = find(mrio_countries_ISO3 == country_ISO3);
 end
 country_ISO3 = mrio_countries_ISO3(selection_country);
-%
+
+sel_country_index = find(ismember(IO_YDS.direct.countries_iso,country_ISO3));
+
 % prompt for mainsector name (one or many) - TO DO 
 [mainsectors_liststr, mainsectors_sort_index] = sort(mainsectors);
 if isempty(mainsector_name)
@@ -92,12 +117,13 @@ else
     selection_mainsector = find(mainsectors == mainsector_name);
 end
 mainsector_name = mainsectors(selection_mainsector);
-%
+
 sel_subsectors = []; % init
 for sel_mainsector_i = 1:length(mainsector_name)
     sel_subsectors_i = IO_YDS.direct.aggregation_info.(char(mainsector_name(sel_mainsector_i)));
     sel_subsectors = [sel_subsectors sel_subsectors_i];
 end
+
 % prompt for subsector name (one or many) - TO DO 
 [subsectors_liststr, subsectors_sort_index] = sort(sel_subsectors);
 if isempty(subsector_name)
@@ -106,36 +132,117 @@ if isempty(subsector_name)
         'ListString',subsectors_liststr);
     selection_subsector = subsectors_sort_index(selection_subsector);
 else
-    selection_subsector = find(subsectors == subsector_name);
+    selection_subsector = find(ismember(subsectors,subsector_name));
 end
 subsector_name = subsectors(selection_subsector);
 
 sel_sector_index = find(ismember(IO_YDS.direct.sectors,subsector_name));
-sel_country_index = find(ismember(IO_YDS.direct.countries_iso,country_ISO3));
-sel_index = intersect(sel_country_index,sel_sector_index);
 
-direct_subsector_risk = IO_YDS.direct.ED;
-indirect_subsector_risk = IO_YDS.indirect.ED;
+sel_mrio_index = intersect(sel_country_index,sel_sector_index);
+
+% distinction by cases
+if find(ismember(IO_YDS.direct.yyyy,year_yyyy)) % year damage of a specific year is shown (yyyy) e.g. 1950
+    
+    sel_year_index = find(ismember(IO_YDS.direct.yyyy',year_yyyy));
+    
+    direct_damage_sel = IO_YDS.direct.damage(sel_year_index,sel_mrio_index);
+    indirect_damage_sel = IO_YDS.indirect.damage(sel_year_index,sel_mrio_index);
+    
+    sz_damage_sel_temp = size(direct_damage_sel);
+    direct_damage_sel = reshape(direct_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
+    indirect_damage_sel = reshape(indirect_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
+    
+    lb_sectors = []; lb_countries = []; 
+    lb_countries_iso = []; lb_year = [];
+    value_sel = [];
+    for index_i = 1:length(sel_mrio_index)
+        lb_sectors = [lb_sectors repmat(IO_YDS.direct.sectors(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
+        lb_countries = [lb_countries repmat(IO_YDS.direct.countries(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
+        lb_countries_iso = [lb_countries_iso repmat(IO_YDS.direct.countries_iso(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
+        lb_year = [lb_year repmat(year_yyyy,1,length(sel_year_index))];
+        
+        value_sel = [value_sel repmat(IO_YDS.direct.Value(sel_mrio_index(index_i)),1,length(sel_year_index))];
+    end
+    
+elseif ischar(year_yyyy) % 'All' year damages are shown
+    
+    direct_damage_sel = IO_YDS.direct.damage(:,sel_mrio_index);
+    indirect_damage_sel = IO_YDS.indirect.damage(:,sel_mrio_index);
+    
+    sz_damage_sel_temp = size(direct_damage_sel);
+    direct_damage_sel = reshape(direct_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
+    indirect_damage_sel = reshape(indirect_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
+    
+    lb_sectors = []; lb_countries = []; 
+    lb_countries_iso = []; lb_year = [];
+    value_sel = [];
+    for index_i = 1:length(sel_mrio_index)
+        lb_sectors = [lb_sectors repmat(IO_YDS.direct.sectors(sel_mrio_index(index_i)),1,length(IO_YDS.direct.yyyy))];
+        lb_countries = [lb_countries repmat(IO_YDS.direct.countries(sel_mrio_index(index_i)),1,length(IO_YDS.direct.yyyy))];
+        lb_countries_iso = [lb_countries_iso repmat(IO_YDS.direct.countries_iso(sel_mrio_index(index_i)),1,length(IO_YDS.direct.yyyy))];
+        lb_year = [lb_year IO_YDS.direct.yyyy'];
+        
+        value_sel = [value_sel repmat(IO_YDS.direct.Value(sel_mrio_index(index_i)),1,length(IO_YDS.direct.yyyy))];
+    end
+    
+% elseif year_yyyy < 0 % i-th biggest year damage is shown, e.g. for year_yyyy = -2, the largest year damage is shown
+    
+else % expected annual damage is shown (year_yyyy == 0)
+
+    direct_damage_sel = IO_YDS.direct.ED(sel_mrio_index);
+    indirect_damage_sel = IO_YDS.indirect.ED(sel_mrio_index);
+    
+    lb_sectors = IO_YDS.direct.sectors(sel_mrio_index);
+    lb_countries = IO_YDS.direct.countries(sel_mrio_index);
+    lb_countries_iso = IO_YDS.direct.countries_iso(sel_mrio_index);
+    lb_year = repmat('_',1,length(sel_mrio_index));
+
+    value_sel = IO_YDS.direct.Value(sel_mrio_index);
+
+end
+
+subsectors_sel = unique(lb_sectors,'stable');
+n_subsectors_sel = length(subsectors_sel);
+mrio_countries_ISO3_sel = unique(lb_countries_iso,'stable');
+n_mrio_countries_ISO3_sel = length(mrio_countries_ISO3_sel);
 
 % aggregate indirect risk across all sectors of a country
-indirect_country_risk = zeros(1,n_mrio_countries); % init
-direct_country_risk = zeros(1,n_mrio_countries); % init
-country_value = zeros(1,n_mrio_countries); % init
-for mrio_country_i = 1:n_mrio_countries
-    for subsector_j = 1:n_subsectors 
-        indirect_country_risk(mrio_country_i) = indirect_country_risk(mrio_country_i) + indirect_subsector_risk((mrio_country_i-1) * n_subsectors+subsector_j);
-        direct_country_risk(mrio_country_i) = direct_country_risk(mrio_country_i) + direct_subsector_risk((mrio_country_i-1) * n_subsectors+subsector_j);
-        country_value(mrio_country_i) = country_value(mrio_country_i) + IO_YDS.direct.Value((mrio_country_i-1) * n_subsectors+subsector_j);
-    end % subsector_j
-end % mrio_country_i
+indirect_country_risk = zeros(1,n_mrio_countries_ISO3_sel); % init
+direct_country_risk = zeros(1,n_mrio_countries_ISO3_sel); % init
+country_value = zeros(1,n_mrio_countries_ISO3_sel); % init
+for mrio_country_ISO3_temp_i = 1:n_mrio_countries_ISO3_sel
+    for subsector_temp_j = 1:(length(lb_sectors)/n_mrio_countries_ISO3_sel)
+        indirect_country_risk(mrio_country_ISO3_temp_i) = indirect_country_risk(mrio_country_ISO3_temp_i) + indirect_damage_sel((mrio_country_ISO3_temp_i-1) * n_subsectors_sel+subsector_temp_j);
+        direct_country_risk(mrio_country_ISO3_temp_i) = direct_country_risk(mrio_country_ISO3_temp_i) + direct_damage_sel((mrio_country_ISO3_temp_i-1) * n_subsectors_sel+subsector_temp_j);
+        country_value(mrio_country_ISO3_temp_i) = country_value(mrio_country_ISO3_temp_i) + value_sel((mrio_country_ISO3_temp_i-1) * n_subsectors_sel+subsector_temp_j);
+    end
+end
+
+lb_country_year = repmat(unique(lb_year),1,n_mrio_countries_ISO3_sel);
 
 %%% For better readability, we return final results as tables so that
 %%% countries and sectors corresponding to the values are visible on
 %%% first sight. Further, a table allows reordering of values, which might come in handy:
 
-subsector_risk = table(IO_YDS.direct.countries',IO_YDS.direct.countries_iso',IO_YDS.direct.sectors',direct_subsector_risk',indirect_subsector_risk',(direct_subsector_risk+indirect_subsector_risk)',((direct_subsector_risk+indirect_subsector_risk)'./IO_YDS.direct.Value'),IO_YDS.direct.Value', ...
-                                'VariableNames',{'Country','CountryISO','Subsector','DirectSubsectorRisk','IndirectSubsectorRisk','TotalSubsectorRisk','RiskRatio','Value'});
-country_risk = table(unique(IO_YDS.direct.countries','stable'),unique(IO_YDS.direct.countries_iso','stable'),direct_country_risk',indirect_country_risk',(direct_country_risk+indirect_country_risk)',((direct_country_risk+indirect_country_risk)'./country_value'),country_value',...
-                                'VariableNames',{'Country','CountryISO','DirectCountryRisk','IndirectCountryRisk','TotalCountryRisk','RiskRatio','Value'});
+if ~(year_yyyy == 0)
+    
+    subsector_risk_tb = table(lb_countries',lb_countries_iso',lb_sectors',lb_year',direct_damage_sel',indirect_damage_sel',(direct_damage_sel+indirect_damage_sel)',((direct_damage_sel+direct_damage_sel)'./value_sel'),value_sel', ...
+                                        'VariableNames',{'Country','CountryISO','Subsector','Year','DirectSubsectorRisk','IndirectSubsectorRisk','TotalSubsectorRisk','RiskRatio','Value'});                          
+else
+    
+    subsector_risk_tb = table(lb_countries',lb_countries_iso',lb_sectors',direct_damage_sel',indirect_damage_sel',(direct_damage_sel+indirect_damage_sel)',((direct_damage_sel+direct_damage_sel)'./value_sel'),value_sel', ...
+                                        'VariableNames',{'Country','CountryISO','Subsector','DirectSubsectorRisk','IndirectSubsectorRisk','TotalSubsectorRisk','RiskRatio','Value'});
+end
+
+
+if ~(year_yyyy == 0)
+    
+    country_risk_tb = table(unique(lb_countries','stable'),unique(mrio_countries_ISO3_sel','stable'),lb_country_year',direct_country_risk',indirect_country_risk',(direct_country_risk+indirect_country_risk)',((direct_country_risk+indirect_country_risk)'./country_value'),country_value',...
+                                   'VariableNames',{'Country','CountryISO','Year','DirectCountryRisk','IndirectCountryRisk','TotalCountryRisk','RiskRatio','Value'});  
+else
+    
+    country_risk_tb = table(unique(lb_countries','stable'),unique(mrio_countries_ISO3_sel','stable'),direct_country_risk',indirect_country_risk',(direct_country_risk+indirect_country_risk)',((direct_country_risk+indirect_country_risk)'./country_value'),country_value',...
+                                   'VariableNames',{'Country','CountryISO','DirectCountryRisk','IndirectCountryRisk','TotalCountryRisk','RiskRatio','Value'});  
+end
 
 end % mrio_get_risk_table
