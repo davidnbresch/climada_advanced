@@ -88,16 +88,18 @@ IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);toc
 fprintf('<strong>Quantifying indirect risk using Input-Output methodology...</strong>\n');tic;
 [IO_YDS, leontief] = mrio_leontief_calc(IO_YDS, climada_mriot, params);toc
 
+%% return final results as tables
+fprintf('<strong>Return final results (annual expected damage per sector and country) as tables...</strong>\n');tic;
+[subsector_risk_tb, country_risk_tb] = mrio_get_risk_table(IO_YDS, '', '', 0); toc
+
+head(subsector_risk_tb)
+head(country_risk_tb)
+
 %% Generate simple graphics for subsector x country-combination selected
 fprintf('<strong>Generate simple graphics for subsector x country-combination selected...</strong>\n');tic;
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
-n_mrio_countries = length(mrio_countries_ISO3);
-
 mainsectors = unique(climada_mriot.climada_sect_name, 'stable');
-n_mainsectors = length(mainsectors);
-
-subsectors = unique(climada_mriot.sectors, 'stable');
-n_subsectors = climada_mriot.no_of_sectors;  
+subsectors = unique(climada_mriot.sectors, 'stable'); 
 
 if ~exist('country_name','var'), country_name = []; end
 % prompt country (one or many) - TO DO 

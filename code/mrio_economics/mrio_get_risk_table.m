@@ -222,10 +222,10 @@ if ~(year_yyyy == 0)
         end % year_i
     end % mrio_country_ISO3_temp_i
 
-    lb_country_year = repmat(lb_year,1,n_mrio_countries_ISO3_sel);
+    lb_country_year = repmat(IO_YDS.direct.yyyy',1,n_mrio_countries_ISO3_sel);
 
     lb_countries_temp = []; lb_countries_iso_temp = [];
-    for mrio_country_ISO3_temp_i = 1:n_mrio_countries_ISO3_sel(1)
+    for mrio_country_ISO3_temp_i = 1:n_mrio_countries_ISO3_sel
         lb_countries_temp = [lb_countries_temp repmat(mrio_countries_sel(mrio_country_ISO3_temp_i),1,sz_damage_sel_temp(1))];
         lb_countries_iso_temp = [lb_countries_iso_temp repmat(mrio_countries_ISO3_sel(mrio_country_ISO3_temp_i),1,sz_damage_sel_temp(1))];
     end % mrio_country_ISO3_temp_i
