@@ -27,7 +27,7 @@ function [IO_YDS, leontief] = mrio_leontief_calc(IO_YDS, climada_mriot, switch_i
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
-%   IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
+%       IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
 %   next call:  % just to illustrate
 %   
 % CALLING SEQUENCE:
@@ -180,8 +180,8 @@ end % switch_io_approach
 if verbose, climada_progress2stdout; end % init, see terminate below
 
 IO_YDS.indirect = IO_YDS.direct; % essentially a copy, reset some fields:
-IO_YDS.indirect.damage = zeros(length(IO_YDS.yyyy),n_subsectors*n_mrio_countries);
-for year_i = 1:length(IO_YDS.yyyy)
+IO_YDS.indirect.damage = zeros(length(IO_YDS.direct.yyyy),n_subsectors*n_mrio_countries);
+for year_i = 1:length(IO_YDS.direct.yyyy)
 
     direct_subsector_risk = (IO_YDS.direct.damage(year_i,:))';
 
@@ -282,7 +282,7 @@ for year_i = 1:length(IO_YDS.yyyy)
     % sum up the risk contributions to obtain the indirect subsector risk
     IO_YDS.indirect.damage(year_i,:) = nansum(leontief.risk_structure,1);
     
-    if verbose, climada_progress2stdout(year_i,length(IO_YDS.yyyy),1,'risk calculations'); end % update
+    if verbose, climada_progress2stdout(year_i,length(IO_YDS.direct.yyyy),1,'risk calculations'); end % update
 
 end % year_i
 

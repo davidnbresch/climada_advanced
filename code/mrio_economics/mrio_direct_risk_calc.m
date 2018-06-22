@@ -13,9 +13,9 @@ function IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params)
 %   NOTE: see PARAMETERS in code
 %
 %   previous call: 
-%   [aggregated_mriot, climada_mriot] = mrio_aggregate_table;
+%       [aggregated_mriot, climada_mriot] = mrio_aggregate_table;
 %   next call:  % just to illustrate
-%   IO_YDS = mrio_leontief_calc(IO_YDS, climada_mriot);
+%       IO_YDS = mrio_leontief_calc(IO_YDS, climada_mriot);
 % CALLING SEQUENCE:
 %   IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot, params);
 % EXAMPLE:
@@ -205,12 +205,8 @@ if isempty(subsector_information) && params.verbose
 end
 
 % load hazard
-if ~exist(params.hazard_file,'file')
-    fprintf('ERROR: hazard does not exist %s\n',params.hazard_file);
-    return
-else
-    hazard = climada_hazard_load(params.hazard_file);
-end
+hazard = climada_hazard_load(params.hazard_file);
+
 n_years = length(hazard.orig_yearset); ens_size=(hazard.event_count/hazard.orig_event_count)-1; 
 
 if params.verbose, climada_progress2stdout; end % init, see terminate below
@@ -293,7 +289,7 @@ end % mainsector_j
 if params.verbose, climada_progress2stdout(0); end % terminate
 
 % Disaggregate direct mainsector risk to direct risk for all subsector/country combinations
-if params.verbose, fprintf('Disaggregate direct mainsector risk to direct risk for all subsector x country-combinations...\n'); end
+if params.verbose, fprintf('Disaggregate direct main sector risk to direct sub sector risk...\n'); end
 direct_subsector_damage = zeros(n_years*(ens_size+1),n_subsectors*n_mrio_countries);     
 for mainsector_i = 1:n_mainsectors  
     main_fields = fields(aggregated_mriot.aggregation_info);
