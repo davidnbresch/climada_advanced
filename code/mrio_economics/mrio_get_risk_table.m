@@ -82,12 +82,12 @@ else
 end
 
 if ~isempty(sector_name)
-    if find(ismember(mainsectors, sector_name))
+    if ismember(mainsectors, sector_name)
         mainsector_name = mainsectors(find(ismember(mainsectors, sector_name)));
-    else find(ismember(subsectors, sector_name))
-        subsector_name = mainsectors(find(ismember(mainsectors, sector_name)));
-
-        sel_index = ismember(unique(IO_YDS.direct.sectors), subsector_name)==1;
+        subsector_name = IO_YDS.direct.aggregation_info.(char(mainsector_name));
+    elseif ismember(subsectors, sector_name)
+        subsector_name = subsectors(find(ismember(subsectors, sector_name)));
+        sel_index = find(ismember(unique(IO_YDS.direct.sectors), subsector_name));
         mainsector_name = IO_YDS.direct.climada_sect_name(sel_index(1));
     end
 end
@@ -238,7 +238,7 @@ else
     
     for mrio_country_ISO3_temp_i = 1:n_mrio_countries_ISO3_sel
         country_ISO3_i = mrio_countries_ISO3_sel(mrio_country_ISO3_temp_i);
-        sel_country_index = find(ismember(IO_YDS.direct.countries_iso,country_ISO3_i));
+        sel_country_index = find(ismember(lb_countries_iso,country_ISO3_i));
         indirect_country_risk(mrio_country_ISO3_temp_i) = sum(indirect_damage_sel_re(sel_country_index));
         direct_country_risk(mrio_country_ISO3_temp_i) = sum(direct_damage_sel_re(sel_country_index));
         country_value(mrio_country_ISO3_temp_i) = sum(value_sel(sel_country_index));
