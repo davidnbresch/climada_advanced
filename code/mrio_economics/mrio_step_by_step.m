@@ -90,7 +90,7 @@ fprintf('<strong>Quantifying indirect risk using Input-Output methodology...</st
 
 %% return final results as tables
 fprintf('<strong>Return final results (annual expected damage per sector and country) as tables...</strong>\n');tic;
-[subsector_risk_tb, country_risk_tb] = mrio_get_risk_table(IO_YDS, '', '', 0); toc
+[subsector_risk_tb, country_risk_tb] = mrio_get_risk_table(IO_YDS, 'ALL', 'ALL', 0); toc
 
 head(subsector_risk_tb)
 head(country_risk_tb)
