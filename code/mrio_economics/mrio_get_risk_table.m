@@ -149,8 +149,8 @@ if find(ismember(IO_YDS.direct.yyyy,year_yyyy)) % year damage of a specific year
     indirect_damage_sel = IO_YDS.indirect.damage(sel_year_index,sel_mrio_index);
     
     sz_damage_sel_temp = size(direct_damage_sel);
-    direct_damage_sel = reshape(direct_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
-    indirect_damage_sel = reshape(indirect_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
+    direct_damage_sel_re = reshape(direct_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
+    indirect_damage_sel_re = reshape(indirect_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
     
     lb_sectors = []; lb_countries = []; 
     lb_countries_iso = []; lb_year = [];
@@ -159,9 +159,9 @@ if find(ismember(IO_YDS.direct.yyyy,year_yyyy)) % year damage of a specific year
         lb_sectors = [lb_sectors repmat(IO_YDS.direct.sectors(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
         lb_countries = [lb_countries repmat(IO_YDS.direct.countries(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
         lb_countries_iso = [lb_countries_iso repmat(IO_YDS.direct.countries_iso(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
-        lb_year = [lb_year repmat(year_yyyy,1,length(sel_year_index))];
+        lb_year = [lb_year repmat(year_yyyy,1,sz_damage_sel_temp(1))];
         
-        value_sel = [value_sel repmat(IO_YDS.direct.Value(sel_mrio_index(index_i)),1,length(sel_year_index))];
+        value_sel = [value_sel repmat(IO_YDS.direct.Value(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
     end
     
 elseif ischar(year_yyyy) % 'All' year damages are shown
@@ -170,27 +170,27 @@ elseif ischar(year_yyyy) % 'All' year damages are shown
     indirect_damage_sel = IO_YDS.indirect.damage(:,sel_mrio_index);
     
     sz_damage_sel_temp = size(direct_damage_sel);
-    direct_damage_sel = reshape(direct_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
-    indirect_damage_sel = reshape(indirect_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
+    direct_damage_sel_re = reshape(direct_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
+    indirect_damage_sel_re = reshape(indirect_damage_sel,1,sz_damage_sel_temp(1)*sz_damage_sel_temp(2));
     
     lb_sectors = []; lb_countries = []; 
     lb_countries_iso = []; lb_year = [];
     value_sel = [];
     for index_i = 1:length(sel_mrio_index)
-        lb_sectors = [lb_sectors repmat(IO_YDS.direct.sectors(sel_mrio_index(index_i)),1,length(IO_YDS.direct.yyyy))];
-        lb_countries = [lb_countries repmat(IO_YDS.direct.countries(sel_mrio_index(index_i)),1,length(IO_YDS.direct.yyyy))];
-        lb_countries_iso = [lb_countries_iso repmat(IO_YDS.direct.countries_iso(sel_mrio_index(index_i)),1,length(IO_YDS.direct.yyyy))];
+        lb_sectors = [lb_sectors repmat(IO_YDS.direct.sectors(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
+        lb_countries = [lb_countries repmat(IO_YDS.direct.countries(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
+        lb_countries_iso = [lb_countries_iso repmat(IO_YDS.direct.countries_iso(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
         lb_year = [lb_year IO_YDS.direct.yyyy'];
         
-        value_sel = [value_sel repmat(IO_YDS.direct.Value(sel_mrio_index(index_i)),1,length(IO_YDS.direct.yyyy))];
+        value_sel = [value_sel repmat(IO_YDS.direct.Value(sel_mrio_index(index_i)),1,sz_damage_sel_temp(1))];
     end
     
 % elseif year_yyyy < 0 % i-th biggest year damage is shown, e.g. for year_yyyy = -2, the largest year damage is shown
     
 else % expected annual damage is shown (year_yyyy == 0)
 
-    direct_damage_sel = IO_YDS.direct.ED(sel_mrio_index);
-    indirect_damage_sel = IO_YDS.indirect.ED(sel_mrio_index);
+    direct_damage_sel_re = IO_YDS.direct.ED(sel_mrio_index);
+    indirect_damage_sel_re = IO_YDS.indirect.ED(sel_mrio_index);
     
     lb_sectors = IO_YDS.direct.sectors(sel_mrio_index);
     lb_countries = IO_YDS.direct.countries(sel_mrio_index);
@@ -201,24 +201,53 @@ else % expected annual damage is shown (year_yyyy == 0)
 
 end
 
-subsectors_sel = unique(lb_sectors,'stable');
-n_subsectors_sel = length(subsectors_sel);
-mrio_countries_ISO3_sel = unique(lb_countries_iso,'stable');
-n_mrio_countries_ISO3_sel = length(mrio_countries_ISO3_sel);
+subsectors_sel = unique(lb_sectors,'stable'); n_subsectors_sel = length(subsectors_sel);
+mrio_countries_ISO3_sel = unique(lb_countries_iso,'stable'); n_mrio_countries_ISO3_sel = length(mrio_countries_ISO3_sel);
+mrio_countries_sel = unique(lb_countries,'stable');
 
-% aggregate indirect risk across all sectors of a country
-indirect_country_risk = zeros(1,n_mrio_countries_ISO3_sel); % init
-direct_country_risk = zeros(1,n_mrio_countries_ISO3_sel); % init
-country_value = zeros(1,n_mrio_countries_ISO3_sel); % init
-for mrio_country_ISO3_temp_i = 1:n_mrio_countries_ISO3_sel
-    for subsector_temp_j = 1:(length(lb_sectors)/n_mrio_countries_ISO3_sel)
-        indirect_country_risk(mrio_country_ISO3_temp_i) = indirect_country_risk(mrio_country_ISO3_temp_i) + indirect_damage_sel((mrio_country_ISO3_temp_i-1) * n_subsectors_sel+subsector_temp_j);
-        direct_country_risk(mrio_country_ISO3_temp_i) = direct_country_risk(mrio_country_ISO3_temp_i) + direct_damage_sel((mrio_country_ISO3_temp_i-1) * n_subsectors_sel+subsector_temp_j);
-        country_value(mrio_country_ISO3_temp_i) = country_value(mrio_country_ISO3_temp_i) + value_sel((mrio_country_ISO3_temp_i-1) * n_subsectors_sel+subsector_temp_j);
-    end
+% aggregate risk across all sectors of a country
+if ~(year_yyyy == 0)
+    
+    indirect_country_risk = zeros(1,n_mrio_countries_ISO3_sel*sz_damage_sel_temp(1)); % init
+    direct_country_risk = zeros(1,n_mrio_countries_ISO3_sel*sz_damage_sel_temp(1)); % init
+    country_value = zeros(1,n_mrio_countries_ISO3_sel*sz_damage_sel_temp(1)); % init
+    
+    for mrio_country_ISO3_temp_i = 1:n_mrio_countries_ISO3_sel
+        country_ISO3_i = mrio_countries_ISO3_sel(mrio_country_ISO3_temp_i);
+        sel_country_index = find(ismember(mrio_countries_ISO3_sel,country_ISO3_i));
+        for year_i = 1:sz_damage_sel_temp(1)
+            indirect_country_risk(year_i+sz_damage_sel_temp(1)*(mrio_country_ISO3_temp_i-1)) = sum(indirect_damage_sel(year_i,sel_country_index));
+            direct_country_risk(year_i+sz_damage_sel_temp(1)*(mrio_country_ISO3_temp_i-1)) = sum(direct_damage_sel(year_i,sel_country_index));
+            country_value(year_i+sz_damage_sel_temp(1)*(mrio_country_ISO3_temp_i-1)) = sum(value_sel(sel_country_index));
+        end % year_i
+    end % mrio_country_ISO3_temp_i
+
+    lb_country_year = repmat(lb_year,1,n_mrio_countries_ISO3_sel);
+
+    lb_countries_temp = []; lb_countries_iso_temp = [];
+    for mrio_country_ISO3_temp_i = 1:n_mrio_countries_ISO3_sel(1)
+        lb_countries_temp = [lb_countries_temp repmat(mrio_countries_sel(mrio_country_ISO3_temp_i),1,sz_damage_sel_temp(1))];
+        lb_countries_iso_temp = [lb_countries_iso_temp repmat(mrio_countries_ISO3_sel(mrio_country_ISO3_temp_i),1,sz_damage_sel_temp(1))];
+    end % mrio_country_ISO3_temp_i
+    
+else
+
+    indirect_country_risk = zeros(1,n_mrio_countries_ISO3_sel); % init
+    direct_country_risk = zeros(1,n_mrio_countries_ISO3_sel); % init
+    country_value = zeros(1,n_mrio_countries_ISO3_sel); % init
+    
+    for mrio_country_ISO3_temp_i = 1:n_mrio_countries_ISO3_sel
+        country_ISO3_i = mrio_countries_ISO3_sel(mrio_country_ISO3_temp_i);
+        sel_country_index = find(ismember(IO_YDS.direct.countries_iso,country_ISO3_i));
+        indirect_country_risk(mrio_country_ISO3_temp_i) = sum(indirect_damage_sel_re(sel_country_index));
+        direct_country_risk(mrio_country_ISO3_temp_i) = sum(direct_damage_sel_re(sel_country_index));
+        country_value(mrio_country_ISO3_temp_i) = sum(value_sel(sel_country_index));
+    end % mrio_country_i
+    
+    lb_countries_temp = unique(lb_countries,'stable');
+    lb_countries_iso_temp = unique(lb_countries_iso,'stable');
+    
 end
-
-lb_country_year = repmat(unique(lb_year),1,n_mrio_countries_ISO3_sel);
 
 %%% For better readability, we return final results as tables so that
 %%% countries and sectors corresponding to the values are visible on
@@ -226,23 +255,16 @@ lb_country_year = repmat(unique(lb_year),1,n_mrio_countries_ISO3_sel);
 
 if ~(year_yyyy == 0)
     
-    subsector_risk_tb = table(lb_countries',lb_countries_iso',lb_sectors',lb_year',direct_damage_sel',indirect_damage_sel',(direct_damage_sel+indirect_damage_sel)',((direct_damage_sel+direct_damage_sel)'./value_sel'),value_sel', ...
-                                        'VariableNames',{'Country','CountryISO','Subsector','Year','DirectSubsectorRisk','IndirectSubsectorRisk','TotalSubsectorRisk','RiskRatio','Value'});                          
+    subsector_risk_tb = table(lb_countries',lb_countries_iso',lb_sectors',lb_year',direct_damage_sel_re',indirect_damage_sel_re',(direct_damage_sel_re+indirect_damage_sel_re)',((direct_damage_sel_re+direct_damage_sel_re)'./value_sel'),value_sel', ...
+                                        'VariableNames',{'Country','CountryISO','Subsector','Year','DirectSubsectorRisk','IndirectSubsectorRisk','TotalSubsectorRisk','RiskRatio','Value'});                        
+    country_risk_tb = table(lb_countries_temp',lb_countries_iso_temp',lb_country_year',direct_country_risk',indirect_country_risk',(direct_country_risk+indirect_country_risk)',((direct_country_risk+indirect_country_risk)'./country_value'),country_value',...
+                                        'VariableNames',{'Country','CountryISO','Year','DirectCountryRisk','IndirectCountryRisk','TotalCountryRisk','RiskRatio','Value'});  
 else
     
-    subsector_risk_tb = table(lb_countries',lb_countries_iso',lb_sectors',direct_damage_sel',indirect_damage_sel',(direct_damage_sel+indirect_damage_sel)',((direct_damage_sel+direct_damage_sel)'./value_sel'),value_sel', ...
+    subsector_risk_tb = table(lb_countries',lb_countries_iso',lb_sectors',direct_damage_sel_re',indirect_damage_sel_re',(direct_damage_sel_re+indirect_damage_sel_re)',((direct_damage_sel_re+direct_damage_sel_re)'./value_sel'),value_sel', ...
                                         'VariableNames',{'Country','CountryISO','Subsector','DirectSubsectorRisk','IndirectSubsectorRisk','TotalSubsectorRisk','RiskRatio','Value'});
-end
-
-
-if ~(year_yyyy == 0)
-    
-    country_risk_tb = table(unique(lb_countries','stable'),unique(mrio_countries_ISO3_sel','stable'),lb_country_year',direct_country_risk',indirect_country_risk',(direct_country_risk+indirect_country_risk)',((direct_country_risk+indirect_country_risk)'./country_value'),country_value',...
-                                   'VariableNames',{'Country','CountryISO','Year','DirectCountryRisk','IndirectCountryRisk','TotalCountryRisk','RiskRatio','Value'});  
-else
-    
-    country_risk_tb = table(unique(lb_countries','stable'),unique(mrio_countries_ISO3_sel','stable'),direct_country_risk',indirect_country_risk',(direct_country_risk+indirect_country_risk)',((direct_country_risk+indirect_country_risk)'./country_value'),country_value',...
-                                   'VariableNames',{'Country','CountryISO','DirectCountryRisk','IndirectCountryRisk','TotalCountryRisk','RiskRatio','Value'});  
+    country_risk_tb = table(lb_countries_temp',lb_countries_iso_temp',direct_country_risk',indirect_country_risk',(direct_country_risk+indirect_country_risk)',((direct_country_risk+indirect_country_risk)'./country_value'),country_value',...
+                                        'VariableNames',{'Country','CountryISO','DirectCountryRisk','IndirectCountryRisk','TotalCountryRisk','RiskRatio','Value'}); 
 end
 
 end % mrio_get_risk_table
