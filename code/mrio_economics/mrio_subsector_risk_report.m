@@ -1,4 +1,4 @@
-function mrio_subsector_risk_report(country_name, subsector_name, direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot, report_filename) 
+function mrio_subsector_risk_report(IO_YDS, leontief, climada_mriot, aggregated_mriot, country_name, subsector_name) 
 % mrio subsector risk report
 % MODULE:
 %   advanced
@@ -9,35 +9,43 @@ function mrio_subsector_risk_report(country_name, subsector_name, direct_subsect
 %   indirect and direct damage) based on the results from mrio_direct_risk_calc 
 %   and mrio_leontief_calc
 %
-%   previous call: mrio_direct_risk_calc and mrio_leontief_calc
+%   previous call: 
+%       mrio_direct_risk_calc and mrio_leontief_calc
 %   see also: 
-%   
+%       mrio_general_risk_report
 % CALLING SEQUENCE:
-%   mrio_subsector_risk_report(country_name, subsector_name, direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot);
+%   mrio_subsector_risk_report(IO_YDS, leontief, climada_mriot, aggregated_mriot, country_name, subsector_name) ;
 % EXAMPLE:
 %   climada_mriot = mrio_read_table
 %   aggregated_mriot = mrio_aggregate_table(climada_mriot);
-%   [direct_subsector_risk, direct_country_risk] = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
-%   [total_subsector_risk, total_country_risk, indirect_subsector_risk, indirect_country_risk, leontief] = mrio_leontief_calc(direct_subsector_risk, climada_mriot);
-%   mrio_subsector_risk_report(country_name, subsector_name, direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot);
+%   IO_YDS = mrio_direct_risk_calc(climada_mriot, aggregated_mriot);
+%   [IO_YDS, leontief] = mrio_leontief_calc(IO_YDS, climada_mriot);
+%   mrio_subsector_risk_report(IO_YDS, leontief, climada_mriot, aggregated_mriot, country_name, subsector_name);
 % INPUTS:
-%   country_name: the country name, either full (like 'Puerto Rico')
-%       or ISO3 (like 'PRI'). See climada_country_name for names/ISO3
-%   subsector_name: the subsector name, see e.g. mrio_read_table
-%   direct_subsector_risk: a table containing as one variable the direct risk (EAD) for each
-%       subsector/country combination covered in the original mriot. The
-%       order of entries follows the same as in the entire process, i.e.
-%       entry mapping is still possible via the climada_mriot.setors and
-%       climada_mriot.countries arrays. The table further contins three
-%       more variables with the country names, country ISO codes and sector names
-%       corresponging to the direct risk values.
-%   direct_country_risk: a table containing as one variable the direct risk (EAD) per country (aggregated across all subsectors). 
-%       Further a variable with correpsonding country names and country ISO codes, respectively.
-%   indirect_subsector_risk: table with indirect risk (EAD) per subsector/country combination 
-%       in one variable and three "label" variables containing corresponding country names, 
-%       country ISO codes and sector names.
-%   indirect_country_risk: table with indirect risk (EAD) per country in one variable and two "label" 
-%       variables containing corresponding country names and country ISO codes.
+%   IO_YDS, the Input-Output year damage set, a struct with the fields:
+%       direct, a struct itself with the field
+%           ED: the total expected annual damage
+%           reference_year: the year the damages are references to
+%           yyyy(i): the year i
+%           damage(year_i): the damage amount for year_i (summed up over all
+%               assets and events)
+%           Value: the sum of all Values used in the calculation (to e.g.
+%               express damages in percentage of total Value)
+%           frequency(i): the annual frequency, =1
+%           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       indirect, a struct itself with the field
+%           ED: the total expected annual damage
+%           reference_year: the year the damages are references to
+%           yyyy(i): the year i
+%           damage(year_i): the damage amount for year_i (summed up over all
+%               assets and events)
+%           Value: the sum of all Values used in the calculation (to e.g.
+%               express damages in percentage of total Value)
+%           frequency(i): the annual frequency, =1
+%           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       hazard: itself a structure, with:
+%           filename: the filename of the hazard event set
+%           comment: a free comment
 %   leontief: a structure with 5 fields. It represents a general climada
 %       leontief structure whose basic properties are the same regardless of the
 %       provided mriot it is based on. The fields are:
@@ -54,9 +62,10 @@ function mrio_subsector_risk_report(country_name, subsector_name, direct_subsect
 %       provided mriot it is based on, see mrio_read_table;
 %   aggregated_mriot: an aggregated climada mriot struct as
 %       produced by mrio_aggregate_table.
+%   country_name: the country name, either full (like 'Puerto Rico')
+%       or ISO3 (like 'PRI'). See climada_country_name for names/ISO3
+%   subsector_name: the subsector name, see e.g. mrio_read_table
 % OPTIONAL INPUT PARAMETERS:
-%   report_filename: the filename of the Excel file the report is written
-%       to. Prompted for if not given (if Cancel pressed, write to stdout only)
 % OUTPUTS:
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180412, initial (under construction)
@@ -66,17 +75,12 @@ global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 % Poor man's version to check arguments. 
-if ~exist('country_name','var'), country_name = []; end
-if ~exist('subsector_name','var'), subsector_name = []; end
-if ~exist('direct_subsector_risk','var'), direct_subsector_risk = []; end
-if ~exist('indirect_subsector_risk','var'), indirect_subsector_risk = []; end
-if ~exist('direct_country_risk','var'), direct_country_risk = []; end
-if ~exist('indirect_country_risk','var'), indirect_country_risk = []; end
-if ~exist('risk_structure','var'), risk_structure = []; end
+if ~exist('IO_YDS', 'var'), IO_YDS = struct; end 
+if ~exist('leontief', 'var'), leontief = []; end 
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end
 if ~exist('aggregated_mriot', 'var'), aggregated_mriot = []; end
-if ~exist('climada_nan_mriot','var'), climada_nan_mriot = []; end
-if ~exist('report_filename','var'),report_filename = []; end
+if ~exist('country_name','var'), country_name = []; end
+if ~exist('subsector_name','var'), subsector_name = []; end
 
 % locate the module's data folder (here  one folder
 % below of the current folder, i.e. in the same level as code folder)
@@ -90,17 +94,6 @@ end
 %
 if isempty(climada_mriot), climada_mriot = mrio_read_table; end
 if isempty(aggregated_mriot), aggregated_mriot = mrio_aggregate_table(climada_mriot); end
-if isempty(country_name)
-    country_name = [];
-else
-    country_name = char(country_name); % as to create filenames etc., needs to be char
-end
-%
-if isempty(subsector_name)
-    subsector_name = [];
-else
-    subsector_name = char(subsector_name); % as to create filenames etc., needs to be char
-end
 %
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 n_mrio_countries = length(mrio_countries_ISO3);
@@ -134,53 +127,21 @@ else
     selection_subsector = find(subsectors == subsector_name);
 end
 subsector_name = char(subsectors(selection_subsector));
-%
-% prompt for report_filename if not given
-% if isempty(report_filename) % local GUI
-%     report_filename = [climada_global.data_dir filesep 'results' filesep 'mrio' filesep datestr(now,1) filesep 'subesctor_risk_report.xls'];
-%     [filename, pathname] = uiputfile(report_filename, 'Save report as:');
-%     if isequal(filename,0) || isequal(pathname,0)
-%         report_filename = ''; % cancel
-%     else
-%         report_filename = fullfile(pathname,filename);
-%     end
-% end
 
 % local folder to write the figures
-fig_dir = [climada_global.results_dir filesep 'mrio' filesep datestr(now,1) filesep country_name '_' subsector_name];
+fig_dir = [climada_global.results_dir filesep 'mrio' filesep datestr(now,1) filesep char(country_name) '_' char(subsector_name)];
 if ~isdir(fig_dir), [fP,fN] = fileparts(fig_dir); mkdir(fP,fN); end % create it
 fig_ext = 'png';
 
+[subsector_risk_tb, country_risk_tb] = mrio_get_risk_table(IO_YDS, country_name, subsector_name, 0);
+
 % All risks as arrays (not tables) for internal use.
 % Keeping it flexible in case future vesions of the tables change order of variables or variable names.
-if istable(direct_subsector_risk)
-    for var_i = 1:length(direct_subsector_risk.Properties.VariableNames)
-            if isnumeric(direct_subsector_risk{1,var_i})
-                direct_subsector_risk = direct_subsector_risk{:,var_i}';
-            end
-    end % var_i
-end
-if istable(indirect_subsector_risk)
-    for var_i = 1:length(indirect_subsector_risk.Properties.VariableNames)
-        if isnumeric(indirect_subsector_risk{1,var_i})
-            indirect_subsector_risk = indirect_subsector_risk{:,var_i}';
-        end
-    end % var_i
-end
-if istable(direct_country_risk)
-    for var_i = 1:length(direct_country_risk.Properties.VariableNames)
-        if isnumeric(direct_country_risk{1,var_i})
-            direct_country_risk = direct_country_risk{:,var_i}';
-        end
-    end % var_i
-end
-if istable(indirect_country_risk)
-    for var_i = 1:length(indirect_country_risk.Properties.VariableNames)
-        if isnumeric(indirect_country_risk{1,var_i})
-            indirect_country_risk = indirect_country_risk{:,var_i}';
-        end
-    end % var_i
-end
+direct_subsector_risk = subsector_risk_tb{:,4}';
+indirect_subsector_risk = subsector_risk_tb{:,5}';
+
+direct_country_risk = country_risk_tb{:,3}';
+indirect_country_risk = country_risk_tb{:,4}';
 
 risk_index = (selection_country-1) * n_subsectors + selection_subsector;
 

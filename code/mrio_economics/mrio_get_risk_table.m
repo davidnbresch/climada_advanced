@@ -82,12 +82,12 @@ else
 end
 
 if ~isempty(sector_name)
-    if ismember(mainsectors, sector_name)
+    if sum(ismember(mainsectors, sector_name)) > 0
         mainsector_name = mainsectors(find(ismember(mainsectors, sector_name)));
         subsector_name = IO_YDS.direct.aggregation_info.(char(mainsector_name));
-    elseif ismember(subsectors, sector_name)
+    elseif sum(ismember(subsectors, sector_name)) > 0
         subsector_name = subsectors(find(ismember(subsectors, sector_name)));
-        sel_index = find(ismember(unique(IO_YDS.direct.sectors), subsector_name));
+        sel_index = find(ismember(unique(IO_YDS.direct.sectors,'stable'), subsector_name));
         mainsector_name = IO_YDS.direct.climada_sect_name(sel_index(1));
     elseif isequal(sector_name,'ALL')
         subsector_name = subsectors;
@@ -105,7 +105,7 @@ if isempty(country_ISO3)
 elseif isequal(country_ISO3,'ALL')
     selection_country = find(mrio_countries_ISO3 == mrio_countries_ISO3);
 else
-    selection_country = find(mrio_countries_ISO3 == country_ISO3);
+    selection_country = find(ismember(mrio_countries_ISO3,country_ISO3));
 end
 country_ISO3 = mrio_countries_ISO3(selection_country);
 
