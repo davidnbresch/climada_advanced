@@ -146,8 +146,8 @@ if ~isfield(GLB_entity.assets, 'ISO3_list')
     % load hazard
     hazard = climada_hazard_load(params.hazard_file);
     
-    % encode entity
-    GLB_entity = climada_assets_encode(GLB_entity, hazard);
+    % encode entity to centroids 
+    GLB_entity = climada_assets_encode(GLB_entity, centroids);
 
     % pass over ISO3 codes and NatID to assets
     if params.verbose, fprintf('get NatID for %i assets ...\n',n_assets); end
@@ -166,6 +166,9 @@ if ~isfield(GLB_entity.assets, 'ISO3_list')
     end % asset_i
 
     if params.verbose, climada_progress2stdout(0); end % terminate
+    
+    % encode entity to hazard
+    GLB_entity = climada_assets_encode(GLB_entity, hazard);
     
 end
 
