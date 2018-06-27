@@ -1,4 +1,4 @@
-function mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot, report_filename, params) 
+function mrio_general_risk_report(IO_YDS, leontief, climada_mriot, aggregated_mriot, report_filename, params) 
 % mrio general risk report
 % MODULE:
 %   advanced
@@ -16,20 +16,30 @@ function mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk
 % EXAMPLE:
 %   mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot);
 % INPUTS:
-%   direct_subsector_risk: a table containing as one variable the direct risk (EAD) for each
-%       subsector/country combination covered in the original mriot. The
-%       order of entries follows the same as in the entire process, i.e.
-%       entry mapping is still possible via the climada_mriot.setors and
-%       climada_mriot.countries arrays. The table further contins three
-%       more variables with the country names, country ISO codes and sector names
-%       corresponging to the direct risk values.
-%   direct_country_risk: a table containing as one variable the direct risk (EAD) per country (aggregated across all subsectors). 
-%       Further a variable with correpsonding country names and country ISO codes, respectively.
-%   indirect_subsector_risk: table with indirect risk (EAD) per subsector/country combination 
-%       in one variable and three "label" variables containing corresponding country names, 
-%       country ISO codes and sector names.
-%   indirect_country_risk: table with indirect risk (EAD) per country in one variable and two "label" 
-%       variables containing corresponding country names and country ISO codes.
+%   IO_YDS, the Input-Output year damage set, a struct with the fields:
+%       direct, a struct itself with the field
+%           ED: the total expected annual damage
+%           reference_year: the year the damages are references to
+%           yyyy(i): the year i
+%           damage(year_i): the damage amount for year_i (summed up over all
+%               assets and events)
+%           Value: the sum of all Values used in the calculation (to e.g.
+%               express damages in percentage of total Value)
+%           frequency(i): the annual frequency, =1
+%           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       indirect, a struct itself with the field
+%           ED: the total expected annual damage
+%           reference_year: the year the damages are references to
+%           yyyy(i): the year i
+%           damage(year_i): the damage amount for year_i (summed up over all
+%               assets and events)
+%           Value: the sum of all Values used in the calculation (to e.g.
+%               express damages in percentage of total Value)
+%           frequency(i): the annual frequency, =1
+%           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       hazard: itself a structure, with:
+%           filename: the filename of the hazard event set
+%           comment: a free comment
 %   leontief: a structure with 5 fields. It represents a general climada
 %       leontief structure whose basic properties are the same regardless of the
 %       provided mriot it is based on. The fields are:
@@ -120,37 +130,15 @@ n_mainsectors = length(mainsectors);
 subsectors = unique(climada_mriot.sectors, 'stable');
 n_subsectors = climada_mriot.no_of_sectors;   
 
+[subsector_risk_tb, country_risk_tb] = mrio_get_risk_table(IO_YDS, 'ALL', 'ALL', 0);
+
 % All risks as arrays (not tables) for internal use.
 % Keeping it flexible in case future vesions of the tables change order of variables or variable names.
-if istable(direct_subsector_risk)
-    for var_i = 1:length(direct_subsector_risk.Properties.VariableNames)
-            if isnumeric(direct_subsector_risk{1,var_i})
-                direct_subsector_risk = direct_subsector_risk{:,var_i}';
-            end
-    end % var_i
-end
-if istable(indirect_subsector_risk)
-    for var_i = 1:length(indirect_subsector_risk.Properties.VariableNames)
-        if isnumeric(indirect_subsector_risk{1,var_i})
-            indirect_subsector_risk = indirect_subsector_risk{:,var_i}';
-        end
-    end % var_i
-end
-if istable(direct_country_risk)
-    for var_i = 1:length(direct_country_risk.Properties.VariableNames)
-        if isnumeric(direct_country_risk{1,var_i})
-            direct_country_risk = direct_country_risk{:,var_i}';
-        end
-    end % var_i
-end
-if istable(indirect_country_risk)
-    for var_i = 1:length(indirect_country_risk.Properties.VariableNames)
-        if isnumeric(indirect_country_risk{1,var_i})
-            indirect_country_risk = indirect_country_risk{:,var_i}';
-        end
-    end % var_i
-end
+direct_subsector_risk = subsector_risk_tb{:,4}';
+indirect_subsector_risk = subsector_risk_tb{:,5}';
 
+direct_country_risk = country_risk_tb{:,3}';
+indirect_country_risk = country_risk_tb{:,4}';
 total_output = climada_mriot.total_production; % total output per sector per country
 
 if exist(report_template_file,'file') & ispc
@@ -346,55 +334,55 @@ saveas(direct_risk_structure_country,[fig_dir filesep 'direct_risk_structure'],'
 % climada_plot_world_borders
 % hold on
 % 
-scatter(direct_subsector_risk,indirect_subsector_risk)
-xlabel('Direct Subsector Risk')
-ylabel('Indirect Subsector Risk')
-title('Relation Between Direct & Indirect Risk')
-hold on
-p = polyfit(direct_subsector_risk,indirect_subsector_risk,2);
-polyval(p,direct_subsector_risk);
-plot(sort(direct_subsector_risk),sort(polyval(p,direct_subsector_risk)))
-grid on
+% scatter(direct_subsector_risk,indirect_subsector_risk)
+% xlabel('Direct Subsector Risk')
+% ylabel('Indirect Subsector Risk')
+% title('Relation Between Direct & Indirect Risk')
+% hold on
+% p = polyfit(direct_subsector_risk,indirect_subsector_risk,2);
+% polyval(p,direct_subsector_risk);
+% plot(sort(direct_subsector_risk),sort(polyval(p,direct_subsector_risk)))
+% grid on
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure 4-5: World map of direct and direct risk
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-rel_risk = zeros(1,length(total_output));
-for i = 1:length(total_output)
-    if ~isnan(direct_subsector_risk(i)/total_output(i))
-        rel_risk(i) = direct_subsector_risk(i)/total_output(i);
-    end
-end
-rel_country_risk = zeros(1,n_mrio_countries); 
-for mrio_country_i = 1:n_mrio_countries
-    for subsector_j = 1:n_subsectors 
-        rel_country_risk(mrio_country_i) = rel_country_risk(mrio_country_i) + rel_risk((mrio_country_i-1) * n_subsectors+subsector_j);
-    end % subsector_j
-end % mrio_country_i
-
-ran=range(rel_country_risk); %finding range of data
-min_val=min(rel_country_risk);%finding maximum value of data
-max_val=max(rel_country_risk)%finding minimum value of data
-y=floor(((rel_country_risk-min_val)/ran)*63)+1; 
-col=zeros(20,3)
-p=flipud(colormap('hot'))
-for i=1:length(rel_country_risk)
-  a=y(i);
-  col(i,:)=p(a,:);
-  stem3(i,i,rel_country_risk(i),'Color',col(i,:))
-  hold on
-end
-climada_plot_world_borders
-
-for mrio_country_i = 1:n_mrio_countries
-        country_ISO3 = char(mrio_countries_ISO3(mrio_country_i)); % extract ISO code
-    if ~strcmp(country_ISO3,'ROW') && ~strcmp(country_ISO3,'RoW')
-        climada_plot_world_borders('',country_ISO3,'','',col(mrio_country_i,:),'')
-        %climada_plot_world_borders('',country_ISO3,'','',[255 (1-rel_country_risk(mrio_country_i)/max(rel_country_risk))*255 (1-rel_country_risk(mrio_country_i)/max(rel_country_risk))*255]/255,'')
-        hold on
-    end
-end
+% 
+% rel_risk = zeros(1,length(total_output));
+% for i = 1:length(total_output)
+%     if ~isnan(direct_subsector_risk(i)/total_output(i))
+%         rel_risk(i) = direct_subsector_risk(i)/total_output(i);
+%     end
+% end
+% rel_country_risk = zeros(1,n_mrio_countries); 
+% for mrio_country_i = 1:n_mrio_countries
+%     for subsector_j = 1:n_subsectors 
+%         rel_country_risk(mrio_country_i) = rel_country_risk(mrio_country_i) + rel_risk((mrio_country_i-1) * n_subsectors+subsector_j);
+%     end % subsector_j
+% end % mrio_country_i
+% 
+% ran=range(rel_country_risk); %finding range of data
+% min_val=min(rel_country_risk);%finding maximum value of data
+% max_val=max(rel_country_risk);%finding minimum value of data
+% y=floor(((rel_country_risk-min_val)/ran)*63)+1; 
+% col=zeros(20,3);
+% p=flipud(colormap('hot'));
+% for i=1:length(rel_country_risk)
+%   a=y(i);
+%   col(i,:)=p(a,:);
+%   stem3(i,i,rel_country_risk(i),'Color',col(i,:))
+%   hold on
+% end
+% climada_plot_world_borders
+% 
+% for mrio_country_i = 1:n_mrio_countries
+%         country_ISO3 = char(mrio_countries_ISO3(mrio_country_i)); % extract ISO code
+%     if ~strcmp(country_ISO3,'ROW') && ~strcmp(country_ISO3,'RoW')
+%         climada_plot_world_borders('',country_ISO3,'','',col(mrio_country_i,:),'')
+%         %climada_plot_world_borders('',country_ISO3,'','',[255 (1-rel_country_risk(mrio_country_i)/max(rel_country_risk))*255 (1-rel_country_risk(mrio_country_i)/max(rel_country_risk))*255]/255,'')
+%         hold on
+%     end
+% end
 
 % for mrio_country_i = 1:n_mrio_countries
 %         country_ISO3 = char(mrio_countries_ISO3(mrio_country_i)); % extract ISO code
@@ -406,10 +394,6 @@ end
 %         end
 %         hold on
 %     end
-% end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Figure 6: Horizontal stacked bar showing  
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end % mrio_general_risk_report

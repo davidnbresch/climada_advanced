@@ -127,7 +127,11 @@ else
 end
 subsector_name = char(subsectors(selection_subsector));
 
-mrio_subsector_risk_report(country_name, subsector_name, direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot, 'mrio_step_by_step');
+mrio_subsector_risk_report(IO_YDS, leontief, climada_mriot, aggregated_mriot, country_name, subsector_name);
 toc
+
+%% Generate general risk report 
+fprintf('<strong>Generate general risk report...</strong>\n');tic;
+mrio_general_risk_report(IO_YDS, leontief, climada_mriot, aggregated_mriot, '', params);toc
 
 end % mrio_step_by_step
