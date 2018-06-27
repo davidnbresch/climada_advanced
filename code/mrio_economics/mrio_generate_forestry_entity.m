@@ -25,8 +25,6 @@ function [entity, entity_save_file] = mrio_generate_forestry_entity(n_aggregatio
 %       (run params = mrio_get_params to obtain all default values)
 %       centroids_file: the filename of the centroids file containing 
 %           information on NatID for all centroid
-%       hazard_file: the filename of the corresponding hazard file that is
-%           is used to encode the constructed entity
 %       verbose: whether we printf progress to stdout (=1, default) or not (=0)
 % OUTPUTS:
 %  entity: a structure, with (please run the first example above and then
@@ -166,19 +164,6 @@ if ~isfield(params,'centroids_file') || isempty(params.centroids_file)
         end
     end
 end
-if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
-    if (exist(fullfile(climada_global.hazards_dir, 'GLB_0360as_TC_hist.mat'), 'file') == 2) 
-        params.hazard_file = 'GLB_0360as_TC_hist.mat';
-    else % prompt for hazard filename
-        params.hazard_file = [climada_global.hazards_dir];
-        [filename, pathname] = uigetfile(params.hazard_file, 'Select hazard file:');
-        if isequal(filename,0) || isequal(pathname,0)
-            return; % cancel
-        else
-            params.hazard_file = fullfile(pathname, filename);
-        end
-    end
-end
 if ~isfield(params,'verbose'), params.verbose = 1; end
 %% 
 % land cover map (300m observation) in .nc format
@@ -200,9 +185,6 @@ entity_file = [climada_global.entities_dir filesep 'entity_template' climada_glo
 
 % load global centroids
 centroids = climada_centroids_load(params.centroids_file);
-
-% load hazard
-hazard = climada_hazard_load(params.hazard_file);
 
 % check for full global land cover image being locally available
 if ~exist(full_img_file,'file')
@@ -295,7 +277,7 @@ entity.assets.Cover = entity.assets.Value;
 entity.assets.DamageFunID = entity.assets.Value*0+1;
 
 % encode entity
-entity = climada_assets_encode(entity, hazard);
+entity = climada_assets_encode(entity, centroids);
 
 % pass over ISO3 codes and NatID to assets
 if params.verbose, fprintf('get NatID for %i assets ...\n',length(entity.assets.Value)); end
