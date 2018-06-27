@@ -38,8 +38,6 @@ function mrio_entity_country(GLB_entity, climada_mriot, switch_scale, check_figu
 %       bit (that's why markersize is not part of params.)
 %   params: a structure to pass on parameters, with fields as
 %       (run params = mrio_get_params to obtain all default values)
-%       centroids_file: the filename of the centroids file containing 
-%           information on NatID for all centroid
 %       hazard_file: the filename of the corresponding hazard file that is
 %           is used to encode the constructed entity
 %       verbose: whether we printf progress to stdout (=1, default) or not (=0)
@@ -88,25 +86,7 @@ if ~isfield(params,'hazard_file') || isempty(params.hazard_file)
         end
     end
 end
-if ~isfield(params,'centroids_file') || isempty(params.centroids_file)
-    if (exist(fullfile(climada_global.centroids_dir, 'GLB_NatID_grid_0360as_adv_1.mat'), 'file') == 2) 
-        params.centroids_file = 'GLB_NatID_grid_0360as_adv_1.mat';
-    elseif switch_scale ~= 0 % prompt for centroids filename
-        params.centroids_file = [climada_global.centroids_file];
-        [filename, pathname] = uigetfile(params.centroids_file, 'Select centroids file:');
-        if isequal(filename,0) || isequal(pathname,0)
-            return; % cancel
-        else
-            params.centroids_file = fullfile(pathname, filename);
-        end
-    end
-end
 if ~isfield(params,'verbose'), params.verbose = 1; end
-
-% load global centroids of which we use the NatID to cut out the entities on country level
-centroids = climada_centroids_load(params.centroids_file);
-
-countries_ISO3 = centroids.ISO3_list(:,1);
 
 % save filename which will be 
 [fP, fN, fE] = fileparts(GLB_entity.assets.filename);
@@ -138,39 +118,7 @@ if switch_scale == 2
     end
 end
         
-if ~isfield(GLB_entity.assets, 'ISO3_list') 
-    
-    % load global centroids
-    centroids = climada_centroids_load(params.centroids_file);
-    
-    % load hazard
-    hazard = climada_hazard_load(params.hazard_file);
-    
-    % encode entity to centroids 
-    GLB_entity = climada_assets_encode(GLB_entity, centroids);
-
-    % pass over ISO3 codes and NatID to assets
-    if params.verbose, fprintf('get NatID for %i assets ...\n',n_assets); end
-    GLB_entity.assets.ISO3_list = centroids.ISO3_list;
-
-    if params.verbose, climada_progress2stdout; end % init, see terminate below
-
-    for asset_i = 1:n_assets
-        sel_centroid = GLB_entity.assets.centroid_index(asset_i);
-        if sel_centroid > 0 && length(centroids.NatID) > sel_centroid
-            GLB_entity.assets.NatID(asset_i) = centroids.NatID(sel_centroid);
-        else
-            GLB_entity.assets.NatID(asset_i) = 0;
-        end
-        if params.verbose, climada_progress2stdout(asset_i,n_assets,5,'processed assets'); end % update
-    end % asset_i
-
-    if params.verbose, climada_progress2stdout(0); end % terminate
-    
-    % encode entity to hazard
-    GLB_entity = climada_assets_encode(GLB_entity, hazard);
-    
-end
+GLB_entity = climada_assets_encode(GLB_entity, hazard);
 
 if params.verbose, fprintf('generate %i country entities and prepare for mrio ...\n',n_mrio_countries); end
 
