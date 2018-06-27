@@ -44,6 +44,14 @@ climada_global.max_encoding_distance_m = 30000;
 % poor man's version to check arguments
 if ~exist('check_figure', 'var'), check_figure = []; end
 
+% locate the module's data folder (here  one folder
+% below of the current folder, i.e. in the same level as code folder)
+if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
+    module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
+else
+    module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+end
+
 %% DEFAULT PARAMETERS
 % calculations with default values so that no file dialogs etc. are opened:
 params = mrio_get_params; % Can also be used with input arguments 'wiod' or 'exiobase' to choose prefered MRIO table. 
@@ -70,11 +78,10 @@ for mainsector_i = 1:n_mainsectors
         % load (global) mainsector entity
         if (exist(fullfile(climada_global.entities_dir, ['GLB_' mainsector_name '_XXX.mat']), 'file') == 2) 
             mainsector_entity = climada_entity_load(mainsector_entity_file);
-            mrio_entity_country(mainsector_entity, climada_mriot, '', '', '', params);
         else 
-            disp('Please provide global main sector entities.')
-            return
+            mainsector_entity = climada_entity_load(fullfile([module_data_dir filesep 'entities'], mainsector_entity_file));
         end  
+        mrio_entity_country(mainsector_entity, climada_mriot, '', '', '', params);
     else
         mainsector_entity = climada_entity_load(mainsector_entity_file);
     end 

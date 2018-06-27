@@ -252,7 +252,6 @@ for mainsector_j = 1:n_mainsectors % different exposure (asset) base as generate
             countries_ISO3 = entity.assets.NatID_RegID.ISO3;
         else
             error('Please prepare entities first.')
-            %uiwait(warndlg('Please prepare entities first.'));
         end
 
         if ~strcmp(country_ISO3,'ROW') && ~strcmp(country_ISO3,'RoW')

@@ -126,11 +126,12 @@ if ~exist('table_flag','var'), table_flag = []; end
 if ~exist('force_read','var'), force_read = 0; end
 
 % locate the module's data folder
-% if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
-%     module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
-% else
-%     module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
-% end
+if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
+    module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
+else
+    module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+end
+
 mrio_data_dir = [climada_global.data_dir filesep 'mrio'];
 if ~isdir(mrio_data_dir)
     mkdir(climada_global.data_dir,'mrio'); % create it
@@ -185,9 +186,10 @@ end
 if isempty(fE), fE = climada_global.spreadsheet_ext;end
 if isempty(fP) % complete path, if missing
     mrio_file = [mrio_data_dir filesep 'mrio' filesep fN fE];
-    if ~exist(mrio_file,'file');
-        fprintf('Note: %s does nor exist, switched to .xlsx\n',mrio_file)
-        mriot_file = [mrio_data_dir filesep fN '.xlsx']; % try this, too
+    if ~exist(mrio_file,'file') 
+        mriot_file = [module_data_dir filesep 'mrio' filesep fN fE]; 
+        fprintf('Note: file did not exist in %s\n', mrio_data_dir)
+        fprintf('switched to %s\n', [module_data_dir filesep 'mrio'])
     end
 end
 [fP,fN] = fileparts(mriot_file);

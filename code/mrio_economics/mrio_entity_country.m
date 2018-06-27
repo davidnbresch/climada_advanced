@@ -117,21 +117,30 @@ if switch_scale == 2
         selection_mainsector = find(mainsectors == mainsector_name);
     end
 end
-        
-GLB_entity = climada_assets_encode(GLB_entity, hazard);
+
+[~, haz_fN, ~] = fileparts(GLB_entity.assets.hazard.filename);
+if ~(contains(GLB_entity.assets.hazard.filename, params.hazard_file) || strcmp(haz_fN,GLB_entity.assets.hazard.filename))
+    % load hazard
+    hazard = climada_hazard_load(params.hazard_file);
+    
+    % encode entity
+    GLB_entity = climada_assets_encode(GLB_entity, hazard);
+end
 
 if params.verbose, fprintf('generate %i country entities and prepare for mrio ...\n',n_mrio_countries); end
 
 if params.verbose, climada_progress2stdout; end % init, see terminate below
+
+countries_ISO3 = GLB_entity.assets.ISO3_list(:,1);
 
 % create all entities for the mrio countries if not already done
 for mrio_country_i = 1:n_mrio_countries
     country_ISO3_i = char(mrio_countries_ISO3(mrio_country_i));
     
     if contains(fN, 'GLB')
-        entity_save_file = [fP filesep replace(fN,'GLB',country_ISO3_i) fE];
+        entity_save_file = [climada_global.entities_dir filesep replace(fN,'GLB',country_ISO3_i) fE];
     else
-        entity_save_file = [fP filesep country_ISO3_i '_' fN fE];
+        entity_save_file = [climada_global.entities_dir filesep country_ISO3_i '_' fN fE];
     end
     
     if ~exist(entity_save_file,'file')
