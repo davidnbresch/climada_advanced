@@ -40,6 +40,14 @@ climada_global.max_encoding_distance_m = 30000;
 % poor man's version to check arguments
 if ~exist('check_figure', 'var'), check_figure = []; end
 
+% locate the module's data folder (here  one folder
+% below of the current folder, i.e. in the same level as code folder)
+if exist([climada_global.modules_dir filesep 'advanced' filesep 'data'],'dir') 
+    module_data_dir = [climada_global.modules_dir filesep 'advanced' filesep 'data'];
+else
+    module_data_dir = [climada_global.modules_dir filesep 'climada_advanced' filesep 'data'];
+end
+
 %% DEFAULT PARAMETERS
 % calculations with default values so that no file dialogs etc. are opened:
 params = mrio_get_params; % Can also be used with input arguments 'wiod' or 'exiobase' to choose prefered MRIO table. 
@@ -97,17 +105,17 @@ head(country_risk_tb)
 
 %% Generate simple graphics for subsector x country-combination selected
 fprintf('<strong>Generate simple graphics for subsector x country-combination selected...</strong>\n');tic;
+country_name = []; subsector_name = []; % init
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
 mainsectors = unique(climada_mriot.climada_sect_name, 'stable');
 subsectors = unique(climada_mriot.sectors, 'stable'); 
 
 if ~exist('country_name','var'), country_name = []; end
-% prompt country (one or many) - TO DO 
+% prompt country name 
 [countries_liststr, countries_sort_index] = sort(mrio_countries_ISO3);
 if isempty(country_name)
-    % compile list of all mrio countries, then call recursively below
-    [selection_country] = listdlg('PromptString','Select countries (or one):',...
-        'ListString',countries_liststr);
+    [selection_country] = listdlg('PromptString','Select country:',...
+        'SelectionMode','single','ListString',countries_liststr);
     selection_country = countries_sort_index(selection_country);
 else 
     selection_country = find(mrio_countries_ISO3 == country_name);
@@ -115,12 +123,11 @@ end
 country_name = char(mrio_countries_ISO3(selection_country));
 
 if ~exist('subsector_name','var'), subsector_name = []; end
-% prompt for subsector name (one or many) - TO DO 
+% prompt for subsector name
 [subsectors_liststr, subsectors_sort_index] = sort(subsectors);
 if isempty(subsector_name)
-    % compile list of all mrio countries, then call recursively below
-    [selection_subsector] = listdlg('PromptString','Select subsectors (or one):',...
-        'ListString',subsectors_liststr);
+    [selection_subsector] = listdlg('PromptString','Select subsector:',...
+        'SelectionMode','single','ListString',subsectors_liststr);
     selection_subsector = subsectors_sort_index(selection_subsector);
 else
     selection_subsector = find(subsectors == subsector_name);
