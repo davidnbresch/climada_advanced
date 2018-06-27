@@ -127,7 +127,7 @@ if ~(contains(GLB_entity.assets.hazard.filename, params.hazard_file) || strcmp(h
     GLB_entity = climada_assets_encode(GLB_entity, hazard);
 end
 
-if params.verbose, fprintf('generate %i country entities and prepare for mrio ...\n',n_mrio_countries); end
+if params.verbose, fprintf('generate %i country entities and prepare for mrio | %s\n',n_mrio_countries,fN); end
 
 if params.verbose, climada_progress2stdout; end % init, see terminate below
 
