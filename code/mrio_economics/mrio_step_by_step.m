@@ -19,9 +19,14 @@ function mrio_step_by_step(check_figure) % uncomment to run as function
 %   isimip          https://github.com/davidnbresch/climada_module_isimip
 %   advanced        https://github.com/davidnbresch/climada_module_advanced
 %
-%   needs additional data:
+%   needs additional data: IBTrACS (TC) hazard
 %   https://polybox.ethz.ch/index.php/s/FwetsXlLeXLJPnD (Accessed 26 07 2018)
 %   Download > Store in climada_global.hazards_dir (./climada_data/hazards)
+%
+%   Reference [Data file]:
+%   Geiger, T., Frieler, K., & Bresch, D. N. (2018). 
+%   A global historical data set of tropical cyclone exposure (TCE-DAT). 
+%   Earth System Science Data, 10(1), 185?194. doi:10.5194/essd-10-185-2018
 %
 % CALLING SEQUENCE:
 %   mrio_step_by_step(check_figure);
