@@ -155,6 +155,11 @@ for cell_i = 1:length(direct_subsector_risk)
     end
 end % cell_i
 
+if ~(sum(leontief.risk_structure(:,risk_index)) > 0)
+    fprintf('The selected sub-sector does not have any risk to be reported.\n')
+    return
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure 1: pier chart of contributions (subsector level) to our subsector risk
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
