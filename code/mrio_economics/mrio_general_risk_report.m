@@ -168,7 +168,7 @@ if ~STATUS || strcmp(MESSAGE.identifier,'MATLAB:xlswrite:NoCOMServer') % xlswrit
     indirect_risk_table = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.climada_sect_name',climada_mriot.sectors',indirect_subsector_risk',total_output,(indirect_subsector_risk'./total_output), ...
                                 'VariableNames',{'country_name','country_ISO3','mainsector_name','subsector_name','damage','value','damage_ratio'});
 
-    risk_structure_table = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.climada_sect_name',climada_mriot.sectors',leontief.risk_structure, ...
+    risk_structure_table = table(climada_mriot.countries',climada_mriot.countries_iso',climada_mriot.climada_sect_name',climada_mriot.sectors',mean(leontief.risk_structure,3), ...
                                 'VariableNames',{'country_name','country_ISO3','mainsector_name','subsector_name','damage'});                     
 
     [fP,fN,fE] = fileparts(report_filename);   
@@ -204,7 +204,7 @@ else
     xlswrite(report_filename,cellstr(climada_mriot.sectors'),'risk structure','B7') 
     xlswrite(report_filename,cellstr(climada_mriot.countries_iso),'risk structure','E5') 
     xlswrite(report_filename,cellstr(climada_mriot.countries_iso'),'risk structure','C7') 
-    xlswrite(report_filename,leontief.risk_structure,'risk structure','E7') 
+    xlswrite(report_filename,mean(leontief.risk_structure,3),'risk structure','E7')
     if params.verbose, fprintf('report written to %s\n',report_filename); end
 end
 
