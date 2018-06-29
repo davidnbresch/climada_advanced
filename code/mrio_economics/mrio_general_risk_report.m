@@ -12,9 +12,9 @@ function mrio_general_risk_report(IO_YDS, leontief, climada_mriot, aggregated_mr
 %   see also: 
 %   
 % CALLING SEQUENCE:
-%   mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot);
+%  mrio_general_risk_report(IO_YDS, leontief, climada_mriot, aggregated_mriot, report_filename, params);
 % EXAMPLE:
-%   mrio_general_risk_report(direct_subsector_risk, indirect_subsector_risk, direct_country_risk, indirect_country_risk, leontief, climada_mriot, aggregated_mriot);
+%  mrio_general_risk_report(IO_YDS, leontief, climada_mriot, aggregated_mriot, report_filename, params);
 % INPUTS:
 %   IO_YDS, the Input-Output year damage set, a struct with the fields:
 %       direct, a struct itself with the field
@@ -72,10 +72,7 @@ global climada_global
 if ~climada_init_vars,return;end % init/import global variables
 
 % Poor man's version to check arguments. 
-if ~exist('direct_subsector_risk','var'), direct_subsector_risk = []; end
-if ~exist('indirect_subsector_risk','var'), indirect_subsector_risk = []; end
-if ~exist('direct_country_risk','var'), direct_country_risk = []; end
-if ~exist('indirect_country_risk','var'), indirect_country_risk = []; end
+if ~exist('IO_YDS', 'var'), IO_YDS = struct; end 
 if ~exist('leontief','var'), leontief = struct; end
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end
 if ~exist('aggregated_mriot', 'var'), aggregated_mriot = []; end
@@ -191,15 +188,15 @@ else
     xlswrite(report_filename,cellstr(climada_mriot.countries_iso'),'direct risk','C2') 
     xlswrite(report_filename,cellstr(climada_mriot.climada_sect_name'),'direct risk','D2') 
     xlswrite(report_filename,cellstr(climada_mriot.sectors'),'direct risk','E2') 
-    xlswrite(report_filename,cellstr(direct_subsector_risk'),'direct risk','F2') 
-    xlswrite(report_filename,cellstr(total_output'),'direct risk','G2')
+    xlswrite(report_filename,direct_subsector_risk','direct risk','F2') 
+    xlswrite(report_filename,total_output','direct risk','G2')
     
     xlswrite(report_filename,cellstr(climada_mriot.countries'),'indirect risk','B2') 
     xlswrite(report_filename,cellstr(climada_mriot.countries_iso'),'indirect risk','C2') 
     xlswrite(report_filename,cellstr(climada_mriot.climada_sect_name'),'indirect risk','D2') 
     xlswrite(report_filename,cellstr(climada_mriot.sectors'),'indirect risk','E2') 
-    xlswrite(report_filename,cellstr(indirect_subsector_risk'),'indirect risk','F2') 
-    xlswrite(report_filename,cellstr(total_output'),'indirect risk','G2')
+    xlswrite(report_filename,indirect_subsector_risk','indirect risk','F2') 
+    xlswrite(report_filename,total_output','indirect risk','G2')
     
     xlswrite(report_filename,cellstr(climada_mriot.climada_sect_name),'risk structure','E3') 
     xlswrite(report_filename,cellstr(climada_mriot.climada_sect_name'),'risk structure','A7') 
@@ -207,7 +204,7 @@ else
     xlswrite(report_filename,cellstr(climada_mriot.sectors'),'risk structure','B7') 
     xlswrite(report_filename,cellstr(climada_mriot.countries_iso),'risk structure','E5') 
     xlswrite(report_filename,cellstr(climada_mriot.countries_iso'),'risk structure','C7') 
-    xlswrite(report_filename,cellstr(leontief.risk_structure),'risk structure','E7') 
+    xlswrite(report_filename,leontief.risk_structure,'risk structure','E7') 
     if params.verbose, fprintf('report written to %s\n',report_filename); end
 end
 
@@ -225,7 +222,7 @@ for country_i = 1:n_mrio_countries
         sel_mainsector_pos = find(climada_mriot.climada_sect_name == mainsector_name_i);
         sel_pos = intersect(sel_mainsector_pos,sel_country_pos);
     
-        indirect_risk_structure_country(mainsector_i,country_i) = sum(sum(leontief.risk_structure(:,sel_pos)));
+        indirect_risk_structure_country(mainsector_i,country_i) = sum(IO_YDS.indirect.ED(sel_pos));
     end % mainsector_i
 end % country_i
 
@@ -272,7 +269,7 @@ for country_i = 1:n_mrio_countries
         sel_mainsector_pos = find(climada_mriot.climada_sect_name == mainsector_name_i);
         sel_pos = intersect(sel_mainsector_pos,sel_country_pos);
     
-        direct_risk_structure_country(mainsector_i,country_i) = sum(direct_subsector_risk(sel_pos));
+    direct_risk_structure_country(mainsector_i,country_i) = sum(IO_YDS.direct.ED(sel_pos));
     end % mainsector_i
 end % country_i
 

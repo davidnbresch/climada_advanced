@@ -76,7 +76,7 @@ if ~climada_init_vars,return;end % init/import global variables
 
 % Poor man's version to check arguments. 
 if ~exist('IO_YDS', 'var'), IO_YDS = struct; end 
-if ~exist('leontief', 'var'), leontief = []; end 
+if ~exist('leontief', 'var'), leontief = struct; end 
 if ~exist('climada_mriot', 'var'), climada_mriot = []; end
 if ~exist('aggregated_mriot', 'var'), aggregated_mriot = []; end
 if ~exist('country_name','var'), country_name = []; end
