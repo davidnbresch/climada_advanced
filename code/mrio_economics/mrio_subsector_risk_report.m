@@ -104,24 +104,22 @@ n_mainsectors = length(mainsectors);
 subsectors = unique(climada_mriot.sectors, 'stable');
 n_subsectors = climada_mriot.no_of_sectors;    
 %
-% prompt country (one or many) - TO DO 
+% prompt country 
 [countries_liststr, countries_sort_index] = sort(mrio_countries_ISO3);
 if isempty(country_name)
-    % compile list of all mrio countries, then call recursively below
-    [selection_country] = listdlg('PromptString','Select countries (or one):',...
-        'ListString',countries_liststr);
+    [selection_country] = listdlg('PromptString','Select country:',...
+        'SelectionMode','single','ListString',countries_liststr);
     selection_country = countries_sort_index(selection_country);
 else 
     selection_country = find(mrio_countries_ISO3 == country_name);
 end
 country_name = char(mrio_countries_ISO3(selection_country));
 %
-% prompt for subsector name (one or many) - TO DO 
+% prompt for subsector name 
 [subsectors_liststr, subsectors_sort_index] = sort(subsectors);
 if isempty(subsector_name)
-    % compile list of all mrio countries, then call recursively below
-    [selection_subsector] = listdlg('PromptString','Select subsectors (or one):',...
-        'ListString',subsectors_liststr);
+    [selection_subsector] = listdlg('PromptString','Select subsector:',...
+        'SelectionMode','single','ListString',subsectors_liststr);
     selection_subsector = subsectors_sort_index(selection_subsector);
 else
     selection_subsector = find(subsectors == subsector_name);
@@ -155,7 +153,8 @@ for cell_i = 1:length(direct_subsector_risk)
     end
 end % cell_i
 
-if ~(sum(leontief.risk_structure(:,risk_index)) > 0)
+risk_structure = mean(leontief.risk_structure,3);
+if ~(sum(risk_structure(:,risk_index)) > 0)
     fprintf('The selected sub-sector does not have any risk to be reported.\n')
     return
 end
@@ -165,7 +164,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % components of subsector risk - per subsector
-risk_structure_sub = (leontief.risk_structure(:,risk_index)/sum(leontief.risk_structure(:,risk_index)))';
+risk_structure_sub = (risk_structure(:,risk_index)/sum(risk_structure(:,risk_index)))';
 
 [risk_structure_sorted, sort_index] = sort(risk_structure_sub, 'descend');
 risk_structure_temp = [risk_structure_sorted(1:5) nansum(risk_structure_sorted(6:end))];
@@ -225,7 +224,8 @@ explode = [1 1 1 1 1 0];
 text_title = ['Risk Structure of ' char(climada_mriot.sectors(risk_index)) ' in ' char(climada_mriot.countries_iso(risk_index))];
 
 risk_structure_main = figure('position', [250, 0, 750, 500]);
-pie(risk_structure_temp, explode)
+%pie(risk_structure_temp, explode)
+pie(risk_structure_temp)
 colormap([1 0 0;      %// red
           .75 .25 0;      %// green
           .5 .5 0;      %// blue
@@ -266,7 +266,8 @@ explode = [1 1 1 1 1 0];
 text_title = ['Risk Structure of ' char(climada_mriot.sectors(risk_index)) ' in ' char(climada_mriot.countries_iso(risk_index))];
 
 risk_structure_country = figure('position', [250, 0, 750, 500]);
-pie(risk_structure_temp, explode)
+pie(risk_structure_temp)
+%pie(risk_structure_temp, explode)
 colormap([1 0 0;      %// red
           .75 .25 0;      %// green
           .5 .5 0;      %// blue
