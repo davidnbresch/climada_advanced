@@ -133,8 +133,8 @@ for mainsector_i = 1:n_mainsectors
             mainsector_entity = climada_entity_load(fullfile([module_data_dir filesep 'entities'], mainsector_entity_file));
         end  
         mrio_entity_country(mainsector_entity, climada_mriot, '', '', '', params);
-    else
-        mainsector_entity = climada_entity_load(mainsector_entity_file);
+    elseif check_figure
+        climada_entity_load(fullfile([module_data_dir filesep 'entities'], mainsector_entity_file));
     end 
     if check_figure
     	figure; climada_entity_plot(mainsector_entity, 1.5);
