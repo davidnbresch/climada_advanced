@@ -173,17 +173,9 @@ if isempty(table_flag) %If empty, provide GUI list.
     end
     end
 end % if table_flag is empty
-
-% If only filename and no path is passed, add the latter:
-% complete path, if missing
-[fP,fN,fE] = fileparts(mriot_file);
-if isempty(fP)
-    fP = mrio_data_dir;
-    mriot_file = [fP filesep fN fE];
-end
     
 [fP,fN,fE] = fileparts(mriot_file);
-if isempty(fE), fE = climada_global.spreadsheet_ext;end
+if isempty(fE), fE = climada_global.spreadsheet_ext; end
 if isempty(fP) % complete path, if missing
     mrio_file = [mrio_data_dir filesep 'mrio' filesep fN fE];
     if ~exist(mrio_file,'file') 
