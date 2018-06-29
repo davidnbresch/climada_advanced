@@ -193,6 +193,7 @@ for year_i = 1:length(IO_YDS.direct.yyyy)
         end % ~isnan
     end % cell_i
 
+    leontief.risk_structure = zeros(size(climada_mriot.mrio_data,1),size(climada_mriot.mrio_data,2),year_i); % init
     % risk calculation
     switch switch_io_approach
 
@@ -206,21 +207,20 @@ for year_i = 1:length(IO_YDS.direct.yyyy)
             leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - leontief.coefficients);
 
             % set up industry-by-industry risk structure table (degraded production L* Deltaf)
-            leontief.risk_structure = zeros(size(leontief.inverse));
             for column_i = 1:size(leontief.inverse,1)
-               leontief.risk_structure(:,column_i) = (leontief.inverse(column_i,:) .* degr_consumption')';
+               leontief.risk_structure(:,column_i,year_i) = (leontief.inverse(column_i,:) .* degr_consumption')';
             end % column_i
 
             % calculate the first 4 layers / tiers and a remainder
-            n_layers = 4;
-            leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1);
-            for layer_i = 1:n_layers
-                for column_i = 1:size(leontief.inverse,1)
-                    leontief.layer(:,column_i,layer_i) = (leontief.coefficients(column_i,:) .* degr_consumption')';
-                end % column_i
-                degr_consumption = sum(leontief.layer(:,:,layer_i),1)';
-            end % layer_i
-            leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
+            % n_layers = 4;
+            % leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1,year_i);
+            % for layer_i = 1:n_layers
+            %    for column_i = 1:size(leontief.inverse,1)
+            %         leontief.layer(:,column_i,layer_i) = (leontief.coefficients(column_i,:) .* degr_consumption')';
+            %     end % column_i
+            %     degr_consumption = sum(leontief.layer(:,:,layer_i),1)';
+            % end % layer_i
+            % leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
 
         case 2 % Ghosh Model, cf. Ghosh (1958) [2]
 
@@ -232,21 +232,20 @@ for year_i = 1:length(IO_YDS.direct.yyyy)
             leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - leontief.coefficients);
 
             % set up industry-by-industry risk structure table (degraded production Deltav*H)
-            leontief.risk_structure = zeros(size(leontief.inverse));
             for column_i = 1:size(leontief.inverse,1)
-               leontief.risk_structure(:,column_i) = degr_value_added .* leontief.inverse(:,column_i);
+               leontief.risk_structure(:,column_i,year_i) = degr_value_added .* leontief.inverse(:,column_i);
             end % column_i
 
             % calculate the first 4 layers / tiers and a remainder
-            n_layers = 4;
-            leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1);
-            for layer_i = 1:n_layers
-                for column_i = 1:size(leontief.inverse,1)
-                    leontief.layer(:,column_i,layer_i) = degr_value_added .* leontief.coefficients(:,column_i);
-                end % column_i
-                degr_value_added = sum(leontief.layer(:,:,layer_i),1)';
-            end % layer_i
-            leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
+            % n_layers = 4;
+            % leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1);
+            % for layer_i = 1:n_layers
+            %     for column_i = 1:size(leontief.inverse,1)
+            %         leontief.layer(:,column_i,layer_i) = degr_value_added .* leontief.coefficients(:,column_i);
+            %     end % column_i
+            %     degr_value_added = sum(leontief.layer(:,:,layer_i),1)';
+            % end % layer_i
+            % leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
 
         case 3 % Environmentally Extended Input-Output Analysis (EEIOA), cf. Kitzes (2013) [3]
 
@@ -254,23 +253,22 @@ for year_i = 1:length(IO_YDS.direct.yyyy)
             leontief.inverse = inv(eye(size(climada_mriot.mrio_data)) - leontief.coefficients);
 
             % set up industry-by-industry risk structure table
-            leontief.risk_structure = zeros(size(leontief.inverse));
             for column_i = 1:size(leontief.inverse,1)
                 % multiplying the monetary input-output relation by the industry-specific factor requirements q*(1-A)^{-1}*x
-                leontief.risk_structure(:,column_i) = (direct_intensity_vector .* leontief.inverse(:,column_i)') .* total_output(column_i);
+                leontief.risk_structure(:,column_i,year_i) = (direct_intensity_vector .* leontief.inverse(:,column_i)') .* total_output(column_i);
             end % column_i
 
-    %         % calculate the first 4 layers / tiers and a remainder
-    %         n_layers = 4;
-    %         leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1);
-    %         leontief.layer(:,column_i,1) = ((direct_intensity_vector .* leontief.coefficients(:,column_i)') .* total_output(column_i))';
-    %         for layer_i = 2:n_layers-1
-    %             for column_i = 1:size(leontief.inverse,1)
-    %                 leontief.layer(:,column_i,layer_i) = ((direct_intensity_vector .* leontief.coefficients(:,column_i)') .* sum(leontief.layer(:,:,layer_i-1),1))';
-    %             end % column_i
-    %             total_output = sum(leontief.layer(:,:,layer_i),1)';
-    %         end % layer_i
-    %         leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
+            % calculate the first 4 layers / tiers and a remainder
+            % n_layers = 4;
+            % leontief.layer = zeros(size(leontief.inverse,1),size(leontief.inverse,2),n_layers+1);
+            % leontief.layer(:,column_i,1) = ((direct_intensity_vector .* leontief.coefficients(:,column_i)') .* total_output(column_i))';
+            % for layer_i = 2:n_layers-1
+            %     for column_i = 1:size(leontief.inverse,1)
+            %         leontief.layer(:,column_i,layer_i) = ((direct_intensity_vector .* leontief.coefficients(:,column_i)') .* sum(leontief.layer(:,:,layer_i-1),1))';
+            %     end % column_i
+            %     total_output = sum(leontief.layer(:,:,layer_i),1)';
+            % end % layer_i
+            % leontief.layer(:,:,n_layers+1) = leontief.risk_structure - sum(leontief.layer(:,:,1:n_layers),3);
 
         otherwise
 
@@ -280,7 +278,7 @@ for year_i = 1:length(IO_YDS.direct.yyyy)
     end % switch_io_approach
 
     % sum up the risk contributions to obtain the indirect subsector risk
-    IO_YDS.indirect.damage(year_i,:) = nansum(leontief.risk_structure,1);
+    IO_YDS.indirect.damage(year_i,:) = nansum(leontief.risk_structure(:,:,year_i),1);
     
     if verbose, climada_progress2stdout(year_i,length(IO_YDS.direct.yyyy),1,'risk calculations'); end % update
 
