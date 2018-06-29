@@ -1,4 +1,4 @@
-function mrio_step_by_step(check_figure) % uncomment to run as function
+function [subsector_risk_tb, country_risk_tb, IO_YDS, leontief] = mrio_step_by_step(check_figure) % uncomment to run as function
 % mrio step by step
 % MODULE:
 %   advanced
@@ -19,7 +19,7 @@ function mrio_step_by_step(check_figure) % uncomment to run as function
 %   isimip          https://github.com/davidnbresch/climada_module_isimip
 %   advanced        https://github.com/davidnbresch/climada_module_advanced
 %
-%   needs additional data: IBTrACS (TC) hazard
+%   needs additional data: TCE-DAT hazard
 %   https://polybox.ethz.ch/index.php/s/FwetsXlLeXLJPnD (Accessed 26 07 2018)
 %   Download > Store in climada_global.hazards_dir (./climada_data/hazards)
 %
@@ -36,6 +36,52 @@ function mrio_step_by_step(check_figure) % uncomment to run as function
 % OPTIONAL INPUT PARAMETERS:
 %   check_figure: set to 1 to visualize figures, by default entities are not plotted (=0)
 % OUTPUTS:
+%   subsector_risk_tb: a table containing as one variable the direct risk
+%       subsector/country combination selected. The table further contins three
+%       more variables with the country names, country ISO codes and sector names
+%       corresponging to the direct risk values.
+%   country_risk_tb: a table containing as one variable the direct risk per country 
+%       (aggregated across all subsectors selected). Further a variable with corresponding 
+%       country names and country ISO codes, respectively.
+%   IO_YDS, the Input-Output year damage set, a struct with the fields:
+%       direct, a struct itself with the field
+%           ED: the total expected annual damage
+%           reference_year: the year the damages are references to
+%           yyyy(i): the year i
+%           damage(year_i): the damage amount for year_i (summed up over all
+%               assets and events)
+%           Value: the sum of all Values used in the calculation (to e.g.
+%               express damages in percentage of total Value)
+%           frequency(i): the annual frequency, =1
+%           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       indirect, a struct itself with the field
+%           ED: the total expected annual damage
+%           reference_year: the year the damages are references to
+%           yyyy(i): the year i
+%           damage(year_i): the damage amount for year_i (summed up over all
+%               assets and events)
+%           Value: the sum of all Values used in the calculation (to e.g.
+%               express damages in percentage of total Value)
+%           frequency(i): the annual frequency, =1
+%           orig_year_flag(i): =1 if year i is an original year, =0 else
+%       hazard: itself a structure, with:
+%           filename: the filename of the hazard event set
+%           comment: a free comment
+%   leontief: a structure with 5 fields. It represents a general climada
+%       leontief structure whose basic properties are the same regardless of the
+%       provided mriot it is based on. The fields are:
+%           risk_structure: industry-by-industry table of expected annual damages (in millions
+%               of US$) that, for each industry, contains indirect risk implicitly
+%               obtained from the different industry.
+%           inverse: the leontief inverse matrix which relates final demand to production
+%           coefficients: either the technical coefficient matrix which gives the amount of input that a 
+%               given sector must receive from every other sector in order to create one dollar of 
+%               output or the allocation coefficient matrix that indicates the allocation of outputs
+%               of each sector
+%           layers: the first 5 layers and a remainder term that gives the
+%               user information on which stage/tier the risk incurs
+%           climada_mriot: struct that contains information on the mrio table used
+%           climada_nan_mriot: matrix with the value 1 in relations (trade flows) that cannot be accessed
 % MODIFICATION HISTORY:
 % Ediz Herms, ediz.herms@outlook.com, 20180614, initial 
 %
