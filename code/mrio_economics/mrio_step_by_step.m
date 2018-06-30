@@ -160,7 +160,6 @@ head(country_risk_tb)
 %% Generate simple graphics for subsector x country-combination selected
 fprintf('<strong>Generate simple graphics for subsector x country-combination selected...</strong>\n');tic;
 mrio_countries_ISO3 = unique(climada_mriot.countries_iso, 'stable');
-mainsectors = unique(climada_mriot.climada_sect_name, 'stable');
 subsectors = unique(climada_mriot.sectors, 'stable'); 
 
 country_name = []; % init
