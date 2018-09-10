@@ -7,6 +7,8 @@
 % PURPOSE:
 %   batch job to TEST wiggling hazard parameters for one centroid in Florida
 %
+%   see PARAMETERS
+%
 %   for speedup, consider climada_global.parfor=1
 %
 % CALLING SEQUENCE:
@@ -19,6 +21,7 @@
 %   to stdout and figures
 % MODIFICATION HISTORY:
 % David N. Bresch, david.bresch@gmail.com, 20180622, initial
+% David N. Bresch, david.bresch@gmail.com, 20180910, rcps added
 %-
 
 global climada_global
@@ -26,9 +29,11 @@ if ~climada_init_vars,return;end % init/import global variables
 
 % PARAMETERS
 %
+%method='perturbed physics'; % wiggle some parameters to generate the hazard set
+method='rcps'; % use different rcps
+
 % define the centroid(s)
 centroids.lon = -80.1918;centroids.lat =  25.7617; % Miami, Florida, USA
-
 
 EDS=[]; % (re)init
 
@@ -55,8 +60,8 @@ EDS=[]; % (re)init
 fprintf('preparing entity ...');
 centroids.centroid_ID=1:length(centroids.lon); % define IDs
 entity=climada_entity_read('entity_template.xlsx','NOENCODE');
-entity.assets=rmfield(entity.assets,'hazard');
-entity.assets=rmfield(entity.assets,'centroid_index');
+if isfield(entity.assets,'hazard'),entity.assets=rmfield(entity.assets,'hazard');end
+if isfield(entity.assets,'centroid_index'),entity.assets=rmfield(entity.assets,'centroid_index');end
 entity.assets=rmfield(entity.assets,'Category_ID');
 entity.assets=rmfield(entity.assets,'Region_ID');
 entity.assets=rmfield(entity.assets,'Value_unit');
@@ -73,13 +78,9 @@ fprintf(' done\n');
 fprintf('loading TC tracks, calculating hazard set and damages:\n');
 
 % load historical TC-tracks
-tc_track=climada_tc_read_unisys_database('atl'); % read historic TC tracks
-
-% generate historic hazard event set
-hazard_hist=climada_tc_hazard_set(tc_track,'NOSAVE',centroids);
-
-% calculate historic damages (the kind of 'reference')
-EDS=climada_EDS_calc(entity,hazard_hist,'hist');
+%tc_track=climada_tc_read_unisys_database('atl'); % read historic TC tracks
+tc_track=climada_tc_track_load([climada_global.data_dir filesep 'tc_tracks' filesep 'ibtracs' filesep 'ibtracs.mat']);
+if isempty(tc_track),tc_track=isimip_ibtracs_read('all','',1,1);end % load from single files
 
 % figure;plot(hazard.yyyy,EDS.damage,'.r');
 % figure;climada_damagefunctions_plot(entity,'TC 001')
@@ -90,24 +91,57 @@ EDS=climada_EDS_calc(entity,hazard_hist,'hist');
 % % fix orig_yearset()
 % figure;plot(hazard.orig_yearset.yyyy,YDS.damage,'.r');
 
-fprintf('calculating perturbed physics (9 combinations):\n');
+switch method
+    case 'perturbed physics'
+        fprintf('calculating perturbed physics (9 combinations):\n');
+        
+        % generate historic hazard event set
+        hazard_hist=climada_tc_hazard_set(tc_track,'NOSAVE',centroids);
+        
+        % calculate historic damages (the kind of 'reference')
+        EDS=climada_EDS_calc(entity,hazard_hist,'hist');
+        
+        % start wiggling
+        ens_size =     9; % create ens_size varied derived tracks, default 9
+        for random_walk_i=1:3
+            ens_amp  =   1.5*random_walk_i; % amplitude of max random starting point shift degree longitude
+            Maxangle = pi/10/random_walk_i; % maximum angle of variation, =pi is like undirected, pi/4 means one quadrant
+            tc_track_prob=climada_tc_random_walk(tc_track,ens_size,ens_amp,Maxangle);
+            hazard_prob=climada_tc_hazard_set(tc_track_prob,'NOSAVE',centroids);
+            EDS(end+1)=climada_EDS_calc(entity,hazard_prob,sprintf('prob walk %i',random_walk_i));
+            
+            for windfield_i=1:2
+                if windfield_i==1,R_min=15;end
+                if windfield_i==2,R_min=45;end
+                hazard_prob=climada_tc_hazard_set(tc_track_prob,'NOSAVE',centroids,1,R_min);
+                EDS(end+1)=climada_EDS_calc(entity,hazard_prob,sprintf('prob walk %i wind %i',random_walk_i,windfield_i));
+            end
+        end
+        
+        climada_EDS_DFC(EDS,[],1,0,'hist');xlim([0 1000])
+        title('single point (Miami) tropical cyclone risk');
+        
+    case 'rcps'
+        
+        fprintf('calculating RCPs:\n');
+        
+        tc_track_prob=climada_tc_random_walk(tc_track);
+        
+        % generate historic hazard event set
+        hazard_prob=climada_tc_hazard_set(tc_track_prob,'NOSAVE',centroids);
+        
+        % calculate historic damages (the kind of 'reference')
+        EDS=climada_EDS_calc(entity,hazard_prob,'today');
+        
+        rcp_list=[26 45 60 85];
+        reference_year=2050;
+        for rcp_i=1:length(rcp_list)
+            hazard_rcp = climada_tc_hazard_clim_scen_Knutson2015(hazard_prob,tc_track_prob,rcp_list(rcp_i),reference_year,0,'NOSAVE'); % 2-degree, 2015
+            EDS(end+1)=climada_EDS_calc(entity,hazard_rcp,sprintf('rcp%2.2i %4.4i',rcp_list(rcp_i),reference_year));
+        end % rcp_i
+        
+        climada_EDS_DFC(EDS,[],1,0,'today');xlim([0 100])
 
-% start wiggling
-ens_size =     9; % create ens_size varied derived tracks, default 9
-for random_walk_i=1:3
-    ens_amp  =   1.5*random_walk_i; % amplitude of max random starting point shift degree longitude
-    Maxangle = pi/10/random_walk_i; % maximum angle of variation, =pi is like undirected, pi/4 means one quadrant
-    tc_track_prob=climada_tc_random_walk(tc_track,ens_size,ens_amp,Maxangle);
-    hazard_prob=climada_tc_hazard_set(tc_track_prob,'NOSAVE',centroids);
-    EDS(end+1)=climada_EDS_calc(entity,hazard_prob,sprintf('prob walk %i',random_walk_i));
-    
-    for windfield_i=1:2
-        if windfield_i==1,R_min=15;end
-        if windfield_i==2,R_min=45;end
-        hazard_prob=climada_tc_hazard_set(tc_track_prob,'NOSAVE',centroids,1,R_min);
-        EDS(end+1)=climada_EDS_calc(entity,hazard_prob,sprintf('prob walk %i wind %i',random_walk_i,windfield_i));
-    end
-end
-
-climada_EDS_DFC(EDS,[],1,0,'hist');xlim([0 1000])
-title('single point (Miami) tropical cyclone risk');
+        title('single point (Miami) tropical cyclone risk');
+        
+end % switch method
