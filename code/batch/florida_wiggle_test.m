@@ -45,6 +45,11 @@ method='perturbed physics'; % wiggle some parameters to generate the hazard set
 % if you define here, we create a dummy entity with these (few) points,
 % otherwise see entity load below
 %centroids.lon = -80.1918;centroids.lat =  25.7617; % Miami, Florida, USA
+%
+% local folder to write the figures
+fig_dir = [climada_global.results_dir filesep 'CLIMADA_LSE'];
+if ~isdir(fig_dir),[fP,fN]=fileparts(fig_dir);mkdir(fP,fN);end % create it
+fig_ext ='png';
 
 EDS=[]; % (re)init
 
@@ -69,7 +74,7 @@ if ~exist('centroids','var')
         entity.assets.filename='/Users/bresch/Documents/_GIT/climada_data/entities/USA_UnitedStates_Florida_10x10.mat';
         entity.assets.Value=entity.assets.Value/sum(entity.assets.Value)*926e9*5;
         entity.assets.Cover=entity.assets.Value; % to cover 100%
-        entity.assets.Value_comment='GDP USD 926 bn (2016) from https://en.wikipedia.org/wiki/Florida, factor 5 is WolrdBank income_group plus one';
+        entity.assets.Value_comment='GDP USD 926 bn (2016) from https://en.wikipedia.org/wiki/Florida, factor 5 is WorldBank income_group plus one';
         save(entity.assets.filename,'entity',climada_global.save_file_version);
         climada_entity_plot(entity);
     end
@@ -151,9 +156,16 @@ switch method
         % start wiggling
         ens_size =     9; % create ens_size varied derived tracks, default 9
         for random_walk_i=1:3
-            ens_amp  =   1.5*random_walk_i; % amplitude of max random starting point shift degree longitude
-            Maxangle = pi/10/random_walk_i; % maximum angle of variation, =pi is like undirected, pi/4 means one quadrant
+            %ens_amp  =   1.5*random_walk_i; % amplitude of max random starting point shift degree longitude
+            ens_amp  =   0.1+0.1*random_walk_i; % amplitude of max random starting point shift degree longitude
+            %Maxangle = pi/10/random_walk_i; % maximum angle of variation, =pi is like undirected, pi/4 means one quadrant
+            Maxangle = pi/10*random_walk_i; % maximum angle of variation, =pi is like undirected, pi/4 means one quadrant
             tc_track_prob=climada_tc_random_walk(tc_track,ens_size,ens_amp,Maxangle);
+            climada_tc_track_info(tc_track_prob);
+            info_str=sprintf('ens amp %2.2f, max angle=%2.3f',ens_amp,Maxangle);title(info_str);axis tight,xlim([-180,180]),ylim([-90,90])
+            saveas(gcf,[fig_dir filesep sprintf('CLIMADA_LSE_random_walk_%1.1i',random_walk_i)],fig_ext);
+            close all % get rid of figures
+            
             hazard_prob=climada_tc_hazard_set(tc_track_prob,'NOSAVE',entity);
             EDS(end+1)=climada_EDS_calc(entity,hazard_prob,sprintf('prob walk %i',random_walk_i));
             
@@ -167,6 +179,8 @@ switch method
         
         climada_EDS_DFC(EDS,[],1,0,'hist');xlim([0 1000])
         %title('single point (Miami) tropical cyclone risk');
+        xlim([0,50])
+        saveas(gcf,[fig_dir filesep 'CLIMADA_LSE_DFC'],fig_ext);
         
     case 'rcps'
         
