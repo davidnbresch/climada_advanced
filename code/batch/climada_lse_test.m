@@ -127,7 +127,7 @@ fprintf('calculating historic hazard set:\n');
 hazard_hist=climada_tc_hazard_set(tc_track,'NOSAVE',entity);
 entity.assets.centroids_index=1:length(entity.assets.lon);
 entity.assets.hazard.filename=hazard_hist.filename;
-entity.assets.hazard.comment='local, hatrd-wired';
+entity.assets.hazard.comment='local, hard-wired';
 EDS_hist=climada_EDS_calc(entity,hazard_hist,'hist');
 
 % figure;plot(hazard.yyyy,EDS.damage,'.r');
