@@ -42,11 +42,13 @@ reference_return_periods=[10 20 30 40 50 60 70 80 90 100];
 %
 % last years to use to construct the probabilistic set(s)
 construction_period_ends=1980:5:2015; % usually 1980:5:2015 or a selection, e.g. [1980 1985 1995]
+% note that the verification is always to the next construction period,
+% i.e. for construction 1950...1980, verification is for 1950...1985
 %
 method='perturbed physics'; % wiggle some parameters to generate the hazard set
 %method='rcps'; % use different rcps CURRENTLY OFF
 %
-ens_size =     9; % create ens_size varied derived tracks, default 9
+ens_size =     1; % create ens_size varied derived tracks, default 9
 %
 % define the centroid(s)
 % if you define here, we create a dummy entity with these (few) points,
@@ -130,6 +132,9 @@ entity.assets.hazard.filename=hazard_hist.filename;
 entity.assets.hazard.comment='local, hard-wired';
 EDS_hist=climada_EDS_calc(entity,hazard_hist,'hist');
 
+% establish decay characteristics
+[~,p_rel] = climada_tc_track_wind_decay_calculate(tc_track,0);p_rel=real(p_rel); % fixes a strange issue
+
 % figure;plot(hazard.yyyy,EDS.damage,'.r');
 % figure;climada_damagefunctions_plot(entity,'TC 001')
 % IFC=climada_hazard2IFC(hazard,1);
@@ -159,35 +164,35 @@ switch method
         % start wiggling
         for random_walk_i=1:4
             ens_amp  =   0.1+0.1*random_walk_i; % amplitude of max random starting point shift degree longitude
-            Maxangle = pi/10*random_walk_i; % maximum angle of variation, =pi is like undirected, pi/4 means one quadrant
-            tc_track_prob=climada_tc_random_walk(tc_track,ens_size,ens_amp,Maxangle);
-            climada_tc_track_info(tc_track_prob);
-            info_str=sprintf('ens amp %2.2f, max angle=%2.3f',ens_amp,Maxangle);title(info_str);axis tight,xlim([-180,180]),ylim([-90,90])
-            saveas(gcf,[fig_dir filesep sprintf('CLIMADA_LSE_random_walk_%1.1i',random_walk_i)],fig_ext);
-            close all % get rid of figures
+            Maxangle =     pi/10*random_walk_i; % maximum angle of variation, =pi is like undirected, pi/4 means one quadrant
+            tc_track_prob = climada_tc_random_walk(tc_track,ens_size,ens_amp,Maxangle);
+    
+            % add the inland decay correction to all probabilistic nodes
+            tc_track_prob = climada_tc_track_wind_decay(tc_track_prob, p_rel,0);
+                    
+%             climada_tc_track_info(tc_track_prob);
+%             info_str=sprintf('ens amp %2.2f, max angle=%2.3f',ens_amp,Maxangle);title(info_str);axis tight,xlim([-180,180]),ylim([-90,90])
+%             saveas(gcf,[fig_dir filesep sprintf('CLIMADA_LSE_random_walk_%1.1i',random_walk_i)],fig_ext);
+%             close all % get rid of figures
             
             hazard_prob=climada_tc_hazard_set(tc_track_prob,'NOSAVE',entity);
             EDS(end+1)=climada_EDS_calc(entity,hazard_prob,sprintf('prob walk %i',random_walk_i));
             
-            for windfield_i=1:3 % 10 20 (30) 40 , 30 is default (used above)
-                if windfield_i==1,R_min=10;end
-                if windfield_i==2,R_min=20;end
-                if windfield_i==3,R_min=40;end
+            for windfield_i=1:3 % [10] 20 (30) 40 50, 30 is default (used above)
+                % we had 10 20 (30) 40 then 20 (30) 40 50
+                if windfield_i==1,R_min= 5;end
+                if windfield_i==2,R_min=10;end
+                if windfield_i==3,R_min=20;end
                 hazard_prob=climada_tc_hazard_set(tc_track_prob,'NOSAVE',entity,1,R_min);
                 EDS(end+1)=climada_EDS_calc(entity,hazard_prob,sprintf('prob walk %i wind %i',random_walk_i,windfield_i));
             end
         end
-        
-        DFC=climada_EDS2DFC(EDS,reference_return_periods); % in USD amounts
-        climada_EDS_DFC(EDS,[],0,0,'hist');xlim([0,100]) % in USD amounts
-        saveas(gcf,[fig_dir filesep 'CLIMADA_LSE_EP_full_period'],fig_ext);
-        
+                
     case 'rcps'
         
         fprintf('calculating RCPs:\n');
         
         EDS=EDS_hist; % just a copy of historic, for handling
-        
         
         % generate historic probabilistic hazard event set
         tc_track_prob=climada_tc_random_walk(tc_track);
@@ -214,12 +219,40 @@ end % switch method
 total_years=tc_track(end).yyyy(end)-tc_track(1).yyyy(1)+1;
 hist_damage_full_period=sum(EDS_hist.damage)/total_years;
 
+% set all orig event damages in probabilistic set to zero
+%orig_pos=find(hazard_prob.orig_event_flag);
+% for EDS_i=2:length(EDS)
+%     EDS(EDS_i).damage(orig_pos)=0; % set original event damages to zero
+%     % adjust frequency (now ens_size instead of ens_size+1, since original
+%     % events taken out or well, set to zero)
+%     EDS(EDS_i).frequency=EDS(EDS_i).frequency*0+1/(hazard_prob.orig_years*ens_size); 
+%     EDS(EDS_i).frequency(orig_pos)=0; % to be sure
+% end
+
+% keep only the probabilistic events for probabilistic sets
+prob_pos=find(hazard_prob.orig_event_flag==0);
+for EDS_i=2:length(EDS)
+    EDS(EDS_i).damage          = EDS(EDS_i).damage(prob_pos); % set original event damages to zero
+    EDS(EDS_i).event_ID        = EDS(EDS_i).event_ID(prob_pos); % set original event damages to zero
+    EDS(EDS_i).orig_event_flag = EDS(EDS_i).damage*0; % set original event damages to zero
+    EDS(EDS_i).frequency       = EDS(EDS_i).damage*0+1/(total_years*ens_size); 
+    EDS(EDS_i).ED_at_centroid  = EDS(EDS_i).ED_at_centroid+NaN; % not valid any more
+    EDS(EDS_i).ED              = EDS(EDS_i).damage*EDS(EDS_i).frequency';
+end
+EDS(1).frequency=EDS(1).damage*0+1/total_years;
+EDS(1).ED=EDS(1).damage*EDS(1).frequency';
+
+DFC=climada_EDS2DFC(EDS,reference_return_periods); % in USD amounts
+climada_EDS_DFC(EDS,[],0,0,'hist');xlim([0,100]) % in USD amounts
+saveas(gcf,[fig_dir filesep 'CLIMADA_LSE_EP_full_period'],fig_ext);
+
 % write results
 % -------------
 
-for construction_period_i=1:length(construction_period_ends)
+for construction_period_i=1:length(construction_period_ends)-1
     
     construction_period_end=construction_period_ends(construction_period_i);
+    verification_period_end=construction_period_ends(construction_period_i+1);
     
     csv_ED_table=[fig_dir filesep 'CLIMADA_LSE_cp_' sprintf('%4.4i',construction_period_end) '_ED.csv'];
     csv_EP_table=[fig_dir filesep 'CLIMADA_LSE_cp_' sprintf('%4.4i',construction_period_end) '_EP.csv'];
@@ -229,13 +262,18 @@ for construction_period_i=1:length(construction_period_ends)
         if tc_track(track_i).yyyy(end)<=construction_period_end
             construction_period_end_track_i=track_i;
         end
+        if tc_track(track_i).yyyy(end)<=verification_period_end
+            verification_period_end_track_i=track_i;
+        end
     end % track_i
     total_years=tc_track(end).yyyy(end)-tc_track(1).yyyy(1)+1;
     construction_years=tc_track(construction_period_end_track_i).yyyy(end)-tc_track(1).yyyy(1)+1;
-    after_construction_years=tc_track(end).yyyy(end)-tc_track(construction_period_end_track_i).yyyy(1);
+    verification_years=tc_track(verification_period_end_track_i).yyyy(end)-tc_track(1).yyyy(1)+1;
+    %after_construction_years=tc_track(end).yyyy(end)-tc_track(construction_period_end_track_i).yyyy(1);
     
     % convert from index in historic set to the probabilistic event
-    cpe_i=construction_period_end_track_i*(ens_size+1);
+    %cpe_i=construction_period_end_track_i*(ens_size+1);
+    cpe_i=construction_period_end_track_i*(ens_size);
     
     % historic expected damage over construction period
     % -------------------------------------------------
@@ -244,11 +282,20 @@ for construction_period_i=1:length(construction_period_ends)
     EDS_hist_cp.frequency =(EDS_hist_cp.frequency(1:construction_period_end_track_i)*0+1)/construction_years;
     EDS_hist_cp.ED        = EDS_hist_cp.damage*EDS_hist_cp(1).frequency';
     if EDS_hist_cp.ED<eps,EDS_hist_cp.ED=eps;end % avoid division by zero
-    
     hist_damage_construction_period=sum(EDS_hist.damage(1:construction_period_end_track_i))/construction_years;
     if hist_damage_construction_period<eps,hist_damage_construction_period=eps;end
     % expected damage over period after construction until end of the dataset
-    hist_damage_after_construction_period=sum(EDS_hist.damage(construction_period_end_track_i+1:end))/after_construction_years;
+    %hist_damage_after_construction_period=sum(EDS_hist.damage(construction_period_end_track_i+1:end))/after_construction_years;
+    
+    % historic expected damage over verification period
+    % -------------------------------------------------
+    EDS_veri_cp=EDS_hist; % copy full historic
+    EDS_veri_cp.damage    = EDS_veri_cp.damage(1:verification_period_end_track_i);
+    EDS_veri_cp.frequency =(EDS_veri_cp.frequency(1:verification_period_end_track_i)*0+1)/verification_years;
+    EDS_veri_cp.ED        = EDS_veri_cp.damage*EDS_veri_cp(1).frequency';
+    if EDS_veri_cp.ED<eps,EDS_veri_cp.ED=eps;end % avoid division by zero
+    hist_damage_verification_period=sum(EDS_veri_cp.damage(1:verification_period_end_track_i))/verification_years;
+    if hist_damage_verification_period<eps,hist_damage_verification_period=eps;end
     
     % trim the EDS to construction period
     % -----------------------------------
@@ -256,7 +303,8 @@ for construction_period_i=1:length(construction_period_ends)
     EDS_cp(1)=EDS_hist_cp; % first is historic
     for EDS_i=2:length(EDS_cp)
         EDS_cp(EDS_i).damage    = EDS_cp(EDS_i).damage(1:cpe_i);
-        EDS_cp(EDS_i).frequency =(EDS_cp(EDS_i).frequency(1:cpe_i)*0+1)/(ens_size+1)/construction_years;
+        EDS_cp(EDS_i).frequency = EDS_cp(EDS_i).frequency(1:cpe_i)*0+1/ens_size/construction_years; % only ens_size, since no historic any more
+        %EDS_cp(EDS_i).frequency =(EDS_cp(EDS_i).frequency(1:cpe_i)*0+1)/(ens_size+1)/construction_years;
         EDS_cp(EDS_i).ED        = EDS_cp(EDS_i).damage*EDS_cp(EDS_i).frequency';
         if EDS_cp(EDS_i).ED<eps,EDS_cp(EDS_i).ED=eps;end % avoid division by zero
         EDS_cp(EDS_i).event_ID  = EDS_cp(EDS_i).event_ID(1:cpe_i);
@@ -269,21 +317,21 @@ for construction_period_i=1:length(construction_period_ends)
     csv_fid=fopen(csv_ED_table,'w');
     
     csv_format='%s,%g,%g,%g\n';
-    csv_header=sprintf('ensemble member,construction period %4.4i to %4.4i,full period,difference',tc_track(1).yyyy(1),tc_track(construction_period_end_track_i).yyyy(end));
+    csv_header=sprintf('ensemble member,construction period %4.4i to %4.4i,verification period,difference',tc_track(1).yyyy(1),tc_track(construction_period_end_track_i).yyyy(end));
     csv_format=strrep(csv_format,',',climada_global.csv_delimiter);
     csv_header=strrep(csv_header,',',climada_global.csv_delimiter);
     
     fprintf('expected damage (construction period %4.4i..%4.4i\n',tc_track(1).yyyy(1),tc_track(construction_period_end_track_i).yyyy(end));
-    fprintf('construction period \t full period \t difference %%\n');
+    fprintf('construction period \t verification period \t difference %%\n');
     fprintf(csv_fid,'%s\n',csv_header);
     
-    fprintf('%s: %g \t %g \t %g\n','historical',hist_damage_construction_period,hist_damage_full_period,(hist_damage_full_period/hist_damage_construction_period-1)*100);
-    fprintf(csv_fid,csv_format,    'historical',hist_damage_construction_period,hist_damage_full_period,(hist_damage_full_period/hist_damage_construction_period-1));
+    fprintf('%s: %g \t %g \t %g\n','historical',hist_damage_construction_period,hist_damage_verification_period,(hist_damage_construction_period/hist_damage_verification_period-1)*100);
+    fprintf(csv_fid,csv_format,    'historical',hist_damage_construction_period,hist_damage_verification_period,(hist_damage_construction_period/hist_damage_construction_period-1));
     
     for EDS_i=2:length(EDS_cp) % EDS(1) is historic, but only for construction_period, we have that above
         %ED=sum(EDS_cp(EDS_i).damage(1:cpe_i))/ens_size/construction_years; % damage during construction period
-        fprintf('%s: %g \t %g \t %g\n',EDS_cp(EDS_i).annotation_name,EDS_cp(EDS_i).ED,hist_damage_full_period,(hist_damage_full_period/EDS_cp(EDS_i).ED-1)*100);
-        fprintf(csv_fid,csv_format,    EDS_cp(EDS_i).annotation_name,EDS_cp(EDS_i).ED,hist_damage_full_period,(hist_damage_full_period/EDS_cp(EDS_i).ED-1));
+        fprintf('%s: %g \t %g \t %g\n',EDS_cp(EDS_i).annotation_name,EDS_cp(EDS_i).ED,hist_damage_verification_period,(EDS_cp(EDS_i).ED/hist_damage_verification_period-1)*100);
+        fprintf(csv_fid,csv_format,    EDS_cp(EDS_i).annotation_name,EDS_cp(EDS_i).ED,hist_damage_verification_period,(EDS_cp(EDS_i).ED/hist_damage_verification_period-1));
     end % EDS_i
     fclose(csv_fid);
     fprintf('\n > ED written to %s\n',csv_ED_table)
