@@ -49,6 +49,7 @@ function hazard=climada_hazard_merge(hazard,hazard2,merge_direction,hazard_file)
 % David N. Bresch, david.bresch@gmail.com, 20171230, frequency inferred
 % David N. Bresch, david.bresch@gmail.com, 20180203, hazard_file
 % David N. Bresch, david.bresch@gmail.com, 20180312, category, datenum and ID_no added in 'events'
+% David N. Bresch, david.bresch@gmail.com, 20190311, name added in 'events'
 %-
 
 global climada_global
@@ -107,15 +108,15 @@ elseif strcmpi(merge_direction,'events')
     
     hazard.frequency = [hazard.frequency hazard2.frequency];
     hazard.orig_event_flag = [hazard.orig_event_flag hazard2.orig_event_flag];
-    hazard.yyyy = [hazard.yyyy hazard2.yyyy];
-    hazard.mm = [hazard.mm hazard2.mm];
-    hazard.dd = [hazard.dd hazard2.dd];
+    if isefield(hazard,'yyyy'),hazard.yyyy = [hazard.yyyy hazard2.yyyy];end
+    if isefield(hazard,'mm'),  hazard.mm   = [hazard.mm hazard2.mm];end
+    if isefield(hazard,'dd'),  hazard.dd   = [hazard.dd hazard2.dd];end
     
-    hazard.orig_years=max(hazard.yyyy)-min(hazard.yyyy)+1;
+    if isefield(hazard,'orig_years'),hazard.orig_years=max(hazard.yyyy)-min(hazard.yyyy)+1;end
     
     hazard.event_count=size(hazard.intensity,1);
     hazard.event_ID=1:hazard.event_count;
-    hazard.orig_event_count=sum(hazard.orig_event_flag);
+    if isefield(hazard,'orig_event_flag'),hazard.orig_event_count=sum(hazard.orig_event_flag);end
     
     n_prob_events=hazard.event_count/hazard.orig_event_count-1;
     hazard.frequency = (hazard.frequency*0+1)/(hazard.orig_years*(1+n_prob_events));
@@ -133,6 +134,10 @@ elseif strcmpi(merge_direction,'events')
     
     if isfield(hazard,'datenum') && isfield(hazard2,'datenum')
         hazard.datenum=[hazard.datenum hazard2.datenum];
+    end
+    
+    if isfield(hazard,'name') && isfield(hazard2,'name')
+        hazard.name=[hazard.name hazard2.name];
     end
     
     if isfield(hazard,'ID_no') && isfield(hazard2,'ID_no')
