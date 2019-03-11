@@ -108,15 +108,15 @@ elseif strcmpi(merge_direction,'events')
     
     hazard.frequency = [hazard.frequency hazard2.frequency];
     hazard.orig_event_flag = [hazard.orig_event_flag hazard2.orig_event_flag];
-    if isefield(hazard,'yyyy'),hazard.yyyy = [hazard.yyyy hazard2.yyyy];end
-    if isefield(hazard,'mm'),  hazard.mm   = [hazard.mm hazard2.mm];end
-    if isefield(hazard,'dd'),  hazard.dd   = [hazard.dd hazard2.dd];end
+    if isfield(hazard,'yyyy'),hazard.yyyy = [hazard.yyyy hazard2.yyyy];end
+    if isfield(hazard,'mm'),  hazard.mm   = [hazard.mm hazard2.mm];end
+    if isfield(hazard,'dd'),  hazard.dd   = [hazard.dd hazard2.dd];end
     
-    if isefield(hazard,'orig_years'),hazard.orig_years=max(hazard.yyyy)-min(hazard.yyyy)+1;end
+    if isfield(hazard,'orig_years'),hazard.orig_years=max(hazard.yyyy)-min(hazard.yyyy)+1;end
     
     hazard.event_count=size(hazard.intensity,1);
     hazard.event_ID=1:hazard.event_count;
-    if isefield(hazard,'orig_event_flag'),hazard.orig_event_count=sum(hazard.orig_event_flag);end
+    if isfield(hazard,'orig_event_flag'),hazard.orig_event_count=sum(hazard.orig_event_flag);end
     
     n_prob_events=hazard.event_count/hazard.orig_event_count-1;
     hazard.frequency = (hazard.frequency*0+1)/(hazard.orig_years*(1+n_prob_events));
