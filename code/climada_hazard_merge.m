@@ -123,6 +123,7 @@ elseif strcmpi(merge_direction,'events')
     
     n_prob_events=hazard.event_count/hazard.orig_event_count-1;
     hazard.frequency = (hazard.frequency*0+1)/(hazard.orig_years*(1+n_prob_events));
+    silent_mode
     if ~silent_mode,fprintf('WARNING: re-defining frequency based on orig_years (%i) and #prob. events (%i) --> 1/%i years\n',...
         hazard.orig_years,n_prob_events,ceil(1/hazard.frequency(1)));end
 
