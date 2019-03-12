@@ -51,6 +51,7 @@ function hazard=climada_hazard_merge(hazard,hazard2,merge_direction,hazard_file,
 % David N. Bresch, david.bresch@gmail.com, 20180203, hazard_file
 % David N. Bresch, david.bresch@gmail.com, 20180312, category, datenum and ID_no added in 'events'
 % David N. Bresch, david.bresch@gmail.com, 20190311, name added in 'events'
+% David N. Bresch, david.bresch@gmail.com, 20190312, silent_mode added
 %-
 
 global climada_global
