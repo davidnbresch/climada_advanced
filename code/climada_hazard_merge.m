@@ -1,4 +1,4 @@
-function hazard=climada_hazard_merge(hazard,hazard2,merge_direction,hazard_file)
+function hazard=climada_hazard_merge(hazard,hazard2,merge_direction,hazard_file,silent_mode)
 % climada WS Europe
 % MODULE:
 %   advanced
@@ -28,7 +28,8 @@ function hazard=climada_hazard_merge(hazard,hazard2,merge_direction,hazard_file)
 %       centroids and events to events, results in sparse matrix of the
 %       form:    X 0
 %                0 Y where X=hazard, Y=hazard2
-%   hazard_file: if present, save to filename as specified. 
+%   hazard_file: if present, save to filename as specified.
+%   silent_mode: if =1, do not print to stdout much, default=0
 % OUTPUTS:
 %   hazard: a climada hazard even set structure, see e.g. climada_tc_hazard_set
 %       for a detailed description of all fields. Key fields are:
@@ -60,6 +61,8 @@ if ~exist('hazard','var'),return;end
 if ~exist('hazard2','var'),return;end
 if ~exist('merge_direction','var'),merge_direction='events';end
 if ~exist('hazard_file','var'),hazard_file='';end
+if ~exist('silent_mode','var'),silent_mode=0;end
+
 
 if hazard.reference_year ~= hazard2.reference_year
     fprintf(['Warning: Reference years are not equal: ' int2str(hazard.reference_year) ' and ' int2str(hazard2.reference_year) '\n']);
@@ -120,8 +123,8 @@ elseif strcmpi(merge_direction,'events')
     
     n_prob_events=hazard.event_count/hazard.orig_event_count-1;
     hazard.frequency = (hazard.frequency*0+1)/(hazard.orig_years*(1+n_prob_events));
-    fprintf('WARNING: re-defining frequency based on orig_years (%i) and #prob. events (%i) --> 1/%i years\n',...
-        hazard.orig_years,n_prob_events,ceil(1/hazard.frequency(1)));
+    if ~silent_mode,fprintf('WARNING: re-defining frequency based on orig_years (%i) and #prob. events (%i) --> 1/%i years\n',...
+        hazard.orig_years,n_prob_events,ceil(1/hazard.frequency(1)));end
 
     if isfield(hazard,'orig_yearset') && isfield(hazard2,'orig_yearset') 
         fprintf('combining hazard.orig_yearset by just appending\n');
